@@ -33,10 +33,10 @@ function stripHostPaths(stack: string): string {
   //   "Error\n    at plugin:test:sandbox-escape:3:24\n    at Object.<anonymous> (/home/runner/work/...)"
   // We remove all occurrences of these host path patterns.
   return stack
-    .replace(/\/home\/[^\s'")]+/g, '/<sandbox>/')
-    .replace(/\/Users\/[^\s'")]+/g, '/<sandbox>/')
-    .replace(/\/root\/[^\s'")]+/g, '/<sandbox>/')
-    .replace(/[A-Z]:\\(?:Users|home|root)[^\s'")\\]+/g, '<sandbox>\\');
+    .replace(/\/home\/[^:\s'")\\]+(:\d+:\d+)?/g, '/<sandbox>$1')
+    .replace(/\/Users\/[^:\s'")\\]+(:\d+:\d+)?/g, '/<sandbox>$1')
+    .replace(/\/root\/[^:\s'")\\]+(:\d+:\d+)?/g, '/<sandbox>$1')
+    .replace(/[A-Z]:\\(?:Users|home|root)[^:\s'")\\]+(:\d+:\d+)?/g, '<sandbox>$1');
 }
 
 /**
