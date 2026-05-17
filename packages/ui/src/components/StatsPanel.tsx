@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { formatNumber } from '../utils/formatters';
+import { formatNumber, formatCurrency } from '../utils/formatters';
 import { useGateway } from '../hooks/useWebSocket';
 import { useDebouncedCallback } from '../hooks';
 import { usePageContext } from '../hooks/usePageContext';
@@ -89,10 +89,6 @@ function StatCard({
       </div>
     </div>
   );
-}
-
-function formatCurrency(amount: number): string {
-  return `$${amount.toFixed(2)}`;
 }
 
 // QuickAddSection is now extracted to QuickAddModal.tsx (shared with DashboardPage)
