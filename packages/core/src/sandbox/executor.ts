@@ -29,16 +29,17 @@ import { getErrorMessage } from '../services/error-utils.js';
  */
 function stripHostPaths(stack: string): string {
   // Match absolute Unix paths in stack traces: /home/..., /Users/..., /root/...
-  const unixPathPattern = /\/home\/[^\s'")]+/g;
-  const usersPathPattern = /\/Users\/[^\s'")]+/g;
-  const rootPathPattern = /\/root\/[^\s'")]+/g;
-  // Match Windows paths: C:\Users\...
-  const windowsPathPattern = /[A-Z]:\\(?:Users|home|root)[^\s'")\\]+/g;
+  // Uses lookbehind to ensure we only match paths preceded by non-word chars (space, parenthesis)
+  const unixPathPattern = /(?<=\B)\/home\/[^\s'")]+/g;
+  const usersPathPattern = /(?<=\B)\/Users\/[^\s'")]+/g;
+  const rootPathPattern = /(?<=\B)\/root\/[^\s'")]+/g;
+  // Match Windows paths: C:\Users\... (preceded by non-word char)
+  const windowsPathPattern = /(?<=\B)[A-Z]:\\(?:Users|home|root)[^\s'")\\]+/g;
 
   return stack
-    .replace(unixPathPattern, '/<sandbox>/')
     .replace(usersPathPattern, '/<sandbox>/')
     .replace(rootPathPattern, '/<sandbox>/')
+    .replace(unixPathPattern, '/<sandbox>/')
     .replace(windowsPathPattern, '<sandbox>\\');
 }
 
