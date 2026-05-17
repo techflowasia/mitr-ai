@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Wrench,
   Plus,
@@ -18,7 +18,7 @@ import { PageHomeTab } from '../components/PageHomeTab';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/ToastProvider';
-import { useDebouncedValue, useModalClose } from '../hooks';
+import { useDebouncedValue, useModalClose, useSkipHome } from '../hooks';
 import { customToolsApi } from '../api';
 import type { CustomTool, ToolStats, ToolStatus, ToolPermission } from '../types';
 
@@ -58,33 +58,11 @@ export function CustomToolsPage() {
   const [pageTab, setPageTab] = useState<PageTabId>('home');
 
   // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:customtools:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'customtools',
+    defaultTab: 'customtools',
+    onNavigate: (tab) => setPageTab(tab as PageTabId),
   });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
-
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setPageTab('tools');
-    }
-  }, [skipHome]);
 
   const [tools, setTools] = useState<CustomTool[]>([]);
   const [stats, setStats] = useState<ToolStats | null>(null);
@@ -241,7 +219,7 @@ export function CustomToolsPage() {
             subtitle="Build tools that your AI can call — from simple API wrappers to complex data processors. Define inputs, outputs, and execution logic."
             cta={{ label: 'View Tools', icon: Wrench, onClick: () => setPageTab('tools') }}
             skipHomeChecked={skipHome}
-            onSkipHomeChange={handleSkipHomeChange}
+            onSkipHomeChange={onSkipHomeChange}
             skipHomeLabel="Skip this screen and go directly to Tools"
             features={[
               {

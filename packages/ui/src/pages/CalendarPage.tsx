@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
+import { useSkipHome } from '../hooks/useSkipHome';
 import {
   Calendar,
   Plus,
@@ -35,25 +36,11 @@ export function CalendarPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:calendar:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  // Skip home preference (via useSkipHome hook)
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'calendar',
+    defaultTab: 'calendar',
   });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
 
   const { confirm } = useDialog();
   const toast = useToast();
@@ -77,17 +64,6 @@ export function CalendarPage() {
     params.set('tab', tab);
     navigate({ search: params.toString() }, { replace: true });
   };
-
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !tabParam && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      const params = new URLSearchParams(searchParams);
-      params.set('tab', 'calendar');
-      navigate({ search: params.toString() }, { replace: true });
-    }
-  }, [skipHome, tabParam, searchParams, navigate]);
 
   const fetchEvents = useCallback(async () => {
     setIsLoading(true);
@@ -225,7 +201,7 @@ export function CalendarPage() {
             },
           }}
           skipHomeChecked={skipHome}
-          onSkipHomeChange={handleSkipHomeChange}
+          onSkipHomeChange={onSkipHomeChange}
           skipHomeLabel="Skip this screen and go directly to Calendar"
           features={[
             {

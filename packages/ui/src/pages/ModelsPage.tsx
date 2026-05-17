@@ -4,7 +4,7 @@
  * Display available AI models from configured providers
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { formatNumber as formatNumberBase } from '../utils/formatters';
 import {
@@ -30,6 +30,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { modelsApi, providersApi } from '../api';
 import { PageHomeTab } from '../components/PageHomeTab';
+import { useSkipHome } from '../hooks/useSkipHome';
 
 interface ModelInfo {
   id: string;
@@ -86,30 +87,11 @@ export function ModelsPage() {
     navigate({ search: params.toString() }, { replace: true });
   };
 
-  // Skip home screen preference
-  const SKIP_HOME_KEY = 'ownpilot:models:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'models',
+    defaultTab: 'models',
+    onNavigate: (tab) => setTab(tab as TabId),
   });
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // Ignore storage errors
-    }
-  }, []);
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !tabParam && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setTab('models');
-    }
-  }, [skipHome, tabParam]);
 
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
@@ -227,7 +209,7 @@ export function ModelsPage() {
             onClick: () => setTab('models'),
           }}
           skipHomeChecked={skipHome}
-          onSkipHomeChange={handleSkipHomeChange}
+          onSkipHomeChange={onSkipHomeChange}
           skipHomeLabel="Skip this screen and go directly to Models"
           features={[
             {
@@ -298,7 +280,7 @@ export function ModelsPage() {
                 iconColor="text-primary"
                 action={{
                   label: 'Configure API Keys',
-                  onClick: () => window.location.href = '/settings/api-keys',
+                  onClick: () => (window.location.href = '/settings/api-keys'),
                 }}
               />
             ) : (

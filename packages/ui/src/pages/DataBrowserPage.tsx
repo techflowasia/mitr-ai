@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Database,
@@ -24,7 +24,7 @@ import { useDialog } from '../components/ConfirmDialog';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/ToastProvider';
-import { useDebouncedValue, useModalClose } from '../hooks';
+import { useDebouncedValue, useModalClose, useSkipHome } from '../hooks';
 import { apiClient } from '../api/client';
 
 type TabId = 'home' | 'browser';
@@ -164,30 +164,11 @@ export function DataBrowserPage() {
     [setSearchParams]
   );
 
-  // Skip home screen preference
-  const SKIP_HOME_KEY = 'ownpilot:databrowser:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'databrowser',
+    defaultTab: 'browser',
+    onNavigate: (tab) => setTab(tab as TabId),
   });
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // Ignore storage errors
-    }
-  }, []);
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !tabParam && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setTab('browser');
-    }
-  }, [skipHome, tabParam, setTab]);
 
   const { confirm } = useDialog();
   const toast = useToast();
@@ -368,7 +349,7 @@ export function DataBrowserPage() {
             onClick: () => setTab('browser'),
           }}
           skipHomeChecked={skipHome}
-          onSkipHomeChange={handleSkipHomeChange}
+          onSkipHomeChange={onSkipHomeChange}
           skipHomeLabel="Skip this screen and go directly to Browser"
           features={[
             {

@@ -5,7 +5,7 @@
  * MQTT status, grid layout, and WS-driven refresh.
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { DeviceCard } from '../components/DeviceCard';
 import { RegisterDeviceModal } from '../components/RegisterDeviceModal';
 import { DeviceDetailDrawer } from '../components/DeviceDetailDrawer';
@@ -29,6 +29,7 @@ import { PageHomeTab } from '../components/PageHomeTab';
 import { edgeApi } from '../api/endpoints/edge';
 import type { EdgeDevice, EdgeDeviceType, EdgeDeviceStatus } from '../api/endpoints/edge';
 import { useGateway } from '../hooks/useWebSocket';
+import { useSkipHome } from '../hooks/useSkipHome';
 
 type PageTabId = 'home' | 'devices';
 
@@ -65,32 +66,11 @@ export function EdgeDevicesPage() {
   const { subscribe } = useGateway();
   const [pageTab, setPageTab] = useState<PageTabId>('home');
 
-  // Skip home screen preference
-  const SKIP_HOME_KEY = 'ownpilot:edge:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'edgedevices',
+    defaultTab: 'devices',
+    onNavigate: (tab) => setPageTab(tab as PageTabId),
   });
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // Ignore storage errors
-    }
-  }, []);
-
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setPageTab('devices');
-    }
-  }, [skipHome]);
 
   const [filterTab, setFilterTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -261,7 +241,7 @@ export function EdgeDevicesPage() {
             subtitle="Stream sensor data from IoT hardware into OwnPilot over MQTT, then query, analyze, and control devices using natural language."
             cta={{ label: 'View Devices', icon: Wifi, onClick: () => setPageTab('devices') }}
             skipHomeChecked={skipHome}
-            onSkipHomeChange={handleSkipHomeChange}
+            onSkipHomeChange={onSkipHomeChange}
             skipHomeLabel="Skip this screen and go directly to Devices"
             features={[
               {

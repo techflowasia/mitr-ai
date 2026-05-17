@@ -5,10 +5,11 @@
  * message stats, users, and provides connect/disconnect/reconnect actions.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { channelsApi } from '../api/endpoints/misc';
 import { useGateway } from '../hooks/useWebSocket';
+import { useSkipHome } from '../hooks/useSkipHome';
 import { useToast } from '../components/ToastProvider';
 import { useDialog } from '../components/ConfirmDialog';
 import { ChannelSetupModal } from '../components/ChannelSetupModal';
@@ -43,39 +44,13 @@ export function ChannelsPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:channels:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'channels',
+    defaultTab: 'channels',
   });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
 
   const tabParam = searchParams.get('tab') as TabId;
   const activeTab: TabId = tabParam || 'home';
-
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !tabParam && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      const params = new URLSearchParams(searchParams);
-      params.set('tab', 'channels');
-      navigate({ search: params.toString() }, { replace: true });
-    }
-  }, [skipHome, tabParam, searchParams, navigate]);
 
   const setTab = (tab: TabId) => {
     const params = new URLSearchParams(searchParams);
@@ -485,7 +460,7 @@ export function ChannelsPage() {
               },
             ]}
             skipHomeChecked={skipHome}
-            onSkipHomeChange={handleSkipHomeChange}
+            onSkipHomeChange={onSkipHomeChange}
             skipHomeLabel="Skip this screen and go directly to Channels"
           />
         </div>

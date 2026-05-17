@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
+import { useSkipHome } from '../hooks/useSkipHome';
 import { useDebouncedCallback } from '../hooks';
 import { goalsApi } from '../api';
 import { silentCatch } from '../utils/ignore-error';
@@ -54,33 +55,10 @@ export function GoalsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:goals:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'goals',
+    defaultTab: 'goals',
   });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
-
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !searchParams.get('tab') && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setSearchParams({ tab: 'goals' });
-    }
-  }, [skipHome, searchParams, setSearchParams]);
 
   const activeTab = (searchParams.get('tab') as TabId) || 'home';
   const setActiveTab = (t: TabId) => setSearchParams(t === 'home' ? {} : { tab: t });
@@ -220,7 +198,7 @@ export function GoalsPage() {
             subtitle="Define personal or professional goals, track milestones, and let your AI help you stay on track with reminders and suggestions."
             cta={{ label: 'View Goals', icon: Target, onClick: () => setActiveTab('goals') }}
             skipHomeChecked={skipHome}
-            onSkipHomeChange={handleSkipHomeChange}
+            onSkipHomeChange={onSkipHomeChange}
             skipHomeLabel="Skip this screen and go directly to Goals"
             features={[
               {

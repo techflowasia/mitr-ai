@@ -5,12 +5,13 @@
  * grid layout, and WS-driven refresh.
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ArtifactCard } from '../components/ArtifactCard';
 import { ArtifactDetailModal } from '../components/ArtifactDetailModal';
 import { EmptyState } from '../components/EmptyState';
 import { SkeletonCard } from '../components/Skeleton';
+import { useSkipHome } from '../hooks/useSkipHome';
 import {
   LayoutTemplate,
   Code2,
@@ -65,42 +66,16 @@ export function ArtifactsPage() {
   type PageTabId = 'home' | 'artifacts';
   const PAGE_TAB_LABELS: Record<PageTabId, string> = { home: 'Home', artifacts: 'Artifacts' };
 
-  // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:artifacts:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'artifacts',
+    defaultTab: 'artifacts',
   });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
 
   const pageTabParam = searchParams.get('tab') as PageTabId | null;
   const activePageTab: PageTabId =
     pageTabParam && (['home', 'artifacts'] as string[]).includes(pageTabParam)
       ? pageTabParam
       : 'home';
-
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !pageTabParam && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      const params = new URLSearchParams(searchParams);
-      params.set('tab', 'artifacts');
-      navigate({ search: params.toString() }, { replace: true });
-    }
-  }, [skipHome, pageTabParam, searchParams, navigate]);
 
   const setPageTab = (tab: PageTabId) => {
     const params = new URLSearchParams(searchParams);
@@ -268,7 +243,7 @@ export function ArtifactsPage() {
             },
           ]}
           skipHomeChecked={skipHome}
-          onSkipHomeChange={handleSkipHomeChange}
+          onSkipHomeChange={onSkipHomeChange}
           skipHomeLabel="Skip this screen and go directly to Artifacts"
         />
       )}

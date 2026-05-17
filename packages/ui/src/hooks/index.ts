@@ -6,6 +6,7 @@ export * from './useWebSocket';
 export * from './useMediaQuery';
 export * from './useDebouncedValue';
 export * from './useDebouncedCallback';
+export * from './useSkipHome';
 export * from './useModalClose';
 export * from './useAuth';
 export * from './useVoice';

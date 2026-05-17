@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useSkipHome } from '../hooks/useSkipHome';
 import {
   Puzzle,
   Power,
@@ -99,26 +100,6 @@ const TAB_LABELS: Record<TabId, string> = {
 export function PluginsPage() {
   const toast = useToast();
 
-  // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:plugins:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
-  });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
-
   const [plugins, setPlugins] = useState<PluginInfo[]>([]);
   const [stats, setStats] = useState<PluginStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -127,14 +108,11 @@ export function PluginsPage() {
   const [filter, setFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
   const [activeTab, setActiveTab] = useState<TabId>('home');
 
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && activeTab === 'home' && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setActiveTab('installed');
-    }
-  }, [skipHome, activeTab]);
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'plugins',
+    defaultTab: 'installed',
+    onNavigate: (tab) => setActiveTab(tab as TabId),
+  });
 
   useEffect(() => {
     fetchPlugins();
@@ -240,7 +218,7 @@ export function PluginsPage() {
               onClick: () => setActiveTab('installed'),
             }}
             skipHomeChecked={skipHome}
-            onSkipHomeChange={handleSkipHomeChange}
+            onSkipHomeChange={onSkipHomeChange}
             skipHomeLabel="Skip this screen and go directly to Plugins"
             features={[
               {

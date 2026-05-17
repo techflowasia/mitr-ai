@@ -6,9 +6,10 @@
  * Accessible at /settings/coding-agents.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../components/ToastProvider';
+import { useSkipHome } from '../hooks/useSkipHome';
 import {
   RefreshCw,
   Terminal,
@@ -38,34 +39,10 @@ export function CodingAgentSettingsPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<SettingsTab>('home');
 
-  // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:codingagentsettings:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'codingagentsettings',
+    defaultTab: 'providers',
   });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
-
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setActiveTab('providers');
-    }
-  }, [skipHome]);
   const [statuses, setStatuses] = useState<CodingAgentStatus[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [testingProvider, setTestingProvider] = useState<string | null>(null);
@@ -189,7 +166,7 @@ export function CodingAgentSettingsPage() {
               onClick: () => setActiveTab('providers'),
             }}
             skipHomeChecked={skipHome}
-            onSkipHomeChange={handleSkipHomeChange}
+            onSkipHomeChange={onSkipHomeChange}
             skipHomeLabel="Skip this screen and go directly to Providers"
             features={[
               {

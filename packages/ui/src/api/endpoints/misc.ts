@@ -77,51 +77,102 @@ export const autonomyApi = {
 // ---- Agent Command Center ----
 
 interface SubagentStats {
-  total: number; active: number; successRate: number; avgCost: number;
-  avgDuration: number; totalCost: number; errorRate: number;
-  byState: Record<string, number>; totalTokens: { input: number; output: number };
+  total: number;
+  active: number;
+  successRate: number;
+  avgCost: number;
+  avgDuration: number;
+  totalCost: number;
+  errorRate: number;
+  byState: Record<string, number>;
+  totalTokens: { input: number; output: number };
 }
 interface SubagentHealth {
-  status: string; score: number; signals: string[]; recommendations: string[];
+  status: string;
+  score: number;
+  signals: string[];
+  recommendations: string[];
 }
 interface FleetStats {
-  totalFleets: number; totalSessions: number; totalWorkers: number;
-  successRate: number; avgCost: number; avgDuration: number; totalCost: number;
-  errorRate: number; byState: Record<string, number>;
+  totalFleets: number;
+  totalSessions: number;
+  totalWorkers: number;
+  successRate: number;
+  avgCost: number;
+  avgDuration: number;
+  totalCost: number;
+  errorRate: number;
+  byState: Record<string, number>;
   totalTokens: { input: number; output: number };
-  tasksCompleted: number; tasksFailed: number;
+  tasksCompleted: number;
+  tasksFailed: number;
 }
 interface FleetHealth {
-  status: string; score: number; signals: string[]; recommendations: string[]; activeFleets: number;
+  status: string;
+  score: number;
+  signals: string[];
+  recommendations: string[];
+  activeFleets: number;
 }
 interface OrchestraStats {
-  total: number; active: number; successRate: number; avgCost: number;
-  avgDuration: number; totalCost: number; errorRate: number; byState: Record<string, number>;
+  total: number;
+  active: number;
+  successRate: number;
+  avgCost: number;
+  avgDuration: number;
+  totalCost: number;
+  errorRate: number;
+  byState: Record<string, number>;
 }
 interface OrchestraHealth {
-  status: string; score: number; signals: string[]; recommendations: string[];
+  status: string;
+  score: number;
+  signals: string[];
+  recommendations: string[];
 }
 interface SoulStats {
-  totalCycles: number; totalCost: number; avgDurationMs: number; failureRate: number;
+  totalCycles: number;
+  totalCost: number;
+  avgDurationMs: number;
+  failureRate: number;
 }
 interface SoulHealth {
-  status: string; score: number; signals: string[]; recommendations: string[];
-  totalCycles: number; totalCost: number; failureRate: number;
+  status: string;
+  score: number;
+  signals: string[];
+  recommendations: string[];
+  totalCycles: number;
+  totalCost: number;
+  failureRate: number;
 }
 interface CrewStats {
-  totalCrews: number; totalCycles: number; totalCost: number;
-  failureRate: number; byStatus: Record<string, number>;
+  totalCrews: number;
+  totalCycles: number;
+  totalCost: number;
+  failureRate: number;
+  byStatus: Record<string, number>;
 }
 interface CrewHealth {
-  status: string; score: number; signals: string[]; recommendations: string[];
-  totalCrews: number; pausedCrews: number;
+  status: string;
+  score: number;
+  signals: string[];
+  recommendations: string[];
+  totalCrews: number;
+  pausedCrews: number;
 }
 interface ClawStats {
-  total: number; running: number; totalCost: number; totalCycles: number;
-  byMode: Record<string, number>; byState: Record<string, number>;
+  total: number;
+  running: number;
+  totalCost: number;
+  totalCycles: number;
+  byMode: Record<string, number>;
+  byState: Record<string, number>;
 }
 interface ClawHealth {
-  status: string; score: number; signals: string[]; recommendations: string[];
+  status: string;
+  score: number;
+  signals: string[];
+  recommendations: string[];
   needsAttention: number;
 }
 
@@ -226,6 +277,33 @@ export const systemApi = {
     apiClient.get<{ backups: BackupInfo[]; count: number; backupDir: string }>('/db/backups'),
   downloadBackup: (filename: string) =>
     `/api/v1/db/backups/${encodeURIComponent(filename)}/download`,
+  exportJson: (tables?: string[], adminKey?: string) =>
+    apiClient.get<Record<string, unknown>>('/db/export', {
+      params: tables?.length ? { tables: tables.join(',') } : undefined,
+      headers: adminKey ? { 'X-Admin-Key': adminKey } : undefined,
+    }),
+  importJson: (
+    data: Record<string, unknown>,
+    options?: { truncate?: boolean; skipExisting?: boolean },
+    adminKey?: string
+  ) =>
+    apiClient.post<{ message: string; tables: string[] }>(
+      '/db/import',
+      { data, options },
+      {
+        headers: adminKey ? { 'X-Admin-Key': adminKey } : undefined,
+      }
+    ),
+  exportCsvTable: (table: string, adminKey?: string) =>
+    apiClient.get<string>(`/db/export/csv/${table}`, {
+      headers: adminKey ? { 'X-Admin-Key': adminKey } : undefined,
+    }),
+  importCsv: (table: string, csvContent: string, adminKey?: string) =>
+    apiClient.post<{ imported: number; errors: number; message: string }>(
+      `/db/import/csv/${table}`,
+      csvContent,
+      { headers: { 'Content-Type': 'text/csv', ...(adminKey ? { 'X-Admin-Key': adminKey } : {}) } }
+    ),
 };
 
 // ---- Debug / Logs ----
@@ -459,7 +537,11 @@ export const expensesApi = {
   summary: (params: Record<string, string>) =>
     apiClient.get<ExpenseSummaryResponse>(`/expenses/summary`, { params }),
   list: (params: Record<string, string>) =>
-    apiClient.get<{ expenses: ExpenseEntry[]; total: number; categories: Record<string, { color: string }> }>(`/expenses`, { params }),
+    apiClient.get<{
+      expenses: ExpenseEntry[];
+      total: number;
+      categories: Record<string, { color: string }>;
+    }>(`/expenses`, { params }),
   create: (expense: {
     date: string;
     amount: number;

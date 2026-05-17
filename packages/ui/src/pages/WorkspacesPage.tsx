@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Folder,
@@ -27,6 +27,7 @@ import { fileWorkspacesApi } from '../api';
 import { formatBytes } from '../utils/formatters';
 import { useModalClose } from '../hooks';
 import type { FileWorkspaceInfo, WorkspaceFile } from '../api';
+import { useSkipHome } from '../hooks/useSkipHome';
 
 type TabId = 'home' | 'workspaces';
 
@@ -65,34 +66,11 @@ export function WorkspacesPage() {
   const tabParam = searchParams.get('tab') as TabId | null;
   const [activeTab, setActiveTab] = useState<TabId>(tabParam || 'home');
 
-  // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:workspaces:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'workspaces',
+    defaultTab: 'workspaces',
+    onNavigate: (tab) => setTab(tab as TabId),
   });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
-
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !tabParam && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setTab('workspaces');
-    }
-  }, [skipHome, tabParam]);
 
   useEffect(() => {
     const urlTab = (searchParams.get('tab') as TabId | null) || 'home';
@@ -362,7 +340,7 @@ export function WorkspacesPage() {
             onClick: () => setTab('workspaces'),
           }}
           skipHomeChecked={skipHome}
-          onSkipHomeChange={handleSkipHomeChange}
+          onSkipHomeChange={onSkipHomeChange}
           skipHomeLabel="Skip this screen and go directly to Workspaces"
           features={[
             {

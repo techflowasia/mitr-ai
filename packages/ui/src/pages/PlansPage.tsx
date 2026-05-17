@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
+import { useSkipHome } from '../hooks/useSkipHome';
 import { plansApi } from '../api';
 import { silentCatch } from '../utils/ignore-error';
 import type { Plan, PlanStep, PlanHistoryEntry } from '../api';
@@ -79,34 +80,11 @@ export function PlansPage() {
   const { subscribe } = useGateway();
   const [activeTab, setActiveTab] = useState<PlansTabId>('home');
 
-  // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:plans:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'plans',
+    defaultTab: 'goals',
+    onNavigate: (tab) => setActiveTab(tab as PlansTabId),
   });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
-
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && activeTab === 'home' && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setActiveTab('goals');
-    }
-  }, [skipHome, activeTab]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -288,7 +266,7 @@ export function PlansPage() {
               onClick: () => setActiveTab('goals'),
             }}
             skipHomeChecked={skipHome}
-            onSkipHomeChange={handleSkipHomeChange}
+            onSkipHomeChange={onSkipHomeChange}
             skipHomeLabel="Skip this screen and go directly to Goals"
             features={[
               {

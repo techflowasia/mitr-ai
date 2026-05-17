@@ -5,7 +5,7 @@
  * Processes: chat, channels, channel media, pulse, and subagents.
  */
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   AlertCircle,
   Check,
@@ -20,6 +20,7 @@ import {
 import { PageHomeTab } from '../components/PageHomeTab';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { useSkipHome } from '../hooks/useSkipHome';
 import {
   modelRoutingApi,
   modelsApi,
@@ -100,34 +101,11 @@ export function ModelRoutingPage() {
   const toast = useToast();
   const [activeTab, setActiveTab] = useState<TabId>('home');
 
-  // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:modelrouting:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'modelrouting',
+    defaultTab: 'routing',
+    onNavigate: (tab) => setActiveTab(tab as TabId),
   });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
-
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setActiveTab('routing');
-    }
-  }, [skipHome]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [models, setModels] = useState<ModelInfo[]>([]);
@@ -462,7 +440,7 @@ export function ModelRoutingPage() {
             subtitle="Route AI requests to the right model based on task complexity, cost limits, or custom rules. Optimize for speed, quality, or budget."
             cta={{ label: 'View Routes', icon: Shuffle, onClick: () => setActiveTab('routing') }}
             skipHomeChecked={skipHome}
-            onSkipHomeChange={handleSkipHomeChange}
+            onSkipHomeChange={onSkipHomeChange}
             skipHomeLabel="Skip this screen and go directly to Routing"
             features={[
               {

@@ -159,7 +159,6 @@ export class ExtensionService implements IExtensionService {
       }
     }
 
-    // Security audit — runs for ALL formats (static pattern analysis)
     const securityResult = auditSkillSecurity(manifest);
     if (securityResult.blocked) {
       throw new ExtensionError(
@@ -168,7 +167,6 @@ export class ExtensionService implements IExtensionService {
       );
     }
 
-    // Store security metadata in manifest for UI display
     manifest._security = {
       riskLevel: securityResult.riskLevel,
       blocked: false,
@@ -540,22 +538,17 @@ export class ExtensionService implements IExtensionService {
 
   getSystemPromptSections(): string[] {
     const enabled = extensionsRepo.getEnabled();
-    const sections: string[] = [];
+    return enabled.map((pkg) => this.#buildPromptSection(pkg)).filter(Boolean) as string[];
+  }
 
-    for (const pkg of enabled) {
-      if (pkg.manifest.format === 'agentskills') {
-        // AgentSkills.io: inject full instructions as system prompt (progressive disclosure)
-        const instructions = pkg.manifest.instructions?.trim();
-        if (instructions) {
-          sections.push(`## Skill: ${pkg.manifest.name}\n${instructions}`);
-        }
-      } else if (pkg.manifest.system_prompt?.trim()) {
-        // OwnPilot extension: inject system_prompt field
-        sections.push(`## Extension: ${pkg.manifest.name}\n${pkg.manifest.system_prompt.trim()}`);
-      }
+  #buildPromptSection(pkg: ExtensionRecord): string | undefined {
+    if (pkg.manifest.format === 'agentskills') {
+      const instructions = pkg.manifest.instructions?.trim();
+      if (instructions) return `## Skill: ${pkg.manifest.name}\n${instructions}`;
+    } else if (pkg.manifest.system_prompt?.trim()) {
+      return `## Extension: ${pkg.manifest.name}\n${pkg.manifest.system_prompt.trim()}`;
     }
-
-    return sections;
+    return undefined;
   }
 
   /**
@@ -583,22 +576,10 @@ export class ExtensionService implements IExtensionService {
     if (ids.length === 0) return [];
     const idSet = new Set(ids);
     const enabled = extensionsRepo.getEnabled();
-    const sections: string[] = [];
-
-    for (const pkg of enabled) {
-      if (!idSet.has(pkg.id)) continue;
-
-      if (pkg.manifest.format === 'agentskills') {
-        const instructions = pkg.manifest.instructions?.trim();
-        if (instructions) {
-          sections.push(`## Skill: ${pkg.manifest.name}\n${instructions}`);
-        }
-      } else if (pkg.manifest.system_prompt?.trim()) {
-        sections.push(`## Extension: ${pkg.manifest.name}\n${pkg.manifest.system_prompt.trim()}`);
-      }
-    }
-
-    return sections;
+    return enabled
+      .filter((pkg) => idSet.has(pkg.id))
+      .map((pkg) => this.#buildPromptSection(pkg))
+      .filter(Boolean) as string[];
   }
 
   /**

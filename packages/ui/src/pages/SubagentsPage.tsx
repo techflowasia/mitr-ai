@@ -2,19 +2,12 @@
  * Subagents Page — Ephemeral single-task agent executions
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
+import { useSkipHome } from '../hooks/useSkipHome';
 import { useToast } from '../components/ToastProvider';
-import {
-  Bot,
-  Activity,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  DollarSign,
-  Home,
-} from '../components/icons';
+import { Bot, Activity, CheckCircle2, XCircle, Clock, DollarSign, Home } from '../components/icons';
 import { subagentsApi } from '../api/endpoints/subagents';
 import type { SubagentHistoryEntry } from '../api/endpoints/subagents';
 
@@ -47,36 +40,20 @@ export function SubagentsPage() {
   const toast = useToast();
   const { subscribe } = useGateway();
 
-  const SKIP_HOME_KEY = 'ownpilot:subagents:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try { return localStorage.getItem(SKIP_HOME_KEY) === 'true'; } catch { return false; }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'subagents',
+    defaultTab: 'subagents',
   });
 
   const tabParam = searchParams.get('tab') as TabId | null;
   const activeTab: TabId =
     tabParam && (['home', 'subagents'] as string[]).includes(tabParam) ? tabParam : 'home';
 
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !tabParam && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      const params = new URLSearchParams(searchParams);
-      params.set('tab', 'subagents');
-      navigate({ search: params.toString() }, { replace: true });
-    }
-  }, [skipHome, tabParam, searchParams, navigate]);
-
   const setTab = (tab: TabId) => {
     const params = new URLSearchParams(searchParams);
     params.set('tab', tab);
     navigate({ search: params.toString() }, { replace: true });
   };
-
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try { localStorage.setItem(SKIP_HOME_KEY, String(checked)); } catch { /* */ }
-  }, []);
 
   const [stats, setStats] = useState<SubagentStats | null>(null);
   const [health, setHealth] = useState<SubagentHealth | null>(null);
@@ -100,7 +77,9 @@ export function SubagentsPage() {
     }
   }, [toast]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   useEffect(() => {
     const unsubs = [
@@ -110,19 +89,65 @@ export function SubagentsPage() {
     return () => unsubs.forEach((u) => u());
   }, [subscribe, loadData]);
 
-  const healthColor = health?.status === 'healthy' ? 'text-green-500' :
-    health?.status === 'watch' ? 'text-yellow-500' : 'text-red-500';
+  const healthColor =
+    health?.status === 'healthy'
+      ? 'text-green-500'
+      : health?.status === 'watch'
+        ? 'text-yellow-500'
+        : 'text-red-500';
 
-  const statCards = stats ? [
-    { label: 'Total Runs', value: stats.total.toLocaleString(), icon: Bot, color: 'text-blue-500' },
-    { label: 'Active', value: stats.active.toString(), icon: Activity, color: 'text-green-500' },
-    { label: 'Success Rate', value: `${(stats.successRate * 100).toFixed(1)}%`, icon: CheckCircle2, color: 'text-emerald-500' },
-    { label: 'Error Rate', value: `${(stats.errorRate * 100).toFixed(1)}%`, icon: XCircle, color: 'text-red-500' },
-    { label: 'Avg Cost', value: `$${stats.avgCost.toFixed(4)}`, icon: DollarSign, color: 'text-amber-500' },
-    { label: 'Avg Duration', value: `${stats.avgDuration.toFixed(0)}ms`, icon: Clock, color: 'text-purple-500' },
-    { label: 'Total Cost', value: `$${stats.totalCost.toFixed(4)}`, icon: DollarSign, color: 'text-indigo-500' },
-    { label: 'Input Tokens', value: `${(stats.totalTokens.input / 1000).toFixed(1)}K`, icon: Activity, color: 'text-cyan-500' },
-  ] : [];
+  const statCards = stats
+    ? [
+        {
+          label: 'Total Runs',
+          value: stats.total.toLocaleString(),
+          icon: Bot,
+          color: 'text-blue-500',
+        },
+        {
+          label: 'Active',
+          value: stats.active.toString(),
+          icon: Activity,
+          color: 'text-green-500',
+        },
+        {
+          label: 'Success Rate',
+          value: `${(stats.successRate * 100).toFixed(1)}%`,
+          icon: CheckCircle2,
+          color: 'text-emerald-500',
+        },
+        {
+          label: 'Error Rate',
+          value: `${(stats.errorRate * 100).toFixed(1)}%`,
+          icon: XCircle,
+          color: 'text-red-500',
+        },
+        {
+          label: 'Avg Cost',
+          value: `$${stats.avgCost.toFixed(4)}`,
+          icon: DollarSign,
+          color: 'text-amber-500',
+        },
+        {
+          label: 'Avg Duration',
+          value: `${stats.avgDuration.toFixed(0)}ms`,
+          icon: Clock,
+          color: 'text-purple-500',
+        },
+        {
+          label: 'Total Cost',
+          value: `$${stats.totalCost.toFixed(4)}`,
+          icon: DollarSign,
+          color: 'text-indigo-500',
+        },
+        {
+          label: 'Input Tokens',
+          value: `${(stats.totalTokens.input / 1000).toFixed(1)}K`,
+          icon: Activity,
+          color: 'text-cyan-500',
+        },
+      ]
+    : [];
 
   const activeSessions = history.filter((s) => s.state === 'running' || s.state === 'pending');
 
@@ -131,13 +156,17 @@ export function SubagentsPage() {
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
         <div>
-          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">Subagents</h2>
+          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+            Subagents
+          </h2>
           <p className="text-sm text-text-muted dark:text-dark-text-muted">
             {stats ? `${stats.total} total · ${stats.active} active` : 'Loading...'}
           </p>
         </div>
         {health && (
-          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${healthColor} bg-opacity-20`}>
+          <span
+            className={`text-xs font-medium px-2 py-0.5 rounded-full ${healthColor} bg-opacity-20`}
+          >
             {health.status} ({health.score})
           </span>
         )}
@@ -154,7 +183,9 @@ export function SubagentsPage() {
             { label: 'Total Cost', value: `$${stats.totalCost.toFixed(4)}` },
           ].map(({ label, value }) => (
             <div key={label} className="flex items-center gap-1.5 text-xs text-muted">
-              <span className="font-medium text-text-secondary dark:text-dark-text-secondary">{value}</span>
+              <span className="font-medium text-text-secondary dark:text-dark-text-secondary">
+                {value}
+              </span>
               <span>{label}</span>
             </div>
           ))}
@@ -200,7 +231,8 @@ export function SubagentsPage() {
                 Subagent Observability
               </h1>
               <p className="text-text-secondary dark:text-dark-text-secondary max-w-xl mx-auto">
-                Monitor ephemeral single-task agent executions — spawned on-demand, completing in seconds to minutes.
+                Monitor ephemeral single-task agent executions — spawned on-demand, completing in
+                seconds to minutes.
               </p>
               <button
                 onClick={() => setTab('subagents')}
@@ -209,16 +241,19 @@ export function SubagentsPage() {
                 <Bot className="w-4 h-4" />
                 View Executions
               </button>
-              {handleSkipHomeChange && (
+              {onSkipHomeChange && (
                 <div className="mt-4 flex items-center justify-center gap-2">
                   <input
                     type="checkbox"
                     id="skip-home"
                     checked={skipHome}
-                    onChange={(e) => handleSkipHomeChange(e.target.checked)}
+                    onChange={(e) => onSkipHomeChange(e.target.checked)}
                     className="w-4 h-4 rounded border-border dark:border-dark-border text-primary focus:ring-primary"
                   />
-                  <label htmlFor="skip-home" className="text-sm text-text-secondary dark:text-dark-text-secondary cursor-pointer">
+                  <label
+                    htmlFor="skip-home"
+                    className="text-sm text-text-secondary dark:text-dark-text-secondary cursor-pointer"
+                  >
                     Skip this screen next time
                   </label>
                 </div>
@@ -229,7 +264,10 @@ export function SubagentsPage() {
             {stats && (
               <div className="grid grid-cols-4 gap-4">
                 {statCards.map((card) => (
-                  <div key={card.label} className="bg-card border border-border dark:border-dark-border rounded-lg p-4">
+                  <div
+                    key={card.label}
+                    className="bg-card border border-border dark:border-dark-border rounded-lg p-4"
+                  >
                     <div className="flex items-center gap-2 mb-2">
                       <card.icon className={`w-4 h-4 ${card.color}`} />
                       <span className="text-xs text-muted">{card.label}</span>
@@ -245,11 +283,19 @@ export function SubagentsPage() {
               <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
                 <h3 className="text-sm font-medium text-yellow-500 mb-2">Health Signals</h3>
                 <ul className="space-y-1">
-                  {health.signals.map((s, i) => <li key={i} className="text-xs text-yellow-400">• {s}</li>)}
+                  {health.signals.map((s, i) => (
+                    <li key={i} className="text-xs text-yellow-400">
+                      • {s}
+                    </li>
+                  ))}
                 </ul>
                 {health.recommendations.length > 0 && (
                   <ul className="mt-2 space-y-1">
-                    {health.recommendations.map((r, i) => <li key={i} className="text-xs text-yellow-600">→ {r}</li>)}
+                    {health.recommendations.map((r, i) => (
+                      <li key={i} className="text-xs text-yellow-600">
+                        → {r}
+                      </li>
+                    ))}
                   </ul>
                 )}
               </div>
@@ -264,7 +310,9 @@ export function SubagentsPage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-medium">Recent Executions</h2>
             <span className="text-xs text-muted">
-              {isLoading ? 'Loading...' : `${history.length} total · ${activeSessions.length} active`}
+              {isLoading
+                ? 'Loading...'
+                : `${history.length} total · ${activeSessions.length} active`}
             </span>
           </div>
 
@@ -277,30 +325,46 @@ export function SubagentsPage() {
               <div className="text-center py-12 text-muted text-sm">No subagent executions yet</div>
             ) : (
               history.map((session) => (
-                <div key={session.id} className="bg-card border border-border dark:border-dark-border rounded-lg p-4">
+                <div
+                  key={session.id}
+                  className="bg-card border border-border dark:border-dark-border rounded-lg p-4"
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <Bot className="w-4 h-4 text-accent" />
                       <div>
                         <div className="text-sm font-medium">{session.name}</div>
-                        <div className="text-xs text-muted">{session.task?.slice(0, 80)}{session.task && session.task.length > 80 ? '...' : ''}</div>
+                        <div className="text-xs text-muted">
+                          {session.task?.slice(0, 80)}
+                          {session.task && session.task.length > 80 ? '...' : ''}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        session.state === 'completed' ? 'bg-green-500/20 text-green-400' :
-                        session.state === 'failed' ? 'bg-red-500/20 text-red-400' :
-                        session.state === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                        session.state === 'running' ? 'bg-blue-500/20 text-blue-400' :
-                        'bg-gray-500/20 text-gray-400'
-                      }`}>{session.state}</span>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${
+                          session.state === 'completed'
+                            ? 'bg-green-500/20 text-green-400'
+                            : session.state === 'failed'
+                              ? 'bg-red-500/20 text-red-400'
+                              : session.state === 'pending'
+                                ? 'bg-yellow-500/20 text-yellow-400'
+                                : session.state === 'running'
+                                  ? 'bg-blue-500/20 text-blue-400'
+                                  : 'bg-gray-500/20 text-gray-400'
+                        }`}
+                      >
+                        {session.state}
+                      </span>
                       {session.durationMs != null && (
                         <span className="text-xs text-muted">{session.durationMs}ms</span>
                       )}
                     </div>
                   </div>
                   {session.error && (
-                    <div className="mt-2 text-xs text-error bg-error/10 rounded px-2 py-1">{session.error}</div>
+                    <div className="mt-2 text-xs text-error bg-error/10 rounded px-2 py-1">
+                      {session.error}
+                    </div>
                   )}
                 </div>
               ))

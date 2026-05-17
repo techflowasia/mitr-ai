@@ -5,7 +5,7 @@
  * per-section breakdowns, top risks, and recommendations.
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import {
   ShieldCheck,
   AlertTriangle,
@@ -31,6 +31,7 @@ import type {
   RiskItem,
   SectionScanResult,
 } from '../api/endpoints/security';
+import { useSkipHome } from '../hooks/useSkipHome';
 
 type TabId = 'home' | 'dashboard';
 
@@ -288,31 +289,11 @@ export function SecurityDashboardPage() {
   const toast = useToast();
   const [activeTab, setActiveTab] = useState<TabId>('home');
 
-  // Skip home screen preference
-  const SKIP_HOME_KEY = 'ownpilot:securitydashboard:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'securitydashboard',
+    defaultTab: 'dashboard',
+    onNavigate: (tab) => setActiveTab(tab as TabId),
   });
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // Ignore storage errors
-    }
-  }, []);
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setActiveTab('dashboard');
-    }
-  }, [skipHome]);
 
   const [result, setResult] = useState<PlatformScanResult | null>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -406,7 +387,7 @@ export function SecurityDashboardPage() {
               onClick: () => setActiveTab('dashboard'),
             }}
             skipHomeChecked={skipHome}
-            onSkipHomeChange={handleSkipHomeChange}
+            onSkipHomeChange={onSkipHomeChange}
             skipHomeLabel="Skip this screen and go directly to Dashboard"
             features={[
               {

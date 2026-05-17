@@ -51,6 +51,38 @@ export const EXPORT_TABLES = [
   'custom_tools',
   'custom_table_schemas',
   'custom_data_records',
+  // Agent/Soul system
+  'agent_souls',
+  'agent_soul_versions',
+  // Browser automation
+  'browser_workflows',
+  // Artifacts
+  'artifacts',
+  // Crew/Orchestration
+  'agent_crews',
+  'agent_crew_members',
+  'crew_shared_memory',
+  'crew_task_queue',
+  // Claws
+  'claws',
+  'claw_sessions',
+  'claw_history',
+  'claw_audit_log',
+  // Fleets
+  'fleets',
+  'fleet_sessions',
+  'fleet_tasks',
+  'fleet_worker_history',
+  // Extensions & Plugins
+  'user_extensions',
+  'plugins',
+  // Providers
+  'local_providers',
+  'local_models',
+  // Edge
+  'edge_devices',
+  // System
+  'system_settings',
 ];
 
 // --- SQL Injection Protection ---

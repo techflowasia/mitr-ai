@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Settings,
@@ -17,6 +17,7 @@ import {
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { useSkipHome } from '../hooks/useSkipHome';
 import { settingsApi, providersApi, modelsApi, localProvidersApi } from '../api';
 import type { ProviderConfig, LocalProviderInfo, ModelInfo } from '../types';
 import { PageHomeTab } from '../components/PageHomeTab';
@@ -38,34 +39,12 @@ export function ApiKeysPage() {
   const activeTab = (searchParams.get('tab') as TabId) || 'home';
   const setActiveTab = (t: TabId) => setSearchParams(t === 'home' ? {} : { tab: t });
 
-  // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:apikeys:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  // Skip home preference (via useSkipHome hook)
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'apikeys',
+    defaultTab: 'keys',
+    onNavigate: (tab) => setActiveTab(tab as TabId),
   });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
-
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && activeTab === 'home' && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setActiveTab('keys');
-    }
-  }, [skipHome, activeTab]);
 
   const { confirm } = useDialog();
   const toast = useToast();
@@ -487,7 +466,7 @@ export function ApiKeysPage() {
             subtitle="Create and manage API keys for programmatic access to your OwnPilot instance. Each key has scoped permissions and usage tracking."
             cta={{ label: 'Manage Keys', icon: Key, onClick: () => setActiveTab('keys') }}
             skipHomeChecked={skipHome}
-            onSkipHomeChange={handleSkipHomeChange}
+            onSkipHomeChange={onSkipHomeChange}
             skipHomeLabel="Skip this screen and go directly to API Keys"
             features={[
               {

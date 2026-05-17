@@ -39,6 +39,7 @@ import { MarkdownContent } from '../components/MarkdownContent';
 import { TraceDisplay } from '../components/TraceDisplay';
 import type { MessageAttachment, TraceInfo } from '../types';
 import { stripChatInternalTags } from '../utils/chat-content';
+import { useSkipHome } from '../hooks/useSkipHome';
 
 function formatAttachmentSize(size: number | undefined): string | null {
   if (!size || size <= 0) return null;
@@ -152,34 +153,10 @@ const TAB_LABELS: Record<TabId, string> = {
 export function ChatHistoryPage() {
   const [activeTab, setActiveTab] = useState<TabId>('home');
 
-  // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:chathistory:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'chathistory',
+    defaultTab: 'history',
   });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
-
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setActiveTab('history');
-    }
-  }, [skipHome]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [messages, setMessages] = useState<(HistoryMessage | UnifiedMessage)[]>([]);
@@ -645,7 +622,7 @@ export function ChatHistoryPage() {
               onClick: () => setActiveTab('history'),
             }}
             skipHomeChecked={skipHome}
-            onSkipHomeChange={handleSkipHomeChange}
+            onSkipHomeChange={onSkipHomeChange}
             skipHomeLabel="Skip this screen and go directly to History"
             features={[
               {

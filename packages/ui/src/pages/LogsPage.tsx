@@ -1,12 +1,21 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { debugApi } from '../api';
 import type { DebugInfo, DebugLogEntry, LogDetail, RequestLog, LogStats } from '../api';
-import { Home, FileText, Activity, Search, Terminal, RefreshCw, AlertTriangle } from '../components/icons';
+import {
+  Home,
+  FileText,
+  Activity,
+  Search,
+  Terminal,
+  RefreshCw,
+  AlertTriangle,
+} from '../components/icons';
 import { PageHomeTab } from '../components/PageHomeTab';
 import { EmptyState } from '../components/EmptyState';
+import { useSkipHome } from '../hooks/useSkipHome';
 
 type FilterType = 'all' | 'chat' | 'completion' | 'embedding' | 'tool' | 'agent' | 'other';
 type ErrorFilter = 'all' | 'errors' | 'success';
@@ -17,36 +26,13 @@ export function LogsPage() {
   const { confirm } = useDialog();
   const toast = useToast();
 
-  // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:logs:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
-  });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
-
   const [activeTab, setActiveTab] = useState<TabType>('home');
 
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && activeTab === 'home' && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setActiveTab('requests');
-    }
-  }, [skipHome, activeTab]);
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'logs',
+    defaultTab: 'requests',
+    onNavigate: (tab) => setActiveTab(tab as TabType),
+  });
 
   // Request logs state
   const [logs, setLogs] = useState<RequestLog[]>([]);
@@ -348,7 +334,7 @@ export function LogsPage() {
               onClick: () => setActiveTab('requests'),
             }}
             skipHomeChecked={skipHome}
-            onSkipHomeChange={handleSkipHomeChange}
+            onSkipHomeChange={onSkipHomeChange}
             skipHomeLabel="Skip this screen and go directly to Logs"
             features={[
               {

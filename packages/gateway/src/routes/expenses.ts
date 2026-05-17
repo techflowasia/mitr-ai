@@ -38,20 +38,9 @@ const VALID_CATEGORIES: readonly ExpenseCategory[] = [
   'other',
 ];
 
-const MONTH_NAMES = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
+const MONTH_NAMES = Array.from({ length: 12 }, (_, i) =>
+  new Date(2000, i).toLocaleString('en-US', { month: 'long' })
+);
 
 const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
   food: '#FF6B6B',
@@ -70,6 +59,47 @@ const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
 const CATEGORY_METADATA: Record<ExpenseCategory, { color: string }> = Object.fromEntries(
   VALID_CATEGORIES.map((cat) => [cat, { color: CATEGORY_COLORS[cat] }])
 ) as Record<ExpenseCategory, { color: string }>;
+
+function computePeriodDates(
+  period: string,
+  customStartDate?: string,
+  customEndDate?: string
+): { startDate: string | undefined; endDate: string | undefined } {
+  if (customStartDate && customEndDate) {
+    return { startDate: customStartDate, endDate: customEndDate };
+  }
+
+  const now = new Date();
+  const endDate = now.toISOString().split('T')[0];
+
+  switch (period) {
+    case 'today':
+      return { startDate: endDate, endDate };
+    case 'this_week': {
+      const ws = new Date(now);
+      ws.setDate(now.getDate() - now.getDay());
+      return { startDate: ws.toISOString().split('T')[0], endDate };
+    }
+    case 'this_month':
+      return {
+        startDate: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`,
+        endDate,
+      };
+    case 'last_month': {
+      const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lme = new Date(now.getFullYear(), now.getMonth(), 0);
+      return {
+        startDate: lm.toISOString().split('T')[0],
+        endDate: lme.toISOString().split('T')[0],
+      };
+    }
+    case 'this_year':
+      return { startDate: `${now.getFullYear()}-01-01`, endDate };
+    case 'all_time':
+    default:
+      return { startDate: undefined, endDate: undefined };
+  }
+}
 
 // =============================================================================
 // Routes
@@ -127,44 +157,7 @@ expensesRoutes.get('/summary', async (c) => {
     const customStartDate = c.req.query('startDate');
     const customEndDate = c.req.query('endDate');
 
-    const now = new Date();
-    let startDate: string | undefined;
-    let endDate: string | undefined;
-
-    if (customStartDate && customEndDate) {
-      startDate = customStartDate;
-      endDate = customEndDate;
-    } else {
-      endDate = now.toISOString().split('T')[0]!;
-      switch (period) {
-        case 'today':
-          startDate = endDate;
-          break;
-        case 'this_week': {
-          const ws = new Date(now);
-          ws.setDate(now.getDate() - now.getDay());
-          startDate = ws.toISOString().split('T')[0]!;
-          break;
-        }
-        case 'this_month':
-          startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-          break;
-        case 'last_month': {
-          const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-          const lme = new Date(now.getFullYear(), now.getMonth(), 0);
-          startDate = lm.toISOString().split('T')[0]!;
-          endDate = lme.toISOString().split('T')[0]!;
-          break;
-        }
-        case 'this_year':
-          startDate = `${now.getFullYear()}-01-01`;
-          break;
-        case 'all_time':
-        default:
-          startDate = undefined;
-          endDate = undefined;
-      }
-    }
+    const { startDate, endDate } = computePeriodDates(period, customStartDate, customEndDate);
 
     const summary = await repo.getSummary(startDate, endDate);
 
@@ -220,23 +213,25 @@ expensesRoutes.get('/monthly', async (c) => {
     const repo = new ExpensesRepository(userId);
     const year = c.req.query('year') ?? String(new Date().getFullYear());
 
-    const months = [];
-    for (let m = 1; m <= 12; m++) {
-      const dateFrom = `${year}-${String(m).padStart(2, '0')}-01`;
-      const lastDay = new Date(Number(year), m, 0).getDate();
-      const dateTo = `${year}-${String(m).padStart(2, '0')}-${lastDay}`;
-      const summary = await repo.getSummary(dateFrom, dateTo);
-      months.push({
-        month: MONTH_NAMES[m - 1],
-        monthNum: String(m),
-        total: summary.totalAmount,
-        count: summary.count,
-        byCategory: Object.fromEntries(
-          Object.entries(summary.byCategory).map(([category, data]) => [category, data.amount])
-        ),
-        year: Number(year),
-      });
-    }
+    const months = await Promise.all(
+      Array.from({ length: 12 }, async (_, m) => {
+        const monthNum = m + 1;
+        const dateFrom = `${year}-${String(monthNum).padStart(2, '0')}-01`;
+        const lastDay = new Date(Number(year), monthNum, 0).getDate();
+        const dateTo = `${year}-${String(monthNum).padStart(2, '0')}-${lastDay}`;
+        const summary = await repo.getSummary(dateFrom, dateTo);
+        return {
+          month: MONTH_NAMES[m],
+          monthNum: String(monthNum),
+          total: summary.totalAmount,
+          count: summary.count,
+          byCategory: Object.fromEntries(
+            Object.entries(summary.byCategory).map(([category, data]) => [category, data.amount])
+          ),
+          year: Number(year),
+        };
+      })
+    );
 
     return apiResponse(c, {
       year: Number(year),

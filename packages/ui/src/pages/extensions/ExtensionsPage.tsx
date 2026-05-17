@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSkipHome } from '../../hooks/useSkipHome';
 import {
   Sparkles,
   Wrench,
@@ -78,36 +79,10 @@ export function ExtensionsPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:extensions:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'extensions',
+    defaultTab: 'extensions',
   });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
-
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !searchParams.get('tab') && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      const params = new URLSearchParams(searchParams);
-      params.set('tab', 'extensions');
-      navigate({ search: params.toString() }, { replace: true });
-    }
-  }, [skipHome, searchParams, navigate]);
 
   const activeTab = (searchParams.get('tab') as TabId) || 'home';
   const setTab = (tab: TabId) => {
@@ -316,7 +291,7 @@ export function ExtensionsPage() {
               onClick: () => setTab('extensions'),
             }}
             skipHomeChecked={skipHome}
-            onSkipHomeChange={handleSkipHomeChange}
+            onSkipHomeChange={onSkipHomeChange}
             skipHomeLabel="Skip this screen and go directly to Extensions"
             features={[
               {

@@ -22,6 +22,7 @@ import { configServicesApi } from '../api';
 import { useToast } from '../components/ToastProvider';
 import type { ConfigEntryView, ConfigServiceView, ConfigServiceStats } from '../api';
 import { normalizeConfigFormData } from '../utils/config-form-validation';
+import { useSkipHome } from '../hooks/useSkipHome';
 
 type TabId = 'home' | 'config';
 
@@ -68,34 +69,10 @@ export function ConfigCenterPage() {
   const tabParam = searchParams.get('tab') as TabId | null;
   const [activeTab, setActiveTab] = useState<TabId>(tabParam || 'home');
 
-  // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:configcenter:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'configcenter',
+    defaultTab: 'config',
   });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
-
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !tabParam && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setTab('config');
-    }
-  }, [skipHome, tabParam]);
 
   useEffect(() => {
     const urlTab = (searchParams.get('tab') as TabId | null) || 'home';
@@ -556,7 +533,7 @@ export function ConfigCenterPage() {
             onClick: () => setTab('config'),
           }}
           skipHomeChecked={skipHome}
-          onSkipHomeChange={handleSkipHomeChange}
+          onSkipHomeChange={onSkipHomeChange}
           skipHomeLabel="Skip this screen and go directly to Configuration"
           features={[
             {

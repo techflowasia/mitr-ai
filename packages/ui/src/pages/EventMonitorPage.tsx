@@ -5,8 +5,9 @@
  * and publish custom events via the WebSocket EventBusBridge.
  */
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
+import { useSkipHome } from '../hooks/useSkipHome';
 import { useToast } from '../components/ToastProvider';
 import {
   MonitorCheck,
@@ -86,29 +87,11 @@ export function EventMonitorPage() {
   const [activeTab, setActiveTab] = useState<TabId>('home');
 
   // Skip home screen preference
-  const SKIP_HOME_KEY = 'ownpilot:eventmonitor:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'eventmonitor',
+    defaultTab: 'monitor',
+    onNavigate: (tab) => setActiveTab(tab as TabId),
   });
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // Ignore storage errors
-    }
-  }, []);
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setActiveTab('monitor');
-    }
-  }, [skipHome]);
 
   const { send, subscribe, status } = useGateway();
   const toast = useToast();
@@ -175,32 +158,52 @@ export function EventMonitorPage() {
         toast.error(`Publish failed: ${payload.error}`);
       }),
       // Legacy raw WS events forwarded from EventBus (colon-separated naming)
-      ...(['claw:started','claw:paused','claw:resumed','claw:stopped','claw:error',
-           'claw:cycle:start','claw:cycle:complete','claw:cycle:skipped',
-           'fleet:started','fleet:stopped','fleet:paused','fleet:resumed',
-           'fleet:cycle:start','fleet:cycle:end',
-           'orchestration:created','orchestration:step:started',
-           'orchestration:step:completed','orchestration:finished',
-           'orchestration:cancelled','orchestration:error',
-           'subagent:spawned','subagent:completed',
-           'soul:heartbeat:completed',
-           'crew:task:created','crew:task:claimed','crew:task:completed','crew:task:failed'] as const).map(
-        (event) =>
-          subscribe(event, (payload: unknown) => {
-            if (pausedRef.current) return;
-            const entry: EventEntry = {
-              id: `evt-${++eventIdCounter.current}`,
-              type: event,
-              source: 'ws:legacy',
-              data: payload,
-              timestamp: new Date().toISOString(),
-              receivedAt: Date.now(),
-            };
-            setEvents((prev) => {
-              const next = [...prev, entry];
-              return next.length > MAX_EVENTS ? next.slice(-MAX_EVENTS) : next;
-            });
-          })
+      ...(
+        [
+          'claw:started',
+          'claw:paused',
+          'claw:resumed',
+          'claw:stopped',
+          'claw:error',
+          'claw:cycle:start',
+          'claw:cycle:complete',
+          'claw:cycle:skipped',
+          'fleet:started',
+          'fleet:stopped',
+          'fleet:paused',
+          'fleet:resumed',
+          'fleet:cycle:start',
+          'fleet:cycle:end',
+          'orchestration:created',
+          'orchestration:step:started',
+          'orchestration:step:completed',
+          'orchestration:finished',
+          'orchestration:cancelled',
+          'orchestration:error',
+          'subagent:spawned',
+          'subagent:completed',
+          'soul:heartbeat:completed',
+          'crew:task:created',
+          'crew:task:claimed',
+          'crew:task:completed',
+          'crew:task:failed',
+        ] as const
+      ).map((event) =>
+        subscribe(event, (payload: unknown) => {
+          if (pausedRef.current) return;
+          const entry: EventEntry = {
+            id: `evt-${++eventIdCounter.current}`,
+            type: event,
+            source: 'ws:legacy',
+            data: payload,
+            timestamp: new Date().toISOString(),
+            receivedAt: Date.now(),
+          };
+          setEvents((prev) => {
+            const next = [...prev, entry];
+            return next.length > MAX_EVENTS ? next.slice(-MAX_EVENTS) : next;
+          });
+        })
       ),
     ];
 
@@ -352,7 +355,7 @@ export function EventMonitorPage() {
               onClick: () => setActiveTab('monitor'),
             }}
             skipHomeChecked={skipHome}
-            onSkipHomeChange={handleSkipHomeChange}
+            onSkipHomeChange={onSkipHomeChange}
             skipHomeLabel="Skip this screen and go directly to Monitor"
             features={[
               {

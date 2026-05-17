@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -26,6 +26,7 @@ import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useTheme } from '../hooks/useTheme';
 import { useDesktopNotifications } from '../hooks/useDesktopNotifications';
+import { useSkipHome } from '../hooks/useSkipHome';
 import { systemApi } from '../api';
 import type { SandboxStatus, DatabaseStatus, BackupInfo, DatabaseStats } from '../api';
 import type { ToolDependenciesResponse } from '../api/endpoints/misc';
@@ -56,6 +57,18 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Coding Agents': 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
 };
 
+// Tables available for CSV export/import
+const CSV_TABLES = [
+  'expenses',
+  'habits',
+  'bookmarks',
+  'notes',
+  'tasks',
+  'contacts',
+  'calendar_events',
+  'captures',
+] as const;
+
 export function SystemPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -78,36 +91,11 @@ export function SystemPage() {
     navigate({ search: params.toString() }, { replace: true });
   };
 
-  // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:system:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  // Skip home preference (via useSkipHome hook)
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'system',
+    defaultTab: 'system',
   });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
-
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !tabParam && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      const params = new URLSearchParams(searchParams);
-      params.set('tab', 'system');
-      navigate({ search: params.toString() }, { replace: true });
-    }
-  }, [skipHome, tabParam, searchParams, navigate]);
   // Theme
   const { theme, setTheme } = useTheme();
   const {
@@ -137,6 +125,23 @@ export function SystemPage() {
   const [backups, setBackups] = useState<BackupInfo[]>([]);
   const [dbStats, setDbStats] = useState<DatabaseStats | null>(null);
   const [adminKey, setAdminKey] = useState<string>('');
+  const [adminKeyError, setAdminKeyError] = useState<string>('');
+
+  // Validate admin key on change
+  useEffect(() => {
+    if (adminKey.length === 0) {
+      setAdminKeyError('');
+    } else if (adminKey.length < 32) {
+      setAdminKeyError('Key must be at least 32 characters');
+    } else {
+      setAdminKeyError('');
+    }
+  }, [adminKey]);
+
+  // CSV operation states
+  const [csvExportLoading, setCsvExportLoading] = useState<string | null>(null);
+  const [csvImportLoading, setCsvImportLoading] = useState(false);
+  const [csvImportTable, setCsvImportTable] = useState<string>('expenses');
 
   // Track active poll timers for cleanup
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -192,6 +197,44 @@ export function SystemPage() {
       // API client handles error reporting
     } finally {
       setIsLoadingDeps(false);
+    }
+  };
+
+  // CSV export handlers
+  const handleCsvExport = async (table: string) => {
+    setCsvExportLoading(table);
+    try {
+      const csv = await systemApi.exportCsvTable(table, adminKey || undefined);
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ownpilot-${table}-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`${table} exported`);
+    } catch {
+      toast.error(`Export failed for ${table}`);
+    } finally {
+      setCsvExportLoading(null);
+    }
+  };
+
+  // CSV import handler
+  const handleCsvImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCsvImportLoading(true);
+    try {
+      const text = await file.text();
+      const result = await systemApi.importCsv(csvImportTable, text, adminKey || undefined);
+      toast.success(`Imported ${result.imported} rows`);
+      loadSystemStatus();
+    } catch {
+      toast.error('CSV import failed');
+    } finally {
+      setCsvImportLoading(false);
+      e.target.value = '';
     }
   };
 
@@ -321,7 +364,7 @@ export function SystemPage() {
             onClick: () => setTab('system'),
           }}
           skipHomeChecked={skipHome}
-          onSkipHomeChange={handleSkipHomeChange}
+          onSkipHomeChange={onSkipHomeChange}
           skipHomeLabel="Skip this screen and go directly to System"
           features={[
             {
@@ -909,8 +952,9 @@ export function SystemPage() {
                     value={adminKey}
                     onChange={(e) => setAdminKey(e.target.value)}
                     placeholder="Enter admin key..."
-                    className="w-full px-3 py-2 text-sm bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg focus:outline-none focus:border-primary"
+                    className={`w-full px-3 py-2 text-sm bg-bg-primary dark:bg-dark-bg-primary border rounded-lg focus:outline-none ${adminKeyError ? 'border-error' : 'border-border dark:border-dark-border focus:border-primary'}`}
                   />
+                  {adminKeyError && <p className="mt-1 text-xs text-error">{adminKeyError}</p>}
                 </div>
               </div>
             </section>
@@ -1158,6 +1202,164 @@ export function SystemPage() {
                         )}
                         Run
                       </button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Data Export / Import */}
+            {databaseStatus?.connected && (
+              <section className="p-6 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
+                <h3 className="text-base font-medium text-text-primary dark:text-dark-text-primary flex items-center gap-2 mb-4">
+                  <Download className="w-5 h-5" />
+                  Data Export & Import
+                </h3>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  {/* JSON Export/Import */}
+                  <div className="p-4 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg space-y-4">
+                    <div>
+                      <p className="font-medium text-text-primary dark:text-dark-text-primary">
+                        Full JSON Export
+                      </p>
+                      <p className="text-sm text-text-muted dark:text-dark-text-muted mt-1">
+                        Export all database tables as JSON (includes agents, conversations,
+                        settings, and more)
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={async () => {
+                          try {
+                            const data = await systemApi.exportJson(
+                              undefined,
+                              adminKey || undefined
+                            );
+                            const blob = new Blob([JSON.stringify(data, null, 2)], {
+                              type: 'application/json',
+                            });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `ownpilot-export-${new Date().toISOString().split('T')[0]}.json`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                            toast.success('Export downloaded');
+                          } catch {
+                            toast.error('Export failed');
+                          }
+                        }}
+                        disabled={dbOperationRunning}
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark disabled:opacity-50 transition-colors"
+                      >
+                        <Download className="w-4 h-4" />
+                        Export JSON
+                      </button>
+                    </div>
+
+                    <div className="border-t border-border dark:border-dark-border pt-3">
+                      <p className="font-medium text-text-primary dark:text-dark-text-primary mb-2">
+                        Import JSON
+                      </p>
+                      <div className="flex gap-2">
+                        <input
+                          type="file"
+                          accept=".json"
+                          id="json-import"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            try {
+                              const text = await file.text();
+                              const data = JSON.parse(text);
+                              await systemApi.importJson(
+                                { data, options: { truncate: false } },
+                                undefined,
+                                adminKey || undefined
+                              );
+                              toast.success('Import started');
+                              loadSystemStatus();
+                            } catch {
+                              toast.error('Import failed');
+                            }
+                            e.target.value = '';
+                          }}
+                        />
+                        <label
+                          htmlFor="json-import"
+                          className="flex items-center gap-2 px-3 py-1.5 text-sm bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg cursor-pointer hover:border-primary transition-colors"
+                        >
+                          <Upload className="w-4 h-4" />
+                          Choose JSON
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* CSV Export */}
+                  <div className="p-4 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg space-y-4">
+                    <div>
+                      <p className="font-medium text-text-primary dark:text-dark-text-primary">
+                        CSV Export
+                      </p>
+                      <p className="text-sm text-text-muted dark:text-dark-text-muted mt-1">
+                        Export user data as CSV (expenses, habits, notes, tasks, contacts, etc.)
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {CSV_TABLES.map((table) => (
+                        <button
+                          key={table}
+                          onClick={() => handleCsvExport(table)}
+                          disabled={csvExportLoading !== null}
+                          className="px-2 py-1 text-xs bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded hover:border-primary transition-colors disabled:opacity-50"
+                        >
+                          {csvExportLoading === table ? (
+                            <RefreshCw className="w-3 h-3 animate-spin" />
+                          ) : (
+                            table
+                          )}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="border-t border-border dark:border-dark-border pt-3">
+                      <p className="font-medium text-text-primary dark:text-dark-text-primary mb-2">
+                        CSV Import
+                      </p>
+                      <div className="flex gap-2 items-center">
+                        <select
+                          value={csvImportTable}
+                          onChange={(e) => setCsvImportTable(e.target.value)}
+                          className="px-2 py-1.5 text-sm bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded"
+                        >
+                          {CSV_TABLES.map((t) => (
+                            <option key={t} value={t}>
+                              {t}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="file"
+                          accept=".csv"
+                          id="csv-import"
+                          className="hidden"
+                          onChange={handleCsvImport}
+                        />
+                        <label
+                          htmlFor="csv-import"
+                          className="flex items-center gap-2 px-3 py-1.5 text-sm bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg cursor-pointer hover:border-primary transition-colors disabled:opacity-50"
+                        >
+                          {csvImportLoading ? (
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Upload className="w-4 h-4" />
+                          )}
+                          {csvImportLoading ? 'Importing...' : 'Import CSV'}
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>

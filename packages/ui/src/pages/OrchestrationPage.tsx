@@ -5,7 +5,7 @@
  * and let OwnPilot chain sessions together — analyzing output and deciding next steps.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useToast } from '../components/ToastProvider';
 import { PageHomeTab } from '../components/PageHomeTab';
@@ -43,17 +43,27 @@ import {
 } from '../api/endpoints/coding-agents';
 import { fileWorkspacesApi, type FileWorkspaceInfo } from '../api/endpoints';
 import { useGateway } from '../hooks/useWebSocket';
+import { useSkipHome } from '../hooks/useSkipHome';
 
 // =============================================================================
 // Stats & Health types
 // =============================================================================
 
 interface OrchestraStats {
-  total: number; active: number; successRate: number;
-  avgCost?: number; avgDuration: number; totalCost: number; errorRate: number; byState: Record<string, number>;
+  total: number;
+  active: number;
+  successRate: number;
+  avgCost?: number;
+  avgDuration: number;
+  totalCost: number;
+  errorRate: number;
+  byState: Record<string, number>;
 }
 interface OrchestraHealth {
-  status: string; score: number; signals: string[]; recommendations: string[];
+  status: string;
+  score: number;
+  signals: string[];
+  recommendations: string[];
 }
 
 // =============================================================================
@@ -436,30 +446,11 @@ export function OrchestrationPage() {
     [setSearchParams]
   );
 
-  // Skip home screen preference
-  const SKIP_HOME_KEY = 'ownpilot:orchestration:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'orchestration',
+    defaultTab: 'orchestration',
+    onNavigate: (tab) => setTab(tab as TabId),
   });
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // Ignore storage errors
-    }
-  }, []);
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !tabParam && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setTab('orchestration');
-    }
-  }, [skipHome, tabParam, setTab]);
 
   const toast = useToast();
   const gateway = useGateway();
@@ -548,12 +539,18 @@ export function OrchestrationPage() {
       },
       {
         event: 'orchestration:error',
-        toast: (p: unknown) => toast.error(`Orchestration error: ${(p as { error: string }).error}`),
+        toast: (p: unknown) =>
+          toast.error(`Orchestration error: ${(p as { error: string }).error}`),
       },
     ];
 
     for (const { event, toast: showToast } of toastEvents) {
-      unsubscribers.push(gateway.subscribe(event, (p) => { showToast(p); fetchData(); }));
+      unsubscribers.push(
+        gateway.subscribe(event, (p) => {
+          showToast(p);
+          fetchData();
+        })
+      );
     }
 
     const refreshEvents = [
@@ -715,7 +712,7 @@ export function OrchestrationPage() {
           subtitle="Chain multiple AI models and tools into sophisticated pipelines — with branching, parallel execution, and intelligent routing."
           cta={{ label: 'View Pipelines', icon: GitMerge, onClick: () => setTab('orchestration') }}
           skipHomeChecked={skipHome}
-          onSkipHomeChange={handleSkipHomeChange}
+          onSkipHomeChange={onSkipHomeChange}
           skipHomeLabel="Skip this screen and go directly to Pipelines"
           features={[
             {
@@ -793,7 +790,9 @@ export function OrchestrationPage() {
                     <span>{stats.total} total</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-muted">
-                    <span className="text-success">{Math.round(stats.successRate * 100)}% success</span>
+                    <span className="text-success">
+                      {Math.round(stats.successRate * 100)}% success
+                    </span>
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-muted">
                     <DollarSign className="w-3.5 h-3.5" />
@@ -806,11 +805,15 @@ export function OrchestrationPage() {
                 </>
               )}
               {health && (
-                <span className={`ml-auto text-xs font-medium px-2 py-0.5 rounded-full ${
-                  health.status === 'healthy' ? 'bg-success/20 text-success' :
-                  health.status === 'watch' ? 'bg-yellow-500/20 text-yellow-500' :
-                  'bg-error/20 text-error'
-                }`}>
+                <span
+                  className={`ml-auto text-xs font-medium px-2 py-0.5 rounded-full ${
+                    health.status === 'healthy'
+                      ? 'bg-success/20 text-success'
+                      : health.status === 'watch'
+                        ? 'bg-yellow-500/20 text-yellow-500'
+                        : 'bg-error/20 text-error'
+                  }`}
+                >
                   {health.status} ({health.score})
                 </span>
               )}

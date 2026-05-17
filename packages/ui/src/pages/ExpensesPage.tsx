@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
 import { useDebouncedCallback } from '../hooks';
@@ -28,6 +28,7 @@ import type {
   ExpenseSummaryResponse as SummaryResponse,
 } from '../api';
 import { useToast } from '../components/ToastProvider';
+import { useSkipHome } from '../hooks/useSkipHome';
 import { PageHomeTab } from '../components/PageHomeTab';
 import { EmptyState } from '../components/EmptyState';
 import { SkeletonCard } from '../components/Skeleton';
@@ -88,31 +89,10 @@ export function ExpensesPage() {
     navigate({ search: params.toString() }, { replace: true });
   };
 
-  // Skip home screen preference
-  const SKIP_HOME_KEY = 'ownpilot:expenses:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'expenses',
+    defaultTab: 'expenses',
   });
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // Ignore storage errors
-    }
-  }, []);
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !tabParam && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setTab('expenses');
-    }
-  }, [skipHome, tabParam]);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -124,33 +104,24 @@ export function ExpensesPage() {
       setMonthlyData({
         ...monthlyJson,
         months,
-        yearTotal: monthlyJson.yearTotal ?? months.reduce((sum, month) => sum + month.total, 0),
-        expenseCount:
-          monthlyJson.expenseCount ?? months.reduce((sum, month) => sum + month.count, 0),
         categories: monthlyJson.categories ?? {},
       });
 
       // Fetch summary for current period
-      // Use proper end-of-month (new Date(year, month, 0) gives last day of previous month)
-      const lastDay = selectedMonth ? new Date(year, parseInt(selectedMonth, 10), 0).getDate() : 31;
-      const selectedMonthPadded = selectedMonth?.padStart(2, '0');
       const summaryParams: Record<string, string> = selectedMonth
         ? {
-            startDate: `${year}-${selectedMonthPadded}-01`,
-            endDate: `${year}-${selectedMonthPadded}-${String(lastDay).padStart(2, '0')}`,
+            startDate: `${year}-${selectedMonth}-01`,
+            endDate: `${year}-${selectedMonth}-${String(new Date(year, parseInt(selectedMonth, 10), 0).getDate()).padStart(2, '0')}`,
           }
         : { period: 'this_year' };
       const summaryJson = await expensesApi.summary(summaryParams);
       setSummaryData({ ...summaryJson, categories: summaryJson.categories ?? {} });
 
       // Fetch expense list
-      const listLastDay = selectedMonth
-        ? new Date(year, parseInt(selectedMonth, 10), 0).getDate()
-        : 31;
       const listParams: Record<string, string> = selectedMonth
         ? {
-            startDate: `${year}-${selectedMonthPadded}-01`,
-            endDate: `${year}-${selectedMonthPadded}-${String(listLastDay).padStart(2, '0')}`,
+            startDate: `${year}-${selectedMonth}-01`,
+            endDate: `${year}-${selectedMonth}-${String(new Date(year, parseInt(selectedMonth, 10), 0).getDate()).padStart(2, '0')}`,
             limit: '50',
           }
         : { startDate: `${year}-01-01`, endDate: `${year}-12-31`, limit: '50' };
@@ -269,7 +240,7 @@ export function ExpensesPage() {
             },
           }}
           skipHomeChecked={skipHome}
-          onSkipHomeChange={handleSkipHomeChange}
+          onSkipHomeChange={onSkipHomeChange}
           skipHomeLabel="Skip this screen and go directly to Expenses"
           features={[
             {

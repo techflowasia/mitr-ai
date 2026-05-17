@@ -4,8 +4,9 @@
  * Set, change, or remove UI password protection.
  */
 
-import { useState, useEffect, useCallback, useRef, type FormEvent } from 'react';
+import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useSkipHome } from '../hooks/useSkipHome';
 import { AlertCircle, Shield, Lock, Key, Users, FileText, Home } from '../components/icons';
 import { PageHomeTab } from '../components/PageHomeTab';
 import { useToast } from '../components/ToastProvider';
@@ -27,34 +28,10 @@ export function SecurityPage() {
   const tabParam = searchParams.get('tab') as TabId | null;
   const [activeTab, setActiveTab] = useState<TabId>(tabParam || 'home');
 
-  // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:security:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'security',
+    defaultTab: 'security',
   });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
-
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !tabParam && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setTab('security');
-    }
-  }, [skipHome, tabParam]);
 
   useEffect(() => {
     const urlTab = (searchParams.get('tab') as TabId | null) || 'home';
@@ -214,7 +191,7 @@ export function SecurityPage() {
             onClick: () => setTab('security'),
           }}
           skipHomeChecked={skipHome}
-          onSkipHomeChange={handleSkipHomeChange}
+          onSkipHomeChange={onSkipHomeChange}
           skipHomeLabel="Skip this screen and go directly to Security"
           features={[
             {

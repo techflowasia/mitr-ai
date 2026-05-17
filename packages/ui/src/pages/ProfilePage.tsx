@@ -9,7 +9,7 @@
  * - Visual Progress Tracking
  */
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   UserCircle,
   Brain,
@@ -44,6 +44,7 @@ import { PageHomeTab } from '../components/PageHomeTab';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useToast } from '../components/ToastProvider';
 import { useDialog } from '../components/ConfirmDialog';
+import { useSkipHome } from '../hooks/useSkipHome';
 import { profileApi } from '../api';
 import { memoriesApi } from '../api/endpoints/personal-data';
 import type { ProfileData } from '../api';
@@ -108,7 +109,12 @@ const AUTONOMY_COLORS: Record<string, string> = {
   full: 'text-purple-500 bg-purple-500/10 border-purple-500/20',
 };
 
-const COMMUNICATION_STYLES: { value: QuickSetupData['communicationStyle']; label: string; icon: typeof MessageSquare; desc: string }[] = [
+const COMMUNICATION_STYLES: {
+  value: QuickSetupData['communicationStyle'];
+  label: string;
+  icon: typeof MessageSquare;
+  desc: string;
+}[] = [
   { value: 'formal', label: 'Formal', icon: Building, desc: 'Professional and polite' },
   { value: 'casual', label: 'Casual', icon: MessageSquare, desc: 'Friendly and relaxed' },
   { value: 'mixed', label: 'Mixed', icon: Sparkles, desc: 'Adapts to context' },
@@ -142,7 +148,17 @@ const LANGUAGES = [
 // Utility Components
 // =============================================================================
 
-function ProgressRing({ progress, size = 80, strokeWidth = 8, color = 'text-primary' }: { progress: number; size?: number; strokeWidth?: number; color?: string }) {
+function ProgressRing({
+  progress,
+  size = 80,
+  strokeWidth = 8,
+  color = 'text-primary',
+}: {
+  progress: number;
+  size?: number;
+  strokeWidth?: number;
+  color?: string;
+}) {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const offset = circumference - (progress / 100) * circumference;
@@ -173,13 +189,27 @@ function ProgressRing({ progress, size = 80, strokeWidth = 8, color = 'text-prim
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-lg font-bold text-text-primary dark:text-dark-text-primary">{progress}%</span>
+        <span className="text-lg font-bold text-text-primary dark:text-dark-text-primary">
+          {progress}%
+        </span>
       </div>
     </div>
   );
 }
 
-function StatCard({ icon: Icon, label, value, color, trend }: { icon: typeof User; label: string; value: string | number; color: string; trend?: { value: number; positive: boolean } }) {
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  color,
+  trend,
+}: {
+  icon: typeof User;
+  label: string;
+  value: string | number;
+  color: string;
+  trend?: { value: number; positive: boolean };
+}) {
   return (
     <div className="p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-xl border border-border dark:border-dark-border hover:border-primary/30 transition-colors">
       <div className="flex items-center gap-3 mb-2">
@@ -189,10 +219,13 @@ function StatCard({ icon: Icon, label, value, color, trend }: { icon: typeof Use
         <span className="text-sm text-text-muted dark:text-dark-text-muted">{label}</span>
       </div>
       <div className="flex items-end gap-2">
-        <span className="text-2xl font-bold text-text-primary dark:text-dark-text-primary">{value}</span>
+        <span className="text-2xl font-bold text-text-primary dark:text-dark-text-primary">
+          {value}
+        </span>
         {trend && (
           <span className={`text-xs mb-1 ${trend.positive ? 'text-success' : 'text-error'}`}>
-            {trend.positive ? '+' : ''}{trend.value}%
+            {trend.positive ? '+' : ''}
+            {trend.value}%
           </span>
         )}
       </div>
@@ -200,7 +233,17 @@ function StatCard({ icon: Icon, label, value, color, trend }: { icon: typeof Use
   );
 }
 
-function SectionCard({ title, icon: Icon, children, action }: { title: string; icon: typeof User; children: React.ReactNode; action?: { label: string; onClick: () => void } }) {
+function SectionCard({
+  title,
+  icon: Icon,
+  children,
+  action,
+}: {
+  title: string;
+  icon: typeof User;
+  children: React.ReactNode;
+  action?: { label: string; onClick: () => void };
+}) {
   return (
     <div className="p-5 bg-bg-secondary dark:bg-dark-bg-secondary rounded-xl border border-border dark:border-dark-border">
       <div className="flex items-center justify-between mb-4">
@@ -219,7 +262,19 @@ function SectionCard({ title, icon: Icon, children, action }: { title: string; i
   );
 }
 
-function TagInput({ tags, onAdd, onRemove, placeholder, color = 'primary' }: { tags: string[]; onAdd: (tag: string) => void; onRemove: (tag: string) => void; placeholder: string; color?: 'primary' | 'success' | 'warning' | 'error' }) {
+function TagInput({
+  tags,
+  onAdd,
+  onRemove,
+  placeholder,
+  color = 'primary',
+}: {
+  tags: string[];
+  onAdd: (tag: string) => void;
+  onRemove: (tag: string) => void;
+  placeholder: string;
+  color?: 'primary' | 'success' | 'warning' | 'error';
+}) {
   const [input, setInput] = useState('');
 
   const colorClasses = {
@@ -241,7 +296,10 @@ function TagInput({ tags, onAdd, onRemove, placeholder, color = 'primary' }: { t
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2">
         {tags.map((tag) => (
-          <span key={tag} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm border ${colorClasses[color]}`}>
+          <span
+            key={tag}
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm border ${colorClasses[color]}`}
+          >
             {tag}
             <button onClick={() => onRemove(tag)} className="hover:opacity-70">
               <X className="w-3 h-3" />
@@ -275,14 +333,11 @@ export function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('home');
 
-  // Skip home preference
-  const SKIP_HOME_KEY = 'ownpilot:profile:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  // Skip home preference (via useSkipHome hook)
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'profile',
+    defaultTab: 'overview',
+    onNavigate: (tab) => setActiveTab(tab as TabId),
   });
 
   // Form states
@@ -299,6 +354,16 @@ export function ProfilePage() {
   // Memory form
   const [newMemory, setNewMemory] = useState({ content: '', type: 'fact' as const, importance: 2 });
   const [isAddingMemory, setIsAddingMemory] = useState(false);
+
+  // Memory bulk operations
+  const [selectedMemoryIds, setSelectedMemoryIds] = useState<Set<string>>(new Set());
+  const [memoryToDelete, setMemoryToDelete] = useState<{ ids: string[]; content: string } | null>(
+    null
+  );
+  const pendingDeleteRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Form validation
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // AI Instructions
   const [newInstruction, setNewInstruction] = useState('');
@@ -351,29 +416,17 @@ export function ProfilePage() {
     }
   };
 
-  // Skip home handlers
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // Ignore storage errors
-    }
-  }, []);
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && activeTab === 'home' && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setActiveTab('overview');
-    }
-  }, [skipHome, activeTab]);
-
   // Save handlers
   const saveQuickSetup = async () => {
+    if (!validateIdentity()) {
+      toast.error('Please fix the validation errors');
+      return;
+    }
     try {
       setIsSaving(true);
       const result = await profileApi.quickSetup({ ...quickSetup });
       setProfile(result.profile);
+      setFormErrors({});
       toast.success('Profile saved successfully');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to save profile');
@@ -443,6 +496,77 @@ export function ProfilePage() {
     }
   };
 
+  // Bulk delete with undo
+  const bulkDeleteMemories = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    const ok = await confirm({
+      title: 'Delete Memories',
+      message: `Delete ${ids.length} selected memories? This cannot be undone.`,
+      confirmText: `Delete ${ids.length}`,
+      variant: 'danger',
+    });
+    if (!ok) return;
+
+    // Clear any pending delete
+    if (pendingDeleteRef.current) {
+      clearTimeout(pendingDeleteRef.current);
+      pendingDeleteRef.current = null;
+    }
+
+    // Optimistically remove
+    const deletedIds = new Set(ids);
+    setMemories((prev) => prev.filter((m) => !deletedIds.has(m.id)));
+    setSelectedMemoryIds(new Set());
+
+    // Start timer for actual deletion
+    pendingDeleteRef.current = setTimeout(async () => {
+      pendingDeleteRef.current = null;
+      try {
+        await Promise.all(ids.map((id) => memoriesApi.delete(id)));
+        toast.success(`Deleted ${ids.length} memories`);
+      } catch {
+        toast.error('Failed to delete some memories');
+        loadAllData();
+      }
+      setMemoryToDelete(null);
+    }, 3000);
+
+    // Show undo option
+    setMemoryToDelete({ ids, content: `${ids.length} memories` });
+    toast.warning('3s undo window');
+  };
+
+  const undoBulkDelete = () => {
+    if (!memoryToDelete || !pendingDeleteRef.current) return;
+    clearTimeout(pendingDeleteRef.current);
+    pendingDeleteRef.current = null;
+    setMemoryToDelete(null);
+    toast.info('Deletion cancelled');
+    loadAllData();
+  };
+
+  const toggleMemorySelection = (id: string) => {
+    setSelectedMemoryIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // Form validation
+  const validateIdentity = () => {
+    const errors: Record<string, string> = {};
+    if (quickSetup.name.length > 0 && quickSetup.name.length < 2) {
+      errors.name = 'Name must be at least 2 characters';
+    }
+    if (quickSetup.location.length > 0 && quickSetup.location.length < 2) {
+      errors.location = 'Location must be at least 2 characters';
+    }
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   // Instruction handlers
   const addInstruction = async () => {
     if (!newInstruction.trim()) return;
@@ -501,7 +625,10 @@ export function ProfilePage() {
 
   // Computed values
   const completeness = profile?.meta?.completeness || 0;
-  const languageName = useMemo(() => LANGUAGES.find((l) => l.code === quickSetup.language)?.name || quickSetup.language, [quickSetup.language]);
+  const languageName = useMemo(
+    () => LANGUAGES.find((l) => l.code === quickSetup.language)?.name || quickSetup.language,
+    [quickSetup.language]
+  );
 
   if (isLoading) {
     return (
@@ -599,7 +726,7 @@ export function ProfilePage() {
               onClick: () => setActiveTab('overview'),
             }}
             skipHomeChecked={skipHome}
-            onSkipHomeChange={handleSkipHomeChange}
+            onSkipHomeChange={onSkipHomeChange}
             skipHomeLabel="Skip this screen and go directly to Overview"
             features={[
               {
@@ -629,15 +756,38 @@ export function ProfilePage() {
             ]}
             steps={[
               { title: 'Set up your identity', detail: 'Add your name, location, and basic info.' },
-              { title: 'Configure AI behavior', detail: 'Choose communication style and autonomy level.' },
+              {
+                title: 'Configure AI behavior',
+                detail: 'Choose communication style and autonomy level.',
+              },
               { title: 'Add important memories', detail: 'Help your AI remember key information.' },
               { title: 'Set goals and track progress', detail: 'Define what you want to achieve.' },
             ]}
             quickActions={[
-              { icon: User, label: 'Edit Identity', description: 'Update your personal info', onClick: () => setActiveTab('identity') },
-              { icon: Brain, label: 'AI Settings', description: 'Configure AI behavior', onClick: () => setActiveTab('behavior') },
-              { icon: History, label: 'Add Memory', description: 'Create a new memory', onClick: () => setActiveTab('memories') },
-              { icon: Target, label: 'Set Goals', description: 'Define your objectives', onClick: () => setActiveTab('advanced') },
+              {
+                icon: User,
+                label: 'Edit Identity',
+                description: 'Update your personal info',
+                onClick: () => setActiveTab('identity'),
+              },
+              {
+                icon: Brain,
+                label: 'AI Settings',
+                description: 'Configure AI behavior',
+                onClick: () => setActiveTab('behavior'),
+              },
+              {
+                icon: History,
+                label: 'Add Memory',
+                description: 'Create a new memory',
+                onClick: () => setActiveTab('memories'),
+              },
+              {
+                icon: Target,
+                label: 'Set Goals',
+                description: 'Define your objectives',
+                onClick: () => setActiveTab('advanced'),
+              },
             ]}
           />
         )}
@@ -661,7 +811,9 @@ export function ProfilePage() {
                     {profile.identity?.name || 'Guest User'}
                   </h3>
                   {profile.identity?.nickname && (
-                    <p className="text-text-muted dark:text-dark-text-muted">"{profile.identity.nickname}"</p>
+                    <p className="text-text-muted dark:text-dark-text-muted">
+                      "{profile.identity.nickname}"
+                    </p>
                   )}
                   <div className="flex flex-wrap items-center gap-3 mt-2">
                     {profile.location?.home?.city && (
@@ -683,50 +835,104 @@ export function ProfilePage() {
                   </div>
                 </div>
                 <div className="hidden sm:block">
-                  <ProgressRing progress={completeness} color={completeness >= 80 ? 'text-success' : completeness >= 50 ? 'text-primary' : 'text-warning'} />
+                  <ProgressRing
+                    progress={completeness}
+                    color={
+                      completeness >= 80
+                        ? 'text-success'
+                        : completeness >= 50
+                          ? 'text-primary'
+                          : 'text-warning'
+                    }
+                  />
                 </div>
               </div>
             </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatCard icon={Bookmark} label="Data Entries" value={profile.meta?.totalEntries || 0} color="bg-primary/10 text-primary" />
-              <StatCard icon={Brain} label="Instructions" value={profile.aiPreferences?.customInstructions?.length || 0} color="bg-violet-500/10 text-violet-500" />
-              <StatCard icon={Shield} label="Boundaries" value={profile.aiPreferences?.boundaries?.length || 0} color="bg-amber-500/10 text-amber-500" />
-              <StatCard icon={History} label="Memories" value={memories.length} color="bg-emerald-500/10 text-emerald-500" />
+              <StatCard
+                icon={Bookmark}
+                label="Data Entries"
+                value={profile.meta?.totalEntries || 0}
+                color="bg-primary/10 text-primary"
+              />
+              <StatCard
+                icon={Brain}
+                label="Instructions"
+                value={profile.aiPreferences?.customInstructions?.length || 0}
+                color="bg-violet-500/10 text-violet-500"
+              />
+              <StatCard
+                icon={Shield}
+                label="Boundaries"
+                value={profile.aiPreferences?.boundaries?.length || 0}
+                color="bg-amber-500/10 text-amber-500"
+              />
+              <StatCard
+                icon={History}
+                label="Memories"
+                value={memories.length}
+                color="bg-emerald-500/10 text-emerald-500"
+              />
             </div>
 
             {/* AI Settings Summary */}
-            <SectionCard title="AI Configuration" icon={Brain} action={{ label: 'Edit', onClick: () => setActiveTab('behavior') }}>
+            <SectionCard
+              title="AI Configuration"
+              icon={Brain}
+              action={{ label: 'Edit', onClick: () => setActiveTab('behavior') }}
+            >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className={`p-3 rounded-lg border ${AUTONOMY_COLORS[profile.aiPreferences?.autonomyLevel || 'medium']}`}>
+                <div
+                  className={`p-3 rounded-lg border ${AUTONOMY_COLORS[profile.aiPreferences?.autonomyLevel || 'medium']}`}
+                >
                   <span className="text-xs opacity-70 uppercase tracking-wider">Autonomy</span>
-                  <p className="font-medium capitalize">{profile.aiPreferences?.autonomyLevel || 'medium'}</p>
+                  <p className="font-medium capitalize">
+                    {profile.aiPreferences?.autonomyLevel || 'medium'}
+                  </p>
                 </div>
                 <div className="p-3 rounded-lg border bg-bg-tertiary dark:bg-dark-bg-tertiary border-border dark:border-dark-border">
                   <span className="text-xs text-text-muted uppercase tracking-wider">Style</span>
-                  <p className="font-medium capitalize">{profile.communication?.preferredStyle || 'casual'}</p>
+                  <p className="font-medium capitalize">
+                    {profile.communication?.preferredStyle || 'casual'}
+                  </p>
                 </div>
                 <div className="p-3 rounded-lg border bg-bg-tertiary dark:bg-dark-bg-tertiary border-border dark:border-dark-border">
-                  <span className="text-xs text-text-muted uppercase tracking-wider">Verbosity</span>
-                  <p className="font-medium capitalize">{profile.communication?.verbosity || 'detailed'}</p>
+                  <span className="text-xs text-text-muted uppercase tracking-wider">
+                    Verbosity
+                  </span>
+                  <p className="font-medium capitalize">
+                    {profile.communication?.verbosity || 'detailed'}
+                  </p>
                 </div>
               </div>
             </SectionCard>
 
             {/* Recent Memories Preview */}
-            <SectionCard title="Recent Memories" icon={History} action={{ label: 'View All', onClick: () => setActiveTab('memories') }}>
+            <SectionCard
+              title="Recent Memories"
+              icon={History}
+              action={{ label: 'View All', onClick: () => setActiveTab('memories') }}
+            >
               {memories.slice(0, 3).length > 0 ? (
                 <div className="space-y-2">
                   {memories.slice(0, 3).map((memory) => (
-                    <div key={memory.id} className="flex items-start gap-3 p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg">
+                    <div
+                      key={memory.id}
+                      className="flex items-start gap-3 p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg"
+                    >
                       <History className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                      <p className="text-sm text-text-primary dark:text-dark-text-primary line-clamp-2">{memory.content}</p>
+                      <p className="text-sm text-text-primary dark:text-dark-text-primary line-clamp-2">
+                        {memory.content}
+                      </p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-text-muted dark:text-dark-text-muted italic">No memories yet. Add some to help your AI remember important things.</p>
+                <p className="text-sm text-text-muted dark:text-dark-text-muted italic">
+                  No memories yet. Add some to help your AI remember important things.
+                </p>
               )}
             </SectionCard>
           </div>
@@ -736,7 +942,9 @@ export function ProfilePage() {
         {activeTab === 'identity' && (
           <div className="space-y-6 max-w-2xl mx-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">Personal Information</h3>
+              <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+                Personal Information
+              </h3>
               <button
                 onClick={saveQuickSetup}
                 disabled={isSaving}
@@ -752,17 +960,24 @@ export function ProfilePage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-1">Full Name</label>
+                    <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-1">
+                      Full Name
+                    </label>
                     <input
                       type="text"
                       value={quickSetup.name}
                       onChange={(e) => setQuickSetup({ ...quickSetup, name: e.target.value })}
                       placeholder="What should the AI call you?"
-                      className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      className={`w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 ${formErrors.name ? 'border-error' : 'border-border dark:border-dark-border'}`}
                     />
+                    {formErrors.name && (
+                      <p className="mt-1 text-xs text-error">{formErrors.name}</p>
+                    )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-1">Nickname</label>
+                    <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-1">
+                      Nickname
+                    </label>
                     <input
                       type="text"
                       value={quickSetup.nickname}
@@ -775,7 +990,9 @@ export function ProfilePage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-1">Location</label>
+                    <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-1">
+                      Location
+                    </label>
                     <div className="relative">
                       <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                       <input
@@ -783,18 +1000,25 @@ export function ProfilePage() {
                         value={quickSetup.location}
                         onChange={(e) => setQuickSetup({ ...quickSetup, location: e.target.value })}
                         placeholder="City or region"
-                        className="w-full pl-10 pr-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        className={`w-full pl-10 pr-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 ${formErrors.location ? 'border-error' : 'border-border dark:border-dark-border'}`}
                       />
                     </div>
+                    {formErrors.location && (
+                      <p className="mt-1 text-xs text-error">{formErrors.location}</p>
+                    )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-1">Occupation</label>
+                    <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-1">
+                      Occupation
+                    </label>
                     <div className="relative">
                       <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                       <input
                         type="text"
                         value={quickSetup.occupation}
-                        onChange={(e) => setQuickSetup({ ...quickSetup, occupation: e.target.value })}
+                        onChange={(e) =>
+                          setQuickSetup({ ...quickSetup, occupation: e.target.value })
+                        }
                         placeholder="What do you do?"
                         className="w-full pl-10 pr-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
                       />
@@ -804,7 +1028,9 @@ export function ProfilePage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-1">Language</label>
+                    <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-1">
+                      Language
+                    </label>
                     <select
                       value={quickSetup.language}
                       onChange={(e) => setQuickSetup({ ...quickSetup, language: e.target.value })}
@@ -818,7 +1044,9 @@ export function ProfilePage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-1">Timezone</label>
+                    <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-1">
+                      Timezone
+                    </label>
                     <div className="relative">
                       <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                       <select
@@ -843,7 +1071,9 @@ export function ProfilePage() {
               <TagInput
                 tags={editable.hobbies}
                 onAdd={(tag) => setEditable({ ...editable, hobbies: [...editable.hobbies, tag] })}
-                onRemove={(tag) => setEditable({ ...editable, hobbies: editable.hobbies.filter((t) => t !== tag) })}
+                onRemove={(tag) =>
+                  setEditable({ ...editable, hobbies: editable.hobbies.filter((t) => t !== tag) })
+                }
                 placeholder="Add a hobby and press Enter..."
                 color="primary"
               />
@@ -853,7 +1083,9 @@ export function ProfilePage() {
               <TagInput
                 tags={editable.skills}
                 onAdd={(tag) => setEditable({ ...editable, skills: [...editable.skills, tag] })}
-                onRemove={(tag) => setEditable({ ...editable, skills: editable.skills.filter((t) => t !== tag) })}
+                onRemove={(tag) =>
+                  setEditable({ ...editable, skills: editable.skills.filter((t) => t !== tag) })
+                }
                 placeholder="Add a skill and press Enter..."
                 color="success"
               />
@@ -865,7 +1097,9 @@ export function ProfilePage() {
         {activeTab === 'behavior' && profile && (
           <div className="space-y-6 max-w-2xl mx-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">AI Behavior Settings</h3>
+              <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+                AI Behavior Settings
+              </h3>
               <button
                 onClick={saveQuickSetup}
                 disabled={isSaving}
@@ -889,8 +1123,14 @@ export function ProfilePage() {
                         : 'border-border dark:border-dark-border hover:border-primary/50'
                     }`}
                   >
-                    <Icon className={`w-6 h-6 mb-2 ${quickSetup.communicationStyle === value ? 'text-primary' : 'text-text-muted'}`} />
-                    <p className={`font-medium ${quickSetup.communicationStyle === value ? 'text-primary' : 'text-text-primary dark:text-dark-text-primary'}`}>{label}</p>
+                    <Icon
+                      className={`w-6 h-6 mb-2 ${quickSetup.communicationStyle === value ? 'text-primary' : 'text-text-muted'}`}
+                    />
+                    <p
+                      className={`font-medium ${quickSetup.communicationStyle === value ? 'text-primary' : 'text-text-primary dark:text-dark-text-primary'}`}
+                    >
+                      {label}
+                    </p>
                     <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">{desc}</p>
                   </button>
                 ))}
@@ -911,10 +1151,16 @@ export function ProfilePage() {
                     }`}
                   >
                     <div className="text-left">
-                      <p className={`font-medium ${quickSetup.verbosity === value ? 'text-primary' : 'text-text-primary dark:text-dark-text-primary'}`}>{label}</p>
+                      <p
+                        className={`font-medium ${quickSetup.verbosity === value ? 'text-primary' : 'text-text-primary dark:text-dark-text-primary'}`}
+                      >
+                        {label}
+                      </p>
                       <p className="text-xs text-text-muted dark:text-dark-text-muted">{desc}</p>
                     </div>
-                    {quickSetup.verbosity === value && <CheckCircle2 className="w-5 h-5 text-primary" />}
+                    {quickSetup.verbosity === value && (
+                      <CheckCircle2 className="w-5 h-5 text-primary" />
+                    )}
                   </button>
                 ))}
               </div>
@@ -926,24 +1172,42 @@ export function ProfilePage() {
                 {Object.entries(AUTONOMY_DESCRIPTIONS).map(([level, desc]) => (
                   <button
                     key={level}
-                    onClick={() => setQuickSetup({ ...quickSetup, autonomyLevel: level as QuickSetupData['autonomyLevel'] })}
+                    onClick={() =>
+                      setQuickSetup({
+                        ...quickSetup,
+                        autonomyLevel: level as QuickSetupData['autonomyLevel'],
+                      })
+                    }
                     className={`w-full p-3 rounded-lg border-2 transition-all flex items-center gap-3 ${
                       quickSetup.autonomyLevel === level
                         ? 'border-primary bg-primary/5'
                         : 'border-border dark:border-dark-border hover:border-primary/50'
                     }`}
                   >
-                    <div className={`w-3 h-3 rounded-full ${
-                      level === 'none' ? 'bg-blue-500' :
-                      level === 'low' ? 'bg-emerald-500' :
-                      level === 'medium' ? 'bg-amber-500' :
-                      level === 'high' ? 'bg-orange-500' : 'bg-purple-500'
-                    }`} />
+                    <div
+                      className={`w-3 h-3 rounded-full ${
+                        level === 'none'
+                          ? 'bg-blue-500'
+                          : level === 'low'
+                            ? 'bg-emerald-500'
+                            : level === 'medium'
+                              ? 'bg-amber-500'
+                              : level === 'high'
+                                ? 'bg-orange-500'
+                                : 'bg-purple-500'
+                      }`}
+                    />
                     <div className="flex-1 text-left">
-                      <p className={`font-medium capitalize ${quickSetup.autonomyLevel === level ? 'text-primary' : 'text-text-primary dark:text-dark-text-primary'}`}>{level}</p>
+                      <p
+                        className={`font-medium capitalize ${quickSetup.autonomyLevel === level ? 'text-primary' : 'text-text-primary dark:text-dark-text-primary'}`}
+                      >
+                        {level}
+                      </p>
                       <p className="text-xs text-text-muted dark:text-dark-text-muted">{desc}</p>
                     </div>
-                    {quickSetup.autonomyLevel === level && <CheckCircle2 className="w-5 h-5 text-primary" />}
+                    {quickSetup.autonomyLevel === level && (
+                      <CheckCircle2 className="w-5 h-5 text-primary" />
+                    )}
                   </button>
                 ))}
               </div>
@@ -956,9 +1220,14 @@ export function ProfilePage() {
               </p>
               <div className="space-y-2 mb-4">
                 {profile.aiPreferences?.customInstructions?.map((instruction, i) => (
-                  <div key={i} className="flex items-center gap-2 p-3 bg-primary/5 border border-primary/10 rounded-lg">
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 p-3 bg-primary/5 border border-primary/10 rounded-lg"
+                  >
                     <Lightbulb className="w-4 h-4 text-primary flex-shrink-0" />
-                    <span className="flex-1 text-sm text-text-primary dark:text-dark-text-primary">{instruction}</span>
+                    <span className="flex-1 text-sm text-text-primary dark:text-dark-text-primary">
+                      {instruction}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -971,7 +1240,11 @@ export function ProfilePage() {
                   className="flex-1 px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
                   onKeyDown={(e) => e.key === 'Enter' && addInstruction()}
                 />
-                <button onClick={addInstruction} disabled={!newInstruction.trim()} className="px-4 py-2 bg-primary text-white rounded-lg disabled:opacity-50">
+                <button
+                  onClick={addInstruction}
+                  disabled={!newInstruction.trim()}
+                  className="px-4 py-2 bg-primary text-white rounded-lg disabled:opacity-50"
+                >
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
@@ -984,9 +1257,14 @@ export function ProfilePage() {
               </p>
               <div className="space-y-2 mb-4">
                 {profile.aiPreferences?.boundaries?.map((boundary, i) => (
-                  <div key={i} className="flex items-center gap-2 p-3 bg-error/5 border border-error/10 rounded-lg">
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 p-3 bg-error/5 border border-error/10 rounded-lg"
+                  >
                     <Shield className="w-4 h-4 text-error flex-shrink-0" />
-                    <span className="flex-1 text-sm text-text-primary dark:text-dark-text-primary">{boundary}</span>
+                    <span className="flex-1 text-sm text-text-primary dark:text-dark-text-primary">
+                      {boundary}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -999,7 +1277,11 @@ export function ProfilePage() {
                   className="flex-1 px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
                   onKeyDown={(e) => e.key === 'Enter' && addBoundary()}
                 />
-                <button onClick={addBoundary} disabled={!newBoundary.trim()} className="px-4 py-2 bg-error text-white rounded-lg disabled:opacity-50">
+                <button
+                  onClick={addBoundary}
+                  disabled={!newBoundary.trim()}
+                  className="px-4 py-2 bg-error text-white rounded-lg disabled:opacity-50"
+                >
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
@@ -1012,12 +1294,59 @@ export function ProfilePage() {
           <div className="space-y-6 max-w-3xl mx-auto">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">Memory Management</h3>
+                <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+                  Memory Management
+                </h3>
                 <p className="text-sm text-text-muted dark:text-dark-text-muted">
                   {memories.length} memories stored · Help your AI remember important information
                 </p>
               </div>
+              {memories.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setSelectedMemoryIds(new Set(memories.map((m) => m.id)))}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Select all
+                  </button>
+                  <span className="text-text-muted">·</span>
+                  <button
+                    onClick={() => setSelectedMemoryIds(new Set())}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Clear
+                  </button>
+                  {selectedMemoryIds.size > 0 && (
+                    <>
+                      <span className="text-text-muted mx-1">|</span>
+                      <button
+                        onClick={() => bulkDeleteMemories(Array.from(selectedMemoryIds))}
+                        className="flex items-center gap-1 px-2 py-1 text-xs text-error bg-error/10 rounded hover:bg-error/20"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Delete {selectedMemoryIds.size}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
+
+            {/* Undo banner */}
+            {memoryToDelete && (
+              <div className="flex items-center gap-3 p-3 bg-warning/10 border border-warning/20 rounded-lg">
+                <AlertCircle className="w-4 h-4 text-warning shrink-0" />
+                <span className="text-sm text-text-primary dark:text-dark-text-primary flex-1">
+                  Deleting {memoryToDelete.content}...
+                </span>
+                <button
+                  onClick={undoBulkDelete}
+                  className="text-xs text-primary hover:underline font-medium"
+                >
+                  Undo
+                </button>
+              </div>
+            )}
 
             {/* Add Memory Form */}
             <div className="p-5 bg-bg-secondary dark:bg-dark-bg-secondary rounded-xl border border-border dark:border-dark-border">
@@ -1036,7 +1365,9 @@ export function ProfilePage() {
                 <div className="flex flex-wrap gap-3">
                   <select
                     value={newMemory.type}
-                    onChange={(e) => setNewMemory({ ...newMemory, type: e.target.value as typeof newMemory.type })}
+                    onChange={(e) =>
+                      setNewMemory({ ...newMemory, type: e.target.value as typeof newMemory.type })
+                    }
                     className="px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-sm text-text-primary dark:text-dark-text-primary"
                   >
                     <option value="fact">Fact</option>
@@ -1046,7 +1377,9 @@ export function ProfilePage() {
                   </select>
                   <select
                     value={newMemory.importance}
-                    onChange={(e) => setNewMemory({ ...newMemory, importance: parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      setNewMemory({ ...newMemory, importance: parseInt(e.target.value) })
+                    }
                     className="px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-sm text-text-primary dark:text-dark-text-primary"
                   >
                     <option value={1}>Low Priority</option>
@@ -1070,21 +1403,40 @@ export function ProfilePage() {
                 <div className="text-center py-12 bg-bg-secondary dark:bg-dark-bg-secondary rounded-xl border border-dashed border-border dark:border-dark-border">
                   <History className="w-12 h-12 text-text-muted mx-auto mb-3" />
                   <p className="text-text-muted dark:text-dark-text-muted">No memories yet</p>
-                  <p className="text-sm text-text-muted dark:text-dark-text-muted mt-1">Add your first memory above to help your AI understand you better.</p>
+                  <p className="text-sm text-text-muted dark:text-dark-text-muted mt-1">
+                    Add your first memory above to help your AI understand you better.
+                  </p>
                 </div>
               ) : (
                 memories.map((memory) => (
                   <div
                     key={memory.id}
-                    className="group p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-xl border border-border dark:border-dark-border hover:border-primary/30 transition-colors"
+                    className={`group p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-xl border transition-colors ${
+                      selectedMemoryIds.has(memory.id)
+                        ? 'border-primary/50 bg-primary/5'
+                        : 'border-border dark:border-dark-border hover:border-primary/30'
+                    }`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
-                        memory.importance >= 3 ? 'bg-error' :
-                        memory.importance <= 1 ? 'bg-text-muted' : 'bg-primary'
-                      }`} />
+                      <input
+                        type="checkbox"
+                        checked={selectedMemoryIds.has(memory.id)}
+                        onChange={() => toggleMemorySelection(memory.id)}
+                        className="mt-1 w-4 h-4 rounded border-border text-primary focus:ring-primary/50"
+                      />
+                      <div
+                        className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
+                          memory.importance >= 3
+                            ? 'bg-error'
+                            : memory.importance <= 1
+                              ? 'bg-text-muted'
+                              : 'bg-primary'
+                        }`}
+                      />
                       <div className="flex-1 min-w-0">
-                        <p className="text-text-primary dark:text-dark-text-primary">{memory.content}</p>
+                        <p className="text-text-primary dark:text-dark-text-primary">
+                          {memory.content}
+                        </p>
                         <div className="flex items-center gap-3 mt-2">
                           <span className="text-xs px-2 py-0.5 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-full text-text-muted dark:text-dark-text-muted capitalize">
                             {memory.type}
@@ -1118,7 +1470,9 @@ export function ProfilePage() {
         {activeTab === 'advanced' && profile && (
           <div className="space-y-6 max-w-2xl mx-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">Advanced Settings</h3>
+              <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+                Advanced Settings
+              </h3>
               <button
                 onClick={saveAdvanced}
                 disabled={isSaving}
@@ -1139,8 +1493,21 @@ export function ProfilePage() {
                   </h5>
                   <TagInput
                     tags={editable.goals.short}
-                    onAdd={(tag) => setEditable({ ...editable, goals: { ...editable.goals, short: [...editable.goals.short, tag] } })}
-                    onRemove={(tag) => setEditable({ ...editable, goals: { ...editable.goals, short: editable.goals.short.filter((t) => t !== tag) } })}
+                    onAdd={(tag) =>
+                      setEditable({
+                        ...editable,
+                        goals: { ...editable.goals, short: [...editable.goals.short, tag] },
+                      })
+                    }
+                    onRemove={(tag) =>
+                      setEditable({
+                        ...editable,
+                        goals: {
+                          ...editable.goals,
+                          short: editable.goals.short.filter((t) => t !== tag),
+                        },
+                      })
+                    }
                     placeholder="Add a short-term goal..."
                     color="success"
                   />
@@ -1152,8 +1519,21 @@ export function ProfilePage() {
                   </h5>
                   <TagInput
                     tags={editable.goals.medium}
-                    onAdd={(tag) => setEditable({ ...editable, goals: { ...editable.goals, medium: [...editable.goals.medium, tag] } })}
-                    onRemove={(tag) => setEditable({ ...editable, goals: { ...editable.goals, medium: editable.goals.medium.filter((t) => t !== tag) } })}
+                    onAdd={(tag) =>
+                      setEditable({
+                        ...editable,
+                        goals: { ...editable.goals, medium: [...editable.goals.medium, tag] },
+                      })
+                    }
+                    onRemove={(tag) =>
+                      setEditable({
+                        ...editable,
+                        goals: {
+                          ...editable.goals,
+                          medium: editable.goals.medium.filter((t) => t !== tag),
+                        },
+                      })
+                    }
                     placeholder="Add a medium-term goal..."
                     color="warning"
                   />
@@ -1165,8 +1545,21 @@ export function ProfilePage() {
                   </h5>
                   <TagInput
                     tags={editable.goals.long}
-                    onAdd={(tag) => setEditable({ ...editable, goals: { ...editable.goals, long: [...editable.goals.long, tag] } })}
-                    onRemove={(tag) => setEditable({ ...editable, goals: { ...editable.goals, long: editable.goals.long.filter((t) => t !== tag) } })}
+                    onAdd={(tag) =>
+                      setEditable({
+                        ...editable,
+                        goals: { ...editable.goals, long: [...editable.goals.long, tag] },
+                      })
+                    }
+                    onRemove={(tag) =>
+                      setEditable({
+                        ...editable,
+                        goals: {
+                          ...editable.goals,
+                          long: editable.goals.long.filter((t) => t !== tag),
+                        },
+                      })
+                    }
                     placeholder="Add a long-term goal..."
                     color="primary"
                   />
@@ -1181,8 +1574,15 @@ export function ProfilePage() {
                   <h5 className="text-sm font-medium text-success mb-2">Favorite Foods</h5>
                   <TagInput
                     tags={editable.favoriteFoods}
-                    onAdd={(tag) => setEditable({ ...editable, favoriteFoods: [...editable.favoriteFoods, tag] })}
-                    onRemove={(tag) => setEditable({ ...editable, favoriteFoods: editable.favoriteFoods.filter((t) => t !== tag) })}
+                    onAdd={(tag) =>
+                      setEditable({ ...editable, favoriteFoods: [...editable.favoriteFoods, tag] })
+                    }
+                    onRemove={(tag) =>
+                      setEditable({
+                        ...editable,
+                        favoriteFoods: editable.favoriteFoods.filter((t) => t !== tag),
+                      })
+                    }
                     placeholder="Add favorite food..."
                     color="success"
                   />
@@ -1191,8 +1591,18 @@ export function ProfilePage() {
                   <h5 className="text-sm font-medium text-warning mb-2">Dietary Restrictions</h5>
                   <TagInput
                     tags={editable.dietaryRestrictions}
-                    onAdd={(tag) => setEditable({ ...editable, dietaryRestrictions: [...editable.dietaryRestrictions, tag] })}
-                    onRemove={(tag) => setEditable({ ...editable, dietaryRestrictions: editable.dietaryRestrictions.filter((t) => t !== tag) })}
+                    onAdd={(tag) =>
+                      setEditable({
+                        ...editable,
+                        dietaryRestrictions: [...editable.dietaryRestrictions, tag],
+                      })
+                    }
+                    onRemove={(tag) =>
+                      setEditable({
+                        ...editable,
+                        dietaryRestrictions: editable.dietaryRestrictions.filter((t) => t !== tag),
+                      })
+                    }
                     placeholder="Add restriction..."
                     color="warning"
                   />
@@ -1201,8 +1611,15 @@ export function ProfilePage() {
                   <h5 className="text-sm font-medium text-error mb-2">Allergies</h5>
                   <TagInput
                     tags={editable.allergies}
-                    onAdd={(tag) => setEditable({ ...editable, allergies: [...editable.allergies, tag] })}
-                    onRemove={(tag) => setEditable({ ...editable, allergies: editable.allergies.filter((t) => t !== tag) })}
+                    onAdd={(tag) =>
+                      setEditable({ ...editable, allergies: [...editable.allergies, tag] })
+                    }
+                    onRemove={(tag) =>
+                      setEditable({
+                        ...editable,
+                        allergies: editable.allergies.filter((t) => t !== tag),
+                      })
+                    }
                     placeholder="Add allergy..."
                     color="error"
                   />

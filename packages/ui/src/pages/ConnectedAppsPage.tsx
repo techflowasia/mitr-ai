@@ -18,6 +18,7 @@ import {
 } from '../components/icons';
 import { composioApi } from '../api';
 import type { ComposioApp, ComposioConnection } from '../api/endpoints/composio';
+import { useSkipHome } from '../hooks/useSkipHome';
 
 // =============================================================================
 // Popular apps catalog — shown as fallback when dynamic list is empty
@@ -327,42 +328,18 @@ export function ConnectedAppsPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const activeTab = (searchParams.get('tab') as TabId) || 'home';
-
-  // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:connectedapps:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'connectedapps',
+    defaultTab: 'apps',
   });
 
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
+  const activeTab = (searchParams.get('tab') as TabId) || 'home';
 
   const setTab = (tab: TabId) => {
     const params = new URLSearchParams(searchParams);
     params.set('tab', tab);
     navigate({ search: params.toString() }, { replace: true });
   };
-
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && activeTab === 'home' && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setTab('apps');
-    }
-  }, [skipHome, activeTab]);
 
   const [composioConfigured, setComposioConfigured] = useState<boolean | null>(null);
   const [connections, setConnections] = useState<ComposioConnection[]>([]);
@@ -566,7 +543,7 @@ export function ConnectedAppsPage() {
               onClick: () => setTab('apps'),
             }}
             skipHomeChecked={skipHome}
-            onSkipHomeChange={handleSkipHomeChange}
+            onSkipHomeChange={onSkipHomeChange}
             skipHomeLabel="Skip this screen and go directly to Apps"
             features={[
               {

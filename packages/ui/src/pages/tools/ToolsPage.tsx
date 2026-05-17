@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Wrench, Code, Puzzle, Layers, Home } from '../../components/icons';
 import { toolsApi } from '../../api';
@@ -9,6 +9,7 @@ import { ToolDetailModal } from './ToolDetailModal';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { EmptyState } from '../../components/EmptyState';
 import { PageHomeTab } from '../../components/PageHomeTab';
+import { useSkipHome } from '../../hooks/useSkipHome';
 
 export function ToolsPage() {
   const [searchParams] = useSearchParams();
@@ -21,36 +22,11 @@ export function ToolsPage() {
   const activeTab: TabId =
     tabParam && (['home', 'tools'] as string[]).includes(tabParam) ? tabParam : 'home';
 
-  // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:tools:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'tools',
+    defaultTab: 'tools',
+    onNavigate: (tab) => setTab(tab as TabId),
   });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
-
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !tabParam && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      const params = new URLSearchParams(searchParams);
-      params.set('tab', 'tools');
-      navigate({ search: params.toString() }, { replace: true });
-    }
-  }, [skipHome, tabParam, searchParams, navigate]);
   const setTab = (tab: TabId) => {
     const params = new URLSearchParams(searchParams);
     params.set('tab', tab);
@@ -186,7 +162,7 @@ export function ToolsPage() {
             onClick: () => setTab('tools'),
           }}
           skipHomeChecked={skipHome}
-          onSkipHomeChange={handleSkipHomeChange}
+          onSkipHomeChange={onSkipHomeChange}
           skipHomeLabel="Skip this screen and go directly to Tools"
           features={[
             {

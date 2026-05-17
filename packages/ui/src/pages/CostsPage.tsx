@@ -1,10 +1,19 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { formatNumber } from '../utils/formatters';
 import { costsApi } from '../api';
 import type { CostSummary, BudgetStatus, ProviderBreakdown, DailyUsage } from '../api';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useToast } from '../components/ToastProvider';
-import { DollarSign, Home, BarChart, TrendingUp, Calendar, Layers, RefreshCw, AlertTriangle } from '../components/icons';
+import {
+  DollarSign,
+  Home,
+  BarChart,
+  TrendingUp,
+  Calendar,
+  Layers,
+  RefreshCw,
+  AlertTriangle,
+} from '../components/icons';
 import { EmptyState } from '../components/EmptyState';
 import {
   AreaChart,
@@ -22,31 +31,18 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { PageHomeTab } from '../components/PageHomeTab';
+import { useSkipHome } from '../hooks/useSkipHome';
 
 type Period = 'day' | 'week' | 'month' | 'year';
 
 export function CostsPage() {
   const toast = useToast();
 
-  // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:costs:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'costs',
+    defaultTab: 'overview',
+    onNavigate: (tab) => setActiveTab(tab as 'home' | 'overview' | 'breakdown' | 'budget'),
   });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
 
   const [period, setPeriod] = useState<Period>('month');
   const [summary, setSummary] = useState<CostSummary | null>(null);
@@ -58,15 +54,6 @@ export function CostsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'home' | 'overview' | 'breakdown' | 'budget'>('home');
-
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && activeTab === 'home' && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setActiveTab('overview');
-    }
-  }, [skipHome, activeTab]);
 
   // Budget form state
   const [dailyLimit, setDailyLimit] = useState<string>('');
@@ -189,7 +176,7 @@ export function CostsPage() {
               onClick: () => setActiveTab('overview'),
             }}
             skipHomeChecked={skipHome}
-            onSkipHomeChange={handleSkipHomeChange}
+            onSkipHomeChange={onSkipHomeChange}
             skipHomeLabel="Skip this screen and go directly to Costs"
             features={[
               {

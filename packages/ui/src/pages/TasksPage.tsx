@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
+import { useSkipHome } from '../hooks/useSkipHome';
 import {
   CheckCircle2,
   Circle,
@@ -49,40 +50,14 @@ export function TasksPage() {
   type TabId = 'home' | 'tasks';
   const TAB_LABELS: Record<TabId, string> = { home: 'Home', tasks: 'Tasks' };
 
-  // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:tasks:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'tasks',
+    defaultTab: 'tasks',
   });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
 
   const tabParam = searchParams.get('tab') as TabId | null;
   const activeTab: TabId =
     tabParam && (['home', 'tasks'] as string[]).includes(tabParam) ? tabParam : 'home';
-
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !tabParam && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      const params = new URLSearchParams(searchParams);
-      params.set('tab', 'tasks');
-      navigate({ search: params.toString() }, { replace: true });
-    }
-  }, [skipHome, tabParam, searchParams, navigate]);
 
   const setTab = (tab: TabId) => {
     const params = new URLSearchParams(searchParams);
@@ -235,7 +210,7 @@ export function TasksPage() {
             },
           }}
           skipHomeChecked={skipHome}
-          onSkipHomeChange={handleSkipHomeChange}
+          onSkipHomeChange={onSkipHomeChange}
           skipHomeLabel="Skip this screen and go directly to Tasks"
           features={[
             {

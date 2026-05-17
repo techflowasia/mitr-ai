@@ -7,10 +7,11 @@
  * right panel for live xterm.js terminal.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useToast } from '../components/ToastProvider';
 import { PageHomeTab } from '../components/PageHomeTab';
+import { useSkipHome } from '../hooks/useSkipHome';
 import {
   RefreshCw,
   CheckCircle2,
@@ -123,34 +124,10 @@ export function CodingAgentsPage() {
   const tabParam = searchParams.get('tab') as TabId | null;
   const [activeTab, setActiveTab] = useState<TabId>(tabParam || 'home');
 
-  // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:codingagents:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'codingagents',
+    defaultTab: 'agents',
   });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
-
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !tabParam && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setTab('agents');
-    }
-  }, [skipHome, tabParam]);
 
   useEffect(() => {
     const urlTab = (searchParams.get('tab') as TabId | null) || 'home';
@@ -362,7 +339,7 @@ export function CodingAgentsPage() {
           subtitle="Spin up coding agents that can read, write, and execute code — powered by Claude, Gemini, or Codex with full terminal access."
           cta={{ label: 'View Sessions', icon: Terminal, onClick: () => setTab('agents') }}
           skipHomeChecked={skipHome}
-          onSkipHomeChange={handleSkipHomeChange}
+          onSkipHomeChange={onSkipHomeChange}
           skipHomeLabel="Skip this screen and go directly to Agents"
           features={[
             {

@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
+import { useSkipHome } from '../hooks/useSkipHome';
 import { workflowsApi } from '../api';
 import type { Workflow, WorkflowLog } from '../api';
 import {
@@ -61,38 +62,17 @@ export function WorkflowsPage() {
   const toast = useToast();
   const { subscribe } = useGateway();
 
-  // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:workflows:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'workflows',
+    defaultTab: 'workflows',
+    onNavigate: (tab) => setActiveTab(tab as TabId),
   });
 
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
-
+  const [activeTab, setActiveTab] = useState<TabId>('home');
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [recentLogs, setRecentLogs] = useState<WorkflowLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const didSkipHomeRef = useRef(false);
-  const [activeTab, setActiveTab] = useState<TabId>(() => {
-    if (!didSkipHomeRef.current && localStorage.getItem(SKIP_HOME_KEY) === 'true') {
-      didSkipHomeRef.current = true;
-      return 'workflows';
-    }
-    return 'home';
-  });
 
   const fetchWorkflows = useCallback(async () => {
     setIsLoading(true);
@@ -295,7 +275,7 @@ export function WorkflowsPage() {
             subtitle="Workflows chain multiple actions into automated pipelines — from simple sequences to complex branching logic."
             cta={{ label: 'Create Workflow', icon: Plus, onClick: handleCreate }}
             skipHomeChecked={skipHome}
-            onSkipHomeChange={handleSkipHomeChange}
+            onSkipHomeChange={onSkipHomeChange}
             skipHomeLabel="Skip this screen and go directly to Workflows"
             features={[
               {

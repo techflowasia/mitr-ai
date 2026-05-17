@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
+import { useSkipHome } from '../hooks/useSkipHome';
 import { triggersApi } from '../api';
 import type {
   Trigger,
@@ -126,34 +127,12 @@ export function TriggersPage() {
   const [editingTrigger, setEditingTrigger] = useState<Trigger | null>(null);
   const [showHistory, setShowHistory] = useState<string | null>(null);
   const [history, setHistory] = useState<TriggerHistoryEntry[]>([]);
+  const [activeTab, setActiveTab] = useState<TabId>('home');
 
-  // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:triggers:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
-  });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
-
-  const didSkipHomeRef = useRef(false);
-  const [activeTab, setActiveTab] = useState<TabId>(() => {
-    if (!didSkipHomeRef.current && localStorage.getItem(SKIP_HOME_KEY) === 'true') {
-      didSkipHomeRef.current = true;
-      return 'triggers';
-    }
-    return 'home';
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'triggers',
+    defaultTab: 'triggers',
+    onNavigate: (tab) => setActiveTab(tab as TabId),
   });
   const [stats, setStats] = useState<TriggerStats | null>(null);
   const [engineRunning, setEngineRunning] = useState<boolean | null>(null);
@@ -489,7 +468,7 @@ export function TriggersPage() {
             subtitle="Triggers let your AI react to events automatically — schedules, webhooks, data changes, and custom conditions."
             cta={{ label: 'Create Trigger', icon: Plus, onClick: () => setShowCreateModal(true) }}
             skipHomeChecked={skipHome}
-            onSkipHomeChange={handleSkipHomeChange}
+            onSkipHomeChange={onSkipHomeChange}
             skipHomeLabel="Skip this screen and go directly to Triggers"
             features={[
               {

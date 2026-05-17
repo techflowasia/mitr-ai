@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
+import { useSkipHome } from '../hooks/useSkipHome';
 import { memoriesApi } from '../api';
 import type { Memory } from '../api';
 import {
@@ -45,33 +46,10 @@ export function MemoriesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:memories:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'memories',
+    defaultTab: 'memories',
   });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
-
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !searchParams.get('tab') && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setSearchParams({ tab: 'memories' });
-    }
-  }, [skipHome, searchParams, setSearchParams]);
 
   const activeTab = (searchParams.get('tab') as TabId) || 'home';
   const setActiveTab = (t: TabId) => setSearchParams(t === 'home' ? {} : { tab: t });
@@ -210,7 +188,7 @@ export function MemoriesPage() {
             subtitle="Memories let your AI remember facts, preferences, and context across conversations — so it gets better over time."
             cta={{ label: 'View Memories', icon: Brain, onClick: () => setActiveTab('memories') }}
             skipHomeChecked={skipHome}
-            onSkipHomeChange={handleSkipHomeChange}
+            onSkipHomeChange={onSkipHomeChange}
             skipHomeLabel="Skip this screen and go directly to Memories"
             features={[
               {

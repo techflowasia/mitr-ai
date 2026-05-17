@@ -5,7 +5,7 @@
  * HeartbeatLogPage into a single unified hub.
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Plus,
@@ -32,6 +32,7 @@ import { useAgentStatus } from './hooks/useAgentStatus';
 import type { HubTab } from './types';
 import { useToast } from '../../components/ToastProvider';
 import { useDialog } from '../../components/ConfirmDialog';
+import { useSkipHome } from '../../hooks/useSkipHome';
 
 // Tab components
 import { PlansTab } from './components/PlansTab';
@@ -105,29 +106,11 @@ export function AutonomousHubPage() {
   );
 
   // Skip home screen preference
-  const SKIP_HOME_KEY = 'ownpilot:autonomoushub:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'autonomous',
+    defaultTab: 'agents',
+    onNavigate: (tab) => handleTabChange(tab as HubTab),
   });
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // Ignore storage errors
-    }
-  }, []);
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && !tabParam && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      handleTabChange('agents');
-    }
-  }, [skipHome, tabParam, handleTabChange]);
 
   // Agent actions
   const handlePause = useCallback(
@@ -329,7 +312,7 @@ export function AutonomousHubPage() {
             subtitle="Create AI agents that work independently — with their own goals, tools, budgets, and crew coordination."
             cta={{ label: 'View Agents', icon: Bot, onClick: () => handleTabChange('agents') }}
             skipHomeChecked={skipHome}
-            onSkipHomeChange={handleSkipHomeChange}
+            onSkipHomeChange={onSkipHomeChange}
             skipHomeLabel="Skip this screen and go directly to Agents"
             features={[
               {

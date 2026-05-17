@@ -575,7 +575,6 @@ export async function executeTool(
   executionPermissions?: ExecutionPermissions,
   execContext?: ToolExecContext
 ): Promise<ToolExecutionResult> {
-  // Centralized permission check — blocks disabled tools in ALL execution contexts
   if (execContext) {
     const perm = await checkToolPermission(userId, toolName, {
       ...execContext,
@@ -586,7 +585,7 @@ export async function executeTool(
     }
   }
 
-  // Idempotency: check for cached result to avoid duplicate execution
+  // Check for cached result
   const idempotencyKey = `tool:${createHash('sha256')
     .update(`${userId}:${toolName}:${JSON.stringify(args)}`)
     .digest('hex')}`;
@@ -604,7 +603,7 @@ export async function executeTool(
   const start = Date.now();
   const result = await executeToolInternal(toolName, args, userId, executionPermissions);
 
-  // Store result for idempotency (fire-and-forget)
+  // Store result
   try {
     const idempotencyRepo = getIdempotencyKeysRepository();
     idempotencyRepo.setRecord(idempotencyKey, result).catch((err: unknown) => {
@@ -615,7 +614,7 @@ export async function executeTool(
     // Idempotency store failures should not affect tool result
   }
 
-  // Audit log (fire-and-forget)
+  // Fire-and-forget audit log
   if (hasServiceRegistry()) {
     try {
       const audit = getServiceRegistry().tryGet<IAuditService>(Services.Audit);
@@ -713,9 +712,6 @@ async function executeToolInternal(
   };
 }
 
-/**
- * Check if a tool exists in the shared registry or plugin registry.
- */
 export async function hasTool(toolName: string): Promise<boolean> {
   const tools = getSharedToolRegistry();
   if (tools.has(toolName)) return true;

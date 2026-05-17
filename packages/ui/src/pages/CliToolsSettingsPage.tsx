@@ -5,10 +5,11 @@
  * Accessible at /settings/cli-tools.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useToast } from '../components/ToastProvider';
+import { useSkipHome } from '../hooks/useSkipHome';
 import {
   RefreshCw,
   CheckCircle2,
@@ -110,34 +111,10 @@ export function CliToolsSettingsPage() {
   const activeTab = (searchParams.get('tab') as TabId) || 'home';
   const setActiveTab = (t: TabId) => setSearchParams(t === 'home' ? {} : { tab: t });
 
-  // Skip home preference from localStorage
-  const SKIP_HOME_KEY = 'ownpilot:clitools:skipHome';
-  const [skipHome, setSkipHome] = useState(() => {
-    try {
-      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
-    } catch {
-      return false;
-    }
+  const { skipHome, onSkipHomeChange } = useSkipHome({
+    pageName: 'clitools',
+    defaultTab: 'settings',
   });
-
-  // Save skip home preference
-  const handleSkipHomeChange = useCallback((checked: boolean) => {
-    setSkipHome(checked);
-    try {
-      localStorage.setItem(SKIP_HOME_KEY, String(checked));
-    } catch {
-      // localStorage might be disabled
-    }
-  }, []);
-
-  // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = useRef(false);
-  useEffect(() => {
-    if (skipHome && activeTab === 'home' && !didSkipHomeRef.current) {
-      didSkipHomeRef.current = true;
-      setActiveTab('settings');
-    }
-  }, [skipHome, activeTab]);
 
   const toast = useToast();
   const [tools, setTools] = useState<CliToolStatus[]>([]);
@@ -328,7 +305,7 @@ export function CliToolsSettingsPage() {
               onClick: () => setActiveTab('settings'),
             }}
             skipHomeChecked={skipHome}
-            onSkipHomeChange={handleSkipHomeChange}
+            onSkipHomeChange={onSkipHomeChange}
             skipHomeLabel="Skip this screen and go directly to Settings"
             features={[
               {

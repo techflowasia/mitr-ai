@@ -11,6 +11,7 @@ import { operationRoutes } from './operations.js';
 import { backupRoutes } from './backup.js';
 import { transferRoutes } from './transfer.js';
 import { schemaRoutes } from './schema.js';
+import { csvExportRoutes } from './csv-export.js';
 
 export const databaseRoutes = new Hono();
 
@@ -55,3 +56,4 @@ databaseRoutes.route('', operationRoutes);
 databaseRoutes.route('', backupRoutes);
 databaseRoutes.route('', transferRoutes);
 databaseRoutes.route('', schemaRoutes);
+databaseRoutes.route('', csvExportRoutes);
