@@ -23,6 +23,20 @@ import { buildSandboxContext, validateCode } from './context.js';
 import { getErrorMessage } from '../services/error-utils.js';
 
 /**
+ * Strip host file paths from a stack trace.
+ * Removes absolute paths like /home/... and C:\Users\... to prevent
+ * path disclosure when sandbox errors are returned in debug mode.
+ */
+function stripHostPaths(stack: string): string {
+  // Match absolute Unix paths (/home/, /Users/, /root/)
+  const unixPathPattern = /\B\/[a-zA-Z][^\s:]*\//g;
+  // Match Windows paths (C:\, D:\, etc.)
+  const windowsPathPattern = /\B[a-zA-Z]:\\[^\s:]*\\/g;
+
+  return stack.replace(unixPathPattern, '/<sandbox>/').replace(windowsPathPattern, '<sandbox>\\');
+}
+
+/**
  * Sandbox executor for running untrusted code
  */
 export class SandboxExecutor {
@@ -197,7 +211,11 @@ export class SandboxExecutor {
 
         // Handle other errors
         const errorMessage = getErrorMessage(error);
-        const errorStack = this.debug && error instanceof Error ? error.stack : undefined;
+        let errorStack = this.debug && error instanceof Error ? error.stack : undefined;
+        // Strip host paths from stack trace when debug mode is enabled
+        if (errorStack) {
+          errorStack = stripHostPaths(errorStack);
+        }
 
         return ok({
           success: false,
