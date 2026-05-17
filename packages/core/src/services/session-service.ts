@@ -45,7 +45,10 @@ export interface Session {
   readonly platformChatId?: string;
 
   /** Whether the session is currently active */
-  readonly isActive: boolean;
+  isActive: boolean;
+
+  /** Timestamp when session was revoked (set by close()) */
+  revokedAt?: Date;
 
   /** Arbitrary session metadata */
   readonly metadata: Record<string, unknown>;
