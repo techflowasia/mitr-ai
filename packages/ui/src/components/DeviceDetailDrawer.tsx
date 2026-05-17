@@ -11,22 +11,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { X, RefreshCw, Send, ChevronDown, ChevronRight } from './icons';
 import { edgeApi } from '../api/endpoints/edge';
 import type { EdgeDevice, EdgeTelemetry, EdgeCommand } from '../api/endpoints/edge';
+import { timeAgo } from '../utils/formatters';
 
 // =============================================================================
 // Helpers
 // =============================================================================
-
-function timeAgo(dateStr: string | null | undefined): string {
-  if (!dateStr) return '—';
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const s = Math.floor(diff / 1000);
-  if (s < 60) return `${s}s ago`;
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
-}
 
 const CMD_STATUS_COLORS: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400',

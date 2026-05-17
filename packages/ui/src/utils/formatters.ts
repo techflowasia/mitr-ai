@@ -39,3 +39,26 @@ export function formatBytes(bytes: number, decimals = 1): string {
 export function formatCurrency(amount: number, currency = 'USD'): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
 }
+
+/**
+ * Format a date string as relative time ("just now", "5m ago", "2h ago", "3d ago").
+ * Returns locale date string for dates older than 30 days.
+ */
+export function timeAgo(
+  dateStr: string,
+  options?: { absoluteAfterDays?: number; nullLabel?: string }
+): string {
+  if (!dateStr) return options?.nullLabel ?? '—';
+  const dateMs = new Date(dateStr).getTime();
+  if (isNaN(dateMs)) return options?.nullLabel ?? '—';
+  const diffMs = Date.now() - dateMs;
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return 'just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDays = Math.floor(diffHr / 24);
+  const absoluteAfterDays = options?.absoluteAfterDays ?? 30;
+  if (diffDays >= absoluteAfterDays) return new Date(dateStr).toLocaleDateString();
+  return `${diffDays}d ago`;
+}

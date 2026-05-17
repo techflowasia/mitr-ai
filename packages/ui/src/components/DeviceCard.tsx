@@ -10,6 +10,7 @@ import { Cpu, Trash2, Activity } from './icons';
 import { edgeApi } from '../api/endpoints/edge';
 import type { EdgeDevice } from '../api/endpoints/edge';
 import { useDialog } from './ConfirmDialog';
+import { timeAgo } from '../utils/formatters';
 
 // =============================================================================
 // Status helpers
@@ -27,19 +28,6 @@ const TYPE_LABELS: Record<string, string> = {
   arduino: 'Arduino',
   custom: 'Custom',
 };
-
-function timeAgo(dateStr: string | null): string {
-  if (!dateStr) return 'Never';
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const seconds = Math.floor(diff / 1000);
-  if (seconds < 60) return `${seconds}s ago`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
 
 // =============================================================================
 // Props
@@ -169,7 +157,7 @@ export function DeviceCard({ device, onDelete, onUpdate: _onUpdate, onClick }: D
       <div className="flex items-center justify-between pt-2 border-t border-border dark:border-dark-border">
         <div className="flex items-center gap-1 text-[10px] text-text-muted dark:text-dark-text-muted">
           <Activity className="w-3 h-3" />
-          <span>Last seen: {timeAgo(device.lastSeen)}</span>
+          <span>Last seen: {timeAgo(device.lastSeen ?? '')}</span>
         </div>
         {device.firmwareVersion && (
           <span className="text-[10px] text-text-muted dark:text-dark-text-muted">
