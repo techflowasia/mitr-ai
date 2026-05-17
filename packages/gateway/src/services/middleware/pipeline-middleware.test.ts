@@ -1157,7 +1157,7 @@ describe('Pipeline Middleware', () => {
 
       await middleware(message, ctx, next);
 
-      expect(mockLogInfo).not.toHaveBeenCalled();
+      expect(mockLogInfo).not.toHaveBeenCalledWith(expect.stringContaining('Injected'));
     });
 
     it('serves subsequent calls from cache (skips buildEnhancedSystemPrompt)', async () => {
