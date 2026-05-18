@@ -9,7 +9,6 @@ import {
   Settings,
   Puzzle,
   FolderOpen,
-  Clock,
   FileText,
   Send,
   Bot,
@@ -18,6 +17,9 @@ import {
   X,
   BarChart3,
   Code2,
+  Play,
+  Pause,
+  Square,
 } from '../../components/icons';
 import { authedFetch, getStateBadge, inputClass as ic } from './utils';
 import {
@@ -27,13 +29,11 @@ import {
   SkillsTab,
   MemoryTab,
   ConfigTab,
-  HistoryTab,
-  TimelineTab,
-  AuditTab,
+  DoctorTab,
+  RunsTab,
   FilesTab,
   OutputTab,
   ConversationTab,
-  DoctorTab,
   type ClawOutputEvent,
   type AuditEntry,
 } from './ClawDetailTabs';
@@ -45,11 +45,9 @@ type DetailTab =
   | 'skills'
   | 'memory'
   | 'config'
-  | 'files'
-  | 'history'
-  | 'timeline'
-  | 'audit'
+  | 'runs'
   | 'doctor'
+  | 'files'
   | 'output'
   | 'conversation';
 
@@ -60,15 +58,13 @@ const DETAIL_TABS: {
 }[] = [
   { id: 'overview', label: 'Overview', icon: Activity },
   { id: 'stats', label: 'Stats', icon: BarChart3 },
+  { id: 'runs', label: 'Runs', icon: FileText },
   { id: 'doctor', label: 'Doctor', icon: Wrench },
   { id: 'settings', label: 'Settings', icon: Settings },
   { id: 'skills', label: 'Skills', icon: Puzzle },
   { id: 'memory', label: '.claw', icon: FileText },
   { id: 'config', label: 'Config', icon: Code2 },
   { id: 'files', label: 'Files', icon: FolderOpen },
-  { id: 'history', label: 'History', icon: Clock },
-  { id: 'timeline', label: 'Timeline', icon: Activity },
-  { id: 'audit', label: 'Audit', icon: FileText },
   { id: 'output', label: 'Output', icon: Send },
   { id: 'conversation', label: 'Chat', icon: Bot },
 ];
@@ -179,12 +175,14 @@ export function ClawManagementPanel({
     return () => unsub();
   }, [subscribe, claw.id]);
 
-  // Load history on tab switch
+  // Load history + audit on runs tab switch
   useEffect(() => {
-    if (tab === 'history') loadHistory();
-  }, [tab, claw.id]);
+    if (tab === 'runs') {
+      loadHistory();
+      loadAudit(auditFilter || undefined);
+    }
+  }, [tab, claw.id, auditFilter]);
 
-  // Load audit log on audit tab
   const loadAudit = useCallback(
     async (cat?: string) => {
       setIsLoadingAudit(true);
@@ -200,10 +198,6 @@ export function ClawManagementPanel({
     },
     [claw.id]
   );
-
-  useEffect(() => {
-    if (tab === 'audit') loadAudit(auditFilter || undefined);
-  }, [tab, claw.id, auditFilter]);
 
   const loadDoctor = useCallback(async () => {
     setIsLoadingDoctor(true);
@@ -367,158 +361,183 @@ export function ClawManagementPanel({
   };
 
   const badge = getStateBadge(claw.session?.state ?? null);
+  const state = claw.session?.state ?? null;
+  const isRunning = state === 'running' || state === 'starting' || state === 'waiting';
+  const isPaused = state === 'paused';
 
   return (
-    <div className="bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-sm animate-fade-in-up">
+    <div className="bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-sm animate-fade-in-up overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-border dark:border-dark-border flex items-start justify-between">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-primary shrink-0" />
-            <h3 className="text-base font-semibold text-text-primary dark:text-dark-text-primary truncate">
-              {claw.name}
-            </h3>
-            <span
-              className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${badge.classes}`}
-            >
-              {badge.text}
-            </span>
-          </div>
-          <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5 truncate">
-            {claw.id} · {claw.mode} · sandbox: {claw.sandbox}
-          </p>
-        </div>
-        <button
-          onClick={onClose}
-          className="p-1.5 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary ml-2"
-          title="Close"
-        >
-          <X className="w-4 h-4 text-text-muted dark:text-dark-text-muted" />
-        </button>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex border-b border-border dark:border-dark-border px-4 overflow-x-auto">
-        {DETAIL_TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ${
-              tab === t.id
-                ? 'border-primary text-primary'
-                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary'
-            }`}
+      <div className="px-5 py-3 border-b border-border dark:border-dark-border flex items-center justify-between gap-3 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <Zap className="w-4 h-4 text-primary shrink-0" />
+          <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary truncate">
+            {claw.name}
+          </h3>
+          <span
+            className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${badge.classes}`}
           >
-            <t.icon className="w-3.5 h-3.5" />
-            {t.label}
+            {badge.text}
+          </span>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          {!isRunning && !isPaused && (
+            <button
+              onClick={() => clawsApi.start(claw.id).then(() => onUpdate())}
+              className="p-1.5 rounded hover:bg-green-500/10 transition-colors"
+              title="Start"
+            >
+              <Play className="w-4 h-4 text-green-600 dark:text-green-400" />
+            </button>
+          )}
+          {isRunning && (
+            <>
+              <button
+                onClick={() => clawsApi.pause(claw.id).then(() => onUpdate())}
+                className="p-1.5 rounded hover:bg-amber-500/10 transition-colors"
+                title="Pause"
+              >
+                <Pause className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              </button>
+              <button
+                onClick={() => clawsApi.stop(claw.id).then(() => onUpdate())}
+                className="p-1.5 rounded hover:bg-red-500/10 transition-colors"
+                title="Stop"
+              >
+                <Square className="w-4 h-4 text-red-600 dark:text-red-400" />
+              </button>
+            </>
+          )}
+          {isPaused && (
+            <button
+              onClick={() => clawsApi.resume(claw.id).then(() => onUpdate())}
+              className="p-1.5 rounded hover:bg-green-500/10 transition-colors"
+              title="Resume"
+            >
+              <Play className="w-4 h-4 text-green-600 dark:text-green-400" />
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
+            title="Close"
+          >
+            <X className="w-4 h-4 text-text-muted dark:text-dark-text-muted" />
           </button>
-        ))}
+        </div>
       </div>
 
-      {/* Content */}
-      <div className="p-5 space-y-4 max-h-[600px] overflow-y-auto">
-        {tab === 'overview' && (
-          <OverviewTab
-            claw={claw}
-            message={message}
-            setMessage={setMessage}
-            sendMsg={sendMsg}
-            onApproveEscalation={approveEscalation}
-            onDenyEscalation={denyEscalation}
-            onSwitchToFiles={() => setTab('files')}
-            inputClass={ic}
-          />
-        )}
+      {/* Body: vertical sidebar + scrollable content */}
+      <div className="flex" style={{ maxHeight: 'calc(100vh - 220px)' }}>
+        {/* Sidebar tabs */}
+        <div className="w-36 shrink-0 border-r border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary overflow-y-auto">
+          {DETAIL_TABS.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium transition-colors text-left ${
+                tab === t.id
+                  ? 'bg-bg-primary dark:bg-dark-bg-primary text-primary border-r-2 border-primary'
+                  : 'text-text-muted dark:text-dark-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary border-r-2 border-transparent'
+              }`}
+            >
+              <t.icon className="w-3.5 h-3.5 shrink-0" />
+              {t.label}
+            </button>
+          ))}
+        </div>
 
-        {tab === 'settings' && (
-          <SettingsTab
-            claw={claw}
-            models={models}
-            configuredProviders={configuredProviders}
-            onSaved={onUpdate}
-          />
-        )}
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {tab === 'overview' && (
+            <OverviewTab
+              claw={claw}
+              message={message}
+              setMessage={setMessage}
+              sendMsg={sendMsg}
+              onApproveEscalation={approveEscalation}
+              onDenyEscalation={denyEscalation}
+              onSwitchToFiles={() => setTab('files')}
+              inputClass={ic}
+            />
+          )}
 
-        {tab === 'skills' && (
-          <SkillsTab
-            availableSkills={availableSkills}
-            selectedSkills={selectedSkills}
-            setSelectedSkills={setSelectedSkills}
-            saveSkills={saveSkills}
-            isSavingSkills={isSavingSkills}
-          />
-        )}
+          {tab === 'settings' && (
+            <SettingsTab
+              claw={claw}
+              models={models}
+              configuredProviders={configuredProviders}
+              onSaved={onUpdate}
+            />
+          )}
 
-        {tab === 'stats' && <StatsTab claw={claw} />}
+          {tab === 'skills' && (
+            <SkillsTab
+              availableSkills={availableSkills}
+              selectedSkills={selectedSkills}
+              setSelectedSkills={setSelectedSkills}
+              saveSkills={saveSkills}
+              isSavingSkills={isSavingSkills}
+            />
+          )}
 
-        {tab === 'memory' && <MemoryTab claw={claw} />}
+          {tab === 'stats' && <StatsTab claw={claw} />}
 
-        {tab === 'config' && <ConfigTab claw={claw} />}
+          {tab === 'memory' && <MemoryTab claw={claw} />}
 
-        {tab === 'history' && (
-          <HistoryTab
-            history={history}
-            historyTotal={historyTotal}
-            isLoadingHistory={isLoadingHistory}
-            loadHistory={loadHistory}
-          />
-        )}
+          {tab === 'config' && <ConfigTab claw={claw} />}
 
-        {tab === 'timeline' && (
-          <TimelineTab
-            history={history}
-            historyTotal={historyTotal}
-            isLoadingHistory={isLoadingHistory}
-            loadHistory={loadHistory}
-          />
-        )}
+          {tab === 'runs' && (
+            <RunsTab
+              history={history}
+              historyTotal={historyTotal}
+              isLoadingHistory={isLoadingHistory}
+              loadHistory={loadHistory}
+              auditEntries={auditEntries}
+              auditTotal={auditTotal}
+              auditFilter={auditFilter}
+              setAuditFilter={setAuditFilter}
+              isLoadingAudit={isLoadingAudit}
+              loadAudit={loadAudit}
+            />
+          )}
 
-        {tab === 'audit' && (
-          <AuditTab
-            auditEntries={auditEntries}
-            auditTotal={auditTotal}
-            auditFilter={auditFilter}
-            setAuditFilter={setAuditFilter}
-            isLoadingAudit={isLoadingAudit}
-            loadAudit={loadAudit}
-          />
-        )}
+          {tab === 'doctor' && (
+            <DoctorTab
+              claw={claw}
+              doctor={doctor}
+              isLoadingDoctor={isLoadingDoctor}
+              isApplyingDoctorFixes={isApplyingDoctorFixes}
+              loadDoctor={loadDoctor}
+              applyDoctorFixes={applyDoctorFixes}
+            />
+          )}
 
-        {tab === 'doctor' && (
-          <DoctorTab
-            claw={claw}
-            doctor={doctor}
-            isLoadingDoctor={isLoadingDoctor}
-            isApplyingDoctorFixes={isApplyingDoctorFixes}
-            loadDoctor={loadDoctor}
-            applyDoctorFixes={applyDoctorFixes}
-          />
-        )}
+          {tab === 'files' && (
+            <FilesTab
+              claw={claw}
+              currentFilePath={currentFilePath}
+              workspaceFiles={workspaceFiles}
+              isLoadingFiles={isLoadingFiles}
+              loadFiles={loadFiles}
+              loadFileContent={loadFileContent}
+              viewingFile={viewingFile}
+              setViewingFile={setViewingFile}
+              fileContent={fileContent}
+              setFileContent={setFileContent}
+              onFileSaved={() => {
+                toast.success('File saved');
+                loadFiles(currentFilePath);
+              }}
+            />
+          )}
 
-        {tab === 'files' && (
-          <FilesTab
-            claw={claw}
-            currentFilePath={currentFilePath}
-            workspaceFiles={workspaceFiles}
-            isLoadingFiles={isLoadingFiles}
-            loadFiles={loadFiles}
-            loadFileContent={loadFileContent}
-            viewingFile={viewingFile}
-            setViewingFile={setViewingFile}
-            fileContent={fileContent}
-            setFileContent={setFileContent}
-            onFileSaved={() => {
-              toast.success('File saved');
-              loadFiles(currentFilePath);
-            }}
-          />
-        )}
+          {tab === 'output' && <OutputTab outputFeed={outputFeed} />}
 
-        {tab === 'output' && <OutputTab outputFeed={outputFeed} />}
-
-        {tab === 'conversation' && (
-          <ConversationTab conversation={conversation} isLoadingConvo={isLoadingConvo} />
-        )}
+          {tab === 'conversation' && (
+            <ConversationTab conversation={conversation} isLoadingConvo={isLoadingConvo} />
+          )}
+        </div>
       </div>
     </div>
   );

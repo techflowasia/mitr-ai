@@ -14,6 +14,7 @@ export { MemoryTab } from './tabs/MemoryTab';
 export { ConfigTab } from './tabs/ConfigTab';
 export { DoctorTab } from './tabs/DoctorTab';
 export { SkillsTab } from './tabs/SkillsTab';
+export { RunsTab } from './tabs/RunsTab';
 export { HistoryTab } from './tabs/HistoryTab';
 export { TimelineTab } from './tabs/TimelineTab';
 export { AuditTab, type AuditEntry } from './tabs/AuditTab';

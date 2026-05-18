@@ -37,7 +37,7 @@ import { ClawManagementPanel } from './claws/ClawManagementPanel';
 // =============================================================================
 
 type PageTab = 'home' | 'claws';
-type DetailTab = 'overview' | 'doctor' | 'timeline';
+type DetailTab = 'overview' | 'doctor' | 'runs';
 type BulkOp = 'stop' | 'delete';
 
 export function ClawsPage() {
@@ -386,7 +386,6 @@ export function ClawsPage() {
           <Activity className="w-4 h-4 text-amber-500 shrink-0" />
           <div className="flex-1 min-w-0">
             <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
-              {escalations.length} pending escalation escalations
               {escalations.length === 1
                 ? '1 pending escalation'
                 : `${escalations.length} pending escalations`}
