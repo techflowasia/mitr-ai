@@ -5,6 +5,7 @@ import { timeAgo } from '../utils';
 
 export function ConfigTab({ claw }: { claw: ClawConfig }) {
   const [copied, setCopied] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const config = JSON.stringify(claw, null, 2);
 
   const copy = () => {
@@ -44,14 +45,27 @@ export function ConfigTab({ claw }: { claw: ClawConfig }) {
     { label: 'Stop Condition', value: claw.stopCondition ?? '-' },
     { label: 'Preset', value: claw.preset ?? '-' },
     { label: 'Created By', value: claw.createdBy },
-    { label: 'Priority', value: claw.priority ?? 3 },
   ];
+
+  const filteredRows = searchQuery
+    ? statRows.filter(
+        (r) =>
+          r.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          String(r.value).toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : statRows;
 
   return (
     <div className="space-y-4">
       {/* Summary stats grid */}
+      <input
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        placeholder="Search config..."
+        className="px-2 py-1 text-xs rounded border border-gray-700 bg-[#1a1a1a] text-gray-300 font-mono placeholder:text-gray-600 focus:outline-none focus:border-gray-500 mb-2"
+      />
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-        {statRows.slice(0, 9).map((row) => (
+        {(searchQuery ? filteredRows : statRows.slice(0, 9)).map((row) => (
           <div
             key={row.label}
             className="flex flex-col p-2.5 rounded-lg bg-bg-secondary dark:bg-dark-bg-secondary min-w-0"
