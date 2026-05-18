@@ -60,7 +60,7 @@ export function CustomToolsPage() {
   // Skip home preference from localStorage
   const { skipHome, onSkipHomeChange } = useSkipHome({
     pageName: 'customtools',
-    defaultTab: 'customtools',
+    defaultTab: 'tools',
     onNavigate: (tab) => setPageTab(tab as PageTabId),
   });
 
