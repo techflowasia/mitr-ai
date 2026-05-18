@@ -453,19 +453,42 @@ export function ClawsPage() {
 
       {/* Live Output Feed — collapsed strip showing real-time claw output */}
       {outputFeed.length > 0 && (
-        <div className="border-b border-border dark:border-dark-border bg-[#0d0d0d] max-h-32 overflow-y-auto">
+        <div className="border-b border-border dark:border-dark-border bg-[#0d0d0d] max-h-40 overflow-y-auto">
           <div className="flex items-center gap-2 px-6 py-1.5 border-b border-[#1a1a1a]">
             <Terminal className="w-3 h-3 text-gray-500 shrink-0" />
             <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider shrink-0">
               Live Output
             </span>
+            <span className="text-[10px] font-mono text-gray-600 shrink-0">
+              {outputFeed.length} event{outputFeed.length !== 1 ? 's' : ''}
+            </span>
             <div className="flex-1 min-w-0">
-              {outputFeed.slice(-3).map((evt, i) => (
-                <div key={i} className="text-xs font-mono text-gray-300 truncate">
-                  <span className="text-gray-600 mr-2">{timeAgo(evt.timestamp)}</span>
-                  {evt.message?.slice(0, 120)}
-                </div>
-              ))}
+              {outputFeed.slice(-Math.min(outputFeed.length, 5)).map((evt, i) => {
+                const isLatest = i === Math.min(outputFeed.length, 5) - 1;
+                return (
+                  <div
+                    key={i}
+                    className={`text-xs font-mono truncate ${isLatest ? 'text-gray-200' : 'text-gray-500'}`}
+                  >
+                    <span className="text-gray-600 mr-2">{timeAgo(evt.timestamp)}</span>
+                    <span className="text-primary mr-1">[{evt.clawId.slice(0, 8)}]</span>
+                    {evt.urgency && (
+                      <span
+                        className={`mr-1 ${
+                          evt.urgency === 'urgent'
+                            ? 'text-red-400'
+                            : evt.urgency === 'high'
+                              ? 'text-amber-400'
+                              : 'text-gray-500'
+                        }`}
+                      >
+                        [{evt.urgency}]
+                      </span>
+                    )}
+                    {evt.message?.slice(0, 150)}
+                  </div>
+                );
+              })}
             </div>
             <button
               onClick={() => setOutputFeed([])}
