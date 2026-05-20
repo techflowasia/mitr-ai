@@ -54,6 +54,8 @@ interface ManagedFleet {
   cycleInProgress: boolean;
   /** Promise of the currently executing cycle (for drain on pause/stop) */
   currentCyclePromise: Promise<void> | null;
+  /** Round-robin cursor for unassigned task distribution */
+  nextWorkerIdx: number;
 }
 
 // ============================================================================
@@ -144,6 +146,7 @@ export class FleetManager {
       activeWorkerCount: 0,
       cycleInProgress: false,
       currentCyclePromise: null,
+      nextWorkerIdx: 0,
     };
 
     this.fleets.set(config.id, managed);
@@ -521,7 +524,7 @@ export class FleetManager {
 
       // Assign tasks to workers and execute in parallel
       const execPromises = readyTasks.map(async (task) => {
-        const workerConfig = this.resolveWorker(managed.config, task);
+        const workerConfig = this.resolveWorker(managed, task);
         if (!workerConfig) {
           log.warn(`[${fleetId}] No suitable worker for task ${task.id}`);
           await repo.updateTask(task.id, {
@@ -668,6 +671,7 @@ export class FleetManager {
       managed.session.tasksFailed += tasksFailed;
       managed.session.totalCostUsd += cycleCost;
       managed.session.activeWorkers = managed.activeWorkerCount;
+      managed.session.lastCycleAt = new Date();
       managed.cyclesThisHour++;
       managed.consecutiveErrors = 0;
 
@@ -735,20 +739,19 @@ export class FleetManager {
 
   /**
    * Resolve which worker should handle a task.
-   * If assignedWorker is set, use that. Otherwise round-robin.
+   * If assignedWorker is set, use that. Otherwise round-robin across workers.
    */
-  private resolveWorker(config: FleetConfig, task: FleetTask): FleetWorkerConfig | null {
+  private resolveWorker(managed: ManagedFleet, task: FleetTask): FleetWorkerConfig | null {
+    const { workers } = managed.config;
     if (task.assignedWorker) {
-      return config.workers.find((w) => w.name === task.assignedWorker) ?? null;
+      return workers.find((w) => w.name === task.assignedWorker) ?? null;
     }
 
-    // Round-robin: pick first available worker
-    if (config.workers.length === 0) return null;
+    if (workers.length === 0) return null;
 
-    // Simple strategy: distribute by task ID hash
-    const hash = simpleHash(task.id);
-    const idx = hash % config.workers.length;
-    return config.workers[idx] ?? config.workers[0] ?? null;
+    const idx = managed.nextWorkerIdx % workers.length;
+    managed.nextWorkerIdx = (idx + 1) % workers.length;
+    return workers[idx] ?? workers[0] ?? null;
   }
 
   private async persistSession(fleetId: string): Promise<void> {
@@ -759,6 +762,7 @@ export class FleetManager {
     await repo.updateSession(managed.session.id, {
       state: managed.session.state,
       stoppedAt: managed.session.stoppedAt,
+      lastCycleAt: managed.session.lastCycleAt,
       cyclesCompleted: managed.session.cyclesCompleted,
       tasksCompleted: managed.session.tasksCompleted,
       tasksFailed: managed.session.tasksFailed,
@@ -781,18 +785,6 @@ export class FleetManager {
       // Event system not available — non-critical
     }
   }
-}
-
-// ============================================================================
-// Utilities
-// ============================================================================
-
-function simpleHash(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
-  }
-  return Math.abs(hash);
 }
 
 // ============================================================================

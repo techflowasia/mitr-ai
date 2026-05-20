@@ -151,6 +151,7 @@ export interface FleetSession {
   state: FleetSessionState;
   startedAt: Date;
   stoppedAt?: Date;
+  lastCycleAt?: Date;
   cyclesCompleted: number;
   tasksCompleted: number;
   tasksFailed: number;

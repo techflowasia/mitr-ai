@@ -1044,6 +1044,7 @@ CREATE TABLE IF NOT EXISTS fleet_sessions (
   state TEXT NOT NULL DEFAULT 'running',
   started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   stopped_at TIMESTAMPTZ,
+  last_cycle_at TIMESTAMPTZ,
   cycles_completed INTEGER NOT NULL DEFAULT 0,
   tasks_completed INTEGER NOT NULL DEFAULT 0,
   tasks_failed INTEGER NOT NULL DEFAULT 0,

@@ -53,6 +53,7 @@ interface SessionRow {
   state: string;
   started_at: string;
   stopped_at: string | null;
+  last_cycle_at: string | null;
   cycles_completed: number;
   tasks_completed: number;
   tasks_failed: number;
@@ -129,6 +130,7 @@ function rowToSession(row: SessionRow): FleetSession {
     state: row.state as FleetSessionState,
     startedAt: new Date(row.started_at),
     stoppedAt: row.stopped_at ? new Date(row.stopped_at) : undefined,
+    lastCycleAt: row.last_cycle_at ? new Date(row.last_cycle_at) : undefined,
     cyclesCompleted: row.cycles_completed,
     tasksCompleted: row.tasks_completed,
     tasksFailed: row.tasks_failed,
@@ -326,6 +328,7 @@ export class FleetRepository extends BaseRepository {
     updates: Partial<{
       state: FleetSessionState;
       stoppedAt: Date;
+      lastCycleAt: Date;
       cyclesCompleted: number;
       tasksCompleted: number;
       tasksFailed: number;
@@ -345,6 +348,10 @@ export class FleetRepository extends BaseRepository {
     if (updates.stoppedAt !== undefined) {
       setClauses.push(`stopped_at = $${idx++}`);
       params.push(updates.stoppedAt.toISOString());
+    }
+    if (updates.lastCycleAt !== undefined) {
+      setClauses.push(`last_cycle_at = $${idx++}`);
+      params.push(updates.lastCycleAt.toISOString());
     }
     if (updates.cyclesCompleted !== undefined) {
       setClauses.push(`cycles_completed = $${idx++}`);
@@ -582,14 +589,15 @@ export class FleetRepository extends BaseRepository {
    */
   async getOrphanedSessions(thresholdMs: number): Promise<Array<{ id: string; name: string }>> {
     const rows = await this.query<{ id: string; name: string }>(
-      `SELECT fs.id, fs.name
+      `SELECT fs.id, f.name
        FROM fleet_sessions fs
+       JOIN fleets f ON f.id = fs.fleet_id
        WHERE fs.state = 'running'
          AND (
            fs.last_cycle_at IS NULL
            OR EXTRACT(EPOCH FROM (NOW() - fs.last_cycle_at)) * 1000 > $1
          )`,
-      [thresholdMs],
+      [thresholdMs]
     );
     return rows;
   }
@@ -602,7 +610,7 @@ export class FleetRepository extends BaseRepository {
       `UPDATE fleet_sessions
        SET state = 'stopped', stopped_at = NOW()
        WHERE id = $1 AND state = 'running'`,
-      [sessionId],
+      [sessionId]
     );
   }
 

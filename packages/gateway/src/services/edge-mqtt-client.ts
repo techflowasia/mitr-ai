@@ -86,11 +86,18 @@ export class EdgeMqttClient {
    * Returns false if no broker URL is configured (edge features dormant).
    */
   async connect(url?: string): Promise<boolean> {
-    this.brokerUrl = url ?? process.env.MQTT_BROKER_URL ?? '';
+    this.brokerUrl =
+      url ||
+      process.env.MQTT_BROKER_URL ||
+      (process.env.MQTT_BROKER_HOST
+        ? `mqtt://${process.env.MQTT_BROKER_HOST}:${process.env.MQTT_PORT ?? '1883'}`
+        : '');
     if (!this.brokerUrl) {
       log.info('No MQTT_BROKER_URL configured — edge MQTT features dormant');
       return false;
     }
+
+    log.info(`Attempting MQTT connection to: ${this.brokerUrl}`);
 
     // Lazy-load mqtt package
     if (!this.connectFn) {
