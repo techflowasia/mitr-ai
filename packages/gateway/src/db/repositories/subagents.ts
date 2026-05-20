@@ -147,14 +147,14 @@ export class SubagentsRepository extends BaseRepository {
    * Get sessions that appear orphaned — running (no completed_at) and older than threshold.
    */
   async getOrphanedSessions(
-    thresholdMs: number,
+    thresholdMs: number
   ): Promise<Array<{ id: string; parent_id: string; name: string }>> {
     const rows = await this.query<{ id: string; parent_id: string; name: string }>(
       `SELECT id, parent_id, name FROM subagent_history
        WHERE state = 'running'
          AND completed_at IS NULL
          AND EXTRACT(EPOCH FROM (NOW() - spawned_at)) * 1000 > $1`,
-      [thresholdMs],
+      [thresholdMs]
     );
     return rows;
   }
@@ -167,7 +167,7 @@ export class SubagentsRepository extends BaseRepository {
       `UPDATE subagent_history
        SET state = 'aborted', completed_at = NOW(), error = $2
        WHERE id = $1 AND state = 'running'`,
-      [id, `orphan_recovery: ${reason}`],
+      [id, `orphan_recovery: ${reason}`]
     );
   }
 
@@ -179,7 +179,7 @@ export class SubagentsRepository extends BaseRepository {
       `DELETE FROM subagent_history
        WHERE spawned_at < NOW() - INTERVAL '1 day' * $1
        RETURNING id`,
-      [retentionDays],
+      [retentionDays]
     );
     return rows.length;
   }
@@ -204,9 +204,7 @@ export class SubagentsRepository extends BaseRepository {
     const row = await this.queryOne<{
       total: string;
       success_count: string;
-      avg_cost: string;
       avg_duration: string;
-      total_cost: string;
       error_count: string;
       total_input_tokens: string;
       total_output_tokens: string;
@@ -214,9 +212,7 @@ export class SubagentsRepository extends BaseRepository {
       `SELECT
          COUNT(*) AS total,
          COUNT(*) FILTER (WHERE state = 'completed') AS success_count,
-         COALESCE(AVG(cost), 0) AS avg_cost,
          COALESCE(AVG(duration_ms), 0) AS avg_duration,
-         COALESCE(SUM(cost), 0) AS total_cost,
          COUNT(*) FILTER (WHERE state = 'failed') AS error_count,
          COALESCE(SUM((tokens_used->>'prompt')::int), 0) AS total_input_tokens,
          COALESCE(SUM((tokens_used->>'completion')::int), 0) AS total_output_tokens
@@ -239,9 +235,9 @@ export class SubagentsRepository extends BaseRepository {
       total,
       successCount,
       successRate: total > 0 ? successCount / total : 0,
-      avgCost: parseFloat(row?.avg_cost ?? '0'),
+      avgCost: 0,
       avgDuration: parseFloat(row?.avg_duration ?? '0'),
-      totalCost: parseFloat(row?.total_cost ?? '0'),
+      totalCost: 0,
       errorRate: total > 0 ? errorCount / total : 0,
       byState,
       totalTokens: {

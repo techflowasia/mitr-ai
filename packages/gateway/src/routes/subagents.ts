@@ -98,31 +98,6 @@ subagentRoutes.get('/history', async (c) => {
 });
 
 // =============================================================================
-// GET /:id - Get subagent session/result
-// =============================================================================
-
-subagentRoutes.get('/:id', (c) => {
-  try {
-    const userId = getUserId(c);
-    const subagentId = c.req.param('id');
-    const service = getSubagentService();
-
-    const session = service.getSession(subagentId, userId);
-    if (!session) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.NOT_FOUND, message: `Subagent ${subagentId} not found` },
-        404
-      );
-    }
-
-    return apiResponse(c, session);
-  } catch (err) {
-    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
-  }
-});
-
-// =============================================================================
 // GET /stats — Aggregate subagent statistics
 // =============================================================================
 
@@ -171,6 +146,31 @@ subagentRoutes.get('/health', async (c) => {
     const status = orphaned.length > 0 ? 'failed' : 'watch';
 
     return apiResponse(c, { status, score, signals, recommendations });
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// =============================================================================
+// GET /:id - Get subagent session/result
+// =============================================================================
+
+subagentRoutes.get('/:id', (c) => {
+  try {
+    const userId = getUserId(c);
+    const subagentId = c.req.param('id');
+    const service = getSubagentService();
+
+    const session = service.getSession(subagentId, userId);
+    if (!session) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.NOT_FOUND, message: `Subagent ${subagentId} not found` },
+        404
+      );
+    }
+
+    return apiResponse(c, session);
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }

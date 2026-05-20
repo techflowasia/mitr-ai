@@ -15,7 +15,7 @@ import { existsSync } from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Try multiple locations for .env file
+// Try multiple locations for .env file (load all found, later override earlier)
 const envPaths = [
   resolve(__dirname, '..', '..', '..', '.env'), // monorepo root from src/
   resolve(__dirname, '..', '..', '.env'), // packages/gateway/.env
@@ -28,7 +28,7 @@ for (const envPath of envPaths) {
     // Use getLog after dotenv is loaded but before heavy imports
     const { getLog } = await import('./services/log.js');
     getLog('Config').info(`Loaded .env from: ${envPath}`);
-    break;
+    // Do NOT break — load all env files so gateway-specific vars override root vars
   }
 }
 
