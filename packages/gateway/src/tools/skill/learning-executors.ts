@@ -120,20 +120,27 @@ export async function executeGetLearningStats(
       success: true,
       result: {
         summary: {
-          totalUsage: typeCountsRows.reduce((sum, r) => sum + parseInt(r.count), 0),
-          learned: parseInt(typeCountsRows.find((r) => r.usage_type === 'learned')?.count ?? '0'),
-          referenced: parseInt(
-            typeCountsRows.find((r) => r.usage_type === 'referenced')?.count ?? '0'
+          totalUsage: typeCountsRows.reduce((sum, r) => sum + parseInt(r.count, 10), 0),
+          learned: parseInt(
+            typeCountsRows.find((r) => r.usage_type === 'learned')?.count ?? '0',
+            10
           ),
-          adapted: parseInt(typeCountsRows.find((r) => r.usage_type === 'adapted')?.count ?? '0'),
+          referenced: parseInt(
+            typeCountsRows.find((r) => r.usage_type === 'referenced')?.count ?? '0',
+            10
+          ),
+          adapted: parseInt(
+            typeCountsRows.find((r) => r.usage_type === 'adapted')?.count ?? '0',
+            10
+          ),
         },
         topSkills: topSkillsRows.map((s) => ({
           skillId: s.skill_id,
           skillName: s.skill_name,
-          totalUses: parseInt(s.total_uses),
-          learned: parseInt(s.learned_count),
-          referenced: parseInt(s.referenced_count),
-          adapted: parseInt(s.adapted_count),
+          totalUses: parseInt(s.total_uses, 10),
+          learned: parseInt(s.learned_count, 10),
+          referenced: parseInt(s.referenced_count, 10),
+          adapted: parseInt(s.adapted_count, 10),
         })),
         recentActivity: recentRows.map((r) => ({
           id: String(r.id),
@@ -199,7 +206,7 @@ export async function executeCompare(
           category: category1,
           toolCount: tools1.length,
           version: pkg1.version,
-          yourUsageCount: parseInt(usageRow1?.count ?? '0'),
+          yourUsageCount: parseInt(usageRow1?.count ?? '0', 10),
         },
         skill2: {
           id: pkg2.id,
@@ -209,7 +216,7 @@ export async function executeCompare(
           category: category2,
           toolCount: tools2.length,
           version: pkg2.version,
-          yourUsageCount: parseInt(usageRow2?.count ?? '0'),
+          yourUsageCount: parseInt(usageRow2?.count ?? '0', 10),
         },
         comparison: {
           sameCategory: category1 === category2,

@@ -4,7 +4,7 @@
  * Follows the app's page convention: header → tab bar → PageHomeTab / content.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
 import { useSkipHome } from '../hooks/useSkipHome';
@@ -158,34 +158,46 @@ export function FleetPage() {
     loadFleets();
   }, [loadFleets]);
 
+  // Coalesce bursty fleet events (cycle:end + N x worker:completed per cycle)
+  // into one refetch so a busy fleet doesn't trigger N+1 list reloads/sec.
+  const refetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduleRefetch = useCallback(() => {
+    if (refetchTimerRef.current) return;
+    refetchTimerRef.current = setTimeout(() => {
+      refetchTimerRef.current = null;
+      loadFleets();
+    }, 300);
+  }, [loadFleets]);
+  useEffect(
+    () => () => {
+      if (refetchTimerRef.current) {
+        clearTimeout(refetchTimerRef.current);
+        refetchTimerRef.current = null;
+      }
+    },
+    []
+  );
+
   const { subscribe } = useGateway();
   useEffect(() => {
     const unsubs = [
-      subscribe('fleet:started', () => {
-        loadFleets();
-      }),
-      subscribe('fleet:stopped', () => {
-        loadFleets();
-      }),
-      subscribe('fleet:paused', () => {
-        loadFleets();
-      }),
-      subscribe('fleet:resumed', () => {
-        loadFleets();
-      }),
       subscribe<{ fleetId: string; name: string }>('fleet:started', (p) => {
+        scheduleRefetch();
         const fleet = fleets.find((f) => f.id === p.fleetId);
         if (fleet) toast.info(`Fleet "${fleet.name}" started`);
       }),
       subscribe<{ fleetId: string }>('fleet:stopped', (p) => {
+        scheduleRefetch();
         const fleet = fleets.find((f) => f.id === p.fleetId);
         if (fleet) toast.info(`Fleet "${fleet.name}" stopped`);
       }),
       subscribe<{ fleetId: string }>('fleet:paused', (p) => {
+        scheduleRefetch();
         const fleet = fleets.find((f) => f.id === p.fleetId);
         if (fleet) toast.info(`Fleet "${fleet.name}" paused`);
       }),
       subscribe<{ fleetId: string }>('fleet:resumed', (p) => {
+        scheduleRefetch();
         const fleet = fleets.find((f) => f.id === p.fleetId);
         if (fleet) toast.info(`Fleet "${fleet.name}" resumed`);
       }),
@@ -196,6 +208,7 @@ export function FleetPage() {
         tasksFailed: number;
         cycleCost: number;
       }>('fleet:cycle:end', (p) => {
+        scheduleRefetch();
         if (p.tasksFailed > 0) {
           toast.warning(
             `Fleet cycle ${p.cycle} finished: ${p.tasksFailed} task${p.tasksFailed > 1 ? 's' : ''} failed`
@@ -205,6 +218,7 @@ export function FleetPage() {
       subscribe<{ fleetId: string; workerName: string; success: boolean; durationMs: number }>(
         'fleet:worker:completed',
         (p) => {
+          scheduleRefetch();
           if (!p.success) {
             const fleet = fleets.find((f) => f.id === p.fleetId);
             toast.error(
@@ -213,11 +227,9 @@ export function FleetPage() {
           }
         }
       ),
-      subscribe('fleet:cycle:end', loadFleets),
-      subscribe('fleet:worker:completed', loadFleets),
     ];
     return () => unsubs.forEach((u) => u());
-  }, [subscribe, loadFleets, fleets, toast]);
+  }, [subscribe, scheduleRefetch, fleets, toast]);
 
   useEffect(() => {
     const hasRunning = fleets.some((f) => f.session?.state === 'running');

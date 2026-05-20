@@ -363,7 +363,7 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
     return c.json({
       version: 'v2',
       status: 'active',
-      note: 'v2 is side-by-side with v1. Breaking changes will land in v2 first. v1 is deprecated with no end-of-life date set.',
+      note: 'v2 mounts the same routes as v1 and is reserved for breaking changes. v1 remains the primary, supported API; no end-of-life is planned.',
       endpoints: {
         health: '/health',
         auth: '/api/v2/auth',

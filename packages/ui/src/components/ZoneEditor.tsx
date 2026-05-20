@@ -3,7 +3,7 @@
  *
  * Shows display mode selector, entry list with remove buttons,
  * and add item/group controls for header zones.
- * Shows "coming soon" placeholder for non-header zones.
+ * Shows a short description for fixed (non-configurable) zones.
  */
 import { useState } from 'react';
 import { useLayoutConfig } from '../hooks/useLayoutConfig';
