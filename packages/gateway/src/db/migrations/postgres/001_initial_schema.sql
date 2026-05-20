@@ -869,6 +869,14 @@ CREATE INDEX IF NOT EXISTS idx_request_logs_created ON request_logs(created_at D
 CREATE INDEX IF NOT EXISTS idx_request_logs_error ON request_logs(error);
 CREATE INDEX IF NOT EXISTS idx_channel_messages_channel ON channel_messages(channel_id);
 CREATE INDEX IF NOT EXISTS idx_channel_messages_created ON channel_messages(created_at);
+-- Composite for Inbox / channel-thread queries: WHERE channel_id ORDER BY created_at DESC.
+CREATE INDEX IF NOT EXISTS idx_channel_messages_channel_created
+  ON channel_messages(channel_id, created_at DESC);
+-- Partial composite for getByConversation: WHERE conversation_id ORDER BY created_at.
+-- Most messages have no conversation_id, so partial keeps the index small.
+CREATE INDEX IF NOT EXISTS idx_channel_messages_conversation_created
+  ON channel_messages(conversation_id, created_at)
+  WHERE conversation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_costs_provider ON costs(provider);
 CREATE INDEX IF NOT EXISTS idx_costs_created ON costs(created_at);
 CREATE INDEX IF NOT EXISTS idx_costs_conversation ON costs(conversation_id);

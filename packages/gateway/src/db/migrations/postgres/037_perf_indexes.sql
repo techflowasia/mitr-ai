@@ -24,3 +24,17 @@ CREATE INDEX IF NOT EXISTS idx_fleet_tasks_fleet_status
 CREATE INDEX IF NOT EXISTS idx_triggers_due
   ON triggers(user_id, next_fire)
   WHERE enabled = true AND type = 'schedule' AND next_fire IS NOT NULL;
+
+-- ChannelMessagesRepository hot queries:
+--   getByChannel / getRecent / getAll({channelId}) — every Inbox page load:
+--     WHERE channel_id = $1 ORDER BY created_at DESC LIMIT/OFFSET
+--   getByConversation — every chat-thread render:
+--     WHERE conversation_id = $1 ORDER BY created_at ASC LIMIT/OFFSET
+-- Existing indexes are (channel_id) and (created_at) separately, and
+-- conversation_id has no index at all. The composites match the ORDER BY
+-- so Postgres returns rows in index order without a sort step.
+CREATE INDEX IF NOT EXISTS idx_channel_messages_channel_created
+  ON channel_messages(channel_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_channel_messages_conversation_created
+  ON channel_messages(conversation_id, created_at)
+  WHERE conversation_id IS NOT NULL;
