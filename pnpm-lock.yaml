@@ -154,7 +154,7 @@ importers:
         specifier: ^7.0.1
         version: 7.0.1
       axios:
-        specifier: 1.16.1
+        specifier: '>=1.15.2'
         version: 1.16.1
       discord.js:
         specifier: ^14.25.1
