@@ -18,6 +18,12 @@ import type {
 } from '../../../db/repositories/workflows.js';
 import { createProvider, type ProviderConfig, type IToolService } from '@ownpilot/core';
 import { getErrorMessage } from '../../../routes/helpers.js';
+import {
+  NATIVE_PROVIDERS,
+  loadProviderConfig,
+  getProviderApiKey,
+} from '../../../routes/agent-cache.js';
+import { resolveDefaultProviderAndModel } from '../../../routes/settings.js';
 import { resolveTemplates } from '../template-resolver.js';
 import type { ToolExecutionResult } from '../types.js';
 import { log, safeVmEval, toToolExecResult, resolveWorkflowToolName } from './utils.js';
@@ -116,10 +122,6 @@ export async function executeLlmNode(
       }));
     }
 
-    const { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } =
-      await import('../../../routes/agent-cache.js');
-    const { resolveDefaultProviderAndModel } = await import('../../../routes/settings.js');
-
     let effectiveProvider = data.provider;
     let effectiveModel = data.model;
     if (
@@ -147,6 +149,16 @@ export async function executeLlmNode(
     }
 
     const apiKey = data.apiKey || (await getProviderApiKey(effectiveProvider));
+    if (!apiKey) {
+      return {
+        nodeId: node.id,
+        status: 'error',
+        error: `No API key configured for provider "${effectiveProvider}". Set it in Settings → API Keys.`,
+        durationMs: Date.now() - startTime,
+        startedAt: new Date(startTime).toISOString(),
+        completedAt: new Date().toISOString(),
+      };
+    }
 
     let baseUrl = data.baseUrl;
     const providerCfg = loadProviderConfig(effectiveProvider);

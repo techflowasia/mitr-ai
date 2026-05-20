@@ -108,7 +108,7 @@ export async function executeHttpRequestNode(
 
     const maxSize = data.maxResponseSize ?? MAX_RESPONSE_SIZE;
     const contentLength = response.headers.get('content-length');
-    if (contentLength && parseInt(contentLength) > maxSize) {
+    if (contentLength && parseInt(contentLength, 10) > maxSize) {
       return {
         nodeId: node.id,
         status: 'error',

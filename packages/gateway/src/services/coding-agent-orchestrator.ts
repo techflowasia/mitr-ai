@@ -24,6 +24,7 @@ import { codingAgentResultsRepo } from '../db/repositories/coding-agent-results.
 import { resolveDefaultProviderAndModel } from '../routes/settings.js';
 import { NATIVE_PROVIDERS, loadProviderConfig, getProviderApiKey } from '../routes/agent-cache.js';
 import { getLog } from './log.js';
+import { getErrorMessage } from '../routes/helpers.js';
 import { wsGateway } from '../ws/server.js';
 
 const log = getLog('Orchestrator');
@@ -73,10 +74,25 @@ async function analyzeOutput(
   goal: string,
   prompt: string,
   output: string,
-  previousSteps: OrchestrationStep[]
+  previousSteps: OrchestrationStep[],
+  runProvider?: string,
+  runModel?: string
 ): Promise<OrchestrationAnalysis> {
   try {
-    const { provider, model } = await resolveDefaultProviderAndModel('default', 'default');
+    // Prefer the orchestration's configured provider/model. Fall back to the
+    // user's global default only if neither is set — analyzing should reuse
+    // the same model that drives the run instead of re-resolving defaults
+    // (and failing) on every step.
+    let provider: string | undefined = runProvider;
+    let model: string | undefined = runModel;
+    if (!provider || !model) {
+      const resolved = await resolveDefaultProviderAndModel(
+        provider ?? 'default',
+        model ?? 'default'
+      );
+      provider = resolved.provider ?? undefined;
+      model = resolved.model ?? undefined;
+    }
     if (!provider || !model) {
       throw new Error('No AI provider configured. Set a default provider in Settings.');
     }
@@ -170,7 +186,10 @@ async function analyzeOutput(
 // =============================================================================
 
 /** In-memory tracker for active runs (avoids double-execution) */
-const activeRuns = new Map<string, { abort: boolean }>();
+// `currentSessionId` tracks the in-flight CLI session so cancelOrchestration
+// can terminate it directly instead of waiting for waitForCompletion to time
+// out — otherwise the CLI keeps spending budget after a user-initiated cancel.
+const activeRuns = new Map<string, { abort: boolean; currentSessionId?: string }>();
 
 function broadcast<K extends keyof import('../ws/types.js').ServerEvents>(
   event: K,
@@ -258,7 +277,18 @@ export async function continueOrchestration(
  */
 export async function cancelOrchestration(runId: string, userId: string): Promise<boolean> {
   const ctrl = activeRuns.get(runId);
-  if (ctrl) ctrl.abort = true;
+  if (ctrl) {
+    ctrl.abort = true;
+    // Kill the in-flight CLI session immediately so it stops burning budget
+    // while the orchestration loop is still inside `waitForCompletion`.
+    if (ctrl.currentSessionId) {
+      try {
+        getCodingAgentService().terminateSession(ctrl.currentSessionId, userId);
+      } catch (err) {
+        log.warn(`Failed to terminate session ${ctrl.currentSessionId}: ${getErrorMessage(err)}`);
+      }
+    }
+  }
 
   const record = await orchestrationRunsRepo.getById(runId, userId);
   if (!record) return false;
@@ -382,6 +412,7 @@ async function runOrchestrationLoop(run: OrchestrationRun, userId: string): Prom
       );
 
       step.sessionId = session.id;
+      if (ctrl) ctrl.currentSessionId = session.id;
 
       // Notify UI of the sessionId so it can subscribe to output
       broadcast('orchestration:step:started', {
@@ -393,6 +424,7 @@ async function runOrchestrationLoop(run: OrchestrationRun, userId: string): Prom
 
       // Wait for the CLI tool to finish
       const completed = await service.waitForCompletion(session.id, userId, STEP_TIMEOUT_MS);
+      if (ctrl) ctrl.currentSessionId = undefined;
 
       step.exitCode = completed.exitCode;
       step.completedAt = new Date().toISOString();
@@ -420,7 +452,9 @@ async function runOrchestrationLoop(run: OrchestrationRun, userId: string): Prom
           run.goal,
           currentPrompt,
           output,
-          run.steps.slice(0, -1)
+          run.steps.slice(0, -1),
+          run.provider,
+          run.model
         );
 
         step.analysis = analysis;

@@ -122,18 +122,26 @@ export function buildSkillsPreamble(skills: CodingAgentSkill[]): string {
 export function buildClaudeCodePermissionArgs(perms: CodingAgentPermissions): string[] {
   const args: string[] = [];
 
+  // Collect all denied tools into a single --disallowed-tools flag. Claude
+  // Code's CLI takes one comma-separated list; emitting the flag multiple
+  // times causes later occurrences to silently overwrite earlier ones, which
+  // previously meant a read-only + no-network session ended up with only the
+  // network restriction in effect.
+  const denied: string[] = [];
   if (perms.fileAccess === 'none') {
-    args.push('--disallowed-tools', 'Edit,Write,MultiEdit');
+    denied.push('Edit', 'Write', 'MultiEdit');
   } else if (perms.fileAccess === 'read-only') {
-    args.push('--disallowed-tools', 'Edit,Write,MultiEdit,Bash(rm|mv|cp|mkdir)');
+    denied.push('Edit', 'Write', 'MultiEdit', 'Bash(rm|mv|cp|mkdir)');
+  }
+  if (perms.networkAccess === false) {
+    denied.push('WebFetch', 'WebSearch');
+  }
+  if (denied.length > 0) {
+    args.push('--disallowed-tools', denied.join(','));
   }
 
   if (perms.autonomy === 'full-auto') {
     args.push('--dangerously-skip-permissions');
-  }
-
-  if (perms.networkAccess === false) {
-    args.push('--disallowed-tools', 'WebFetch,WebSearch');
   }
 
   return args;

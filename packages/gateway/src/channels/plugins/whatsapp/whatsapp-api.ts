@@ -507,8 +507,12 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   }
 
   async disconnect(): Promise<void> {
-    // Prevent auto-reconnect after manual disconnect
-    this.preventAutoReconnect = false; // Manual disconnect allows future reconnects
+    // Soft disconnect: tear down the socket but keep session files so the
+    // next connect() can resume without a fresh QR. We deliberately leave
+    // preventAutoReconnect at its existing value — cleanupSocket removes the
+    // connection.update listener, so no auto-reconnect can fire. logout()
+    // (below) is the hard variant that sets preventAutoReconnect=true.
+    this.preventAutoReconnect = false;
     this.clearReconnectTimer();
     this.cleanupSocket();
 
