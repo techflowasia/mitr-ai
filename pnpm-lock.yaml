@@ -19,14 +19,14 @@ overrides:
   music-metadata: '>=11.12.3'
   brace-expansion: '>=5.0.5'
   nodemailer: '>=8.0.5'
-  protobufjs: '>=7.5.6'
-  fast-uri: '>=3.1.2'
-  basic-ftp: '>=5.3.1'
+  protobufjs: 8.4.0
+  fast-uri: 3.1.2
+  basic-ftp: 6.0.1
   vite: 7.3.2
-  hono: '>=4.12.16'
+  hono: 4.12.21
   '@hono/node-server': 1.19.13
-  axios: '>=1.15.2'
-  ip-address: '>=10.1.1'
+  axios: 1.16.1
+  ip-address: 10.1.1
   follow-redirects: 1.16.0
   postcss: 8.5.10
 
@@ -154,7 +154,7 @@ importers:
         specifier: ^7.0.1
         version: 7.0.1
       axios:
-        specifier: '>=1.15.2'
+        specifier: 1.16.1
         version: 1.16.1
       discord.js:
         specifier: ^14.25.1
@@ -166,7 +166,7 @@ importers:
         specifier: ^1.41.1
         version: 1.41.1
       hono:
-        specifier: '>=4.12.16'
+        specifier: 4.12.21
         version: 4.12.21
       imapflow:
         specifier: ^1.2.14
@@ -190,7 +190,7 @@ importers:
         specifier: ^10.3.1
         version: 10.3.1
       protobufjs:
-        specifier: '>=7.5.6'
+        specifier: 8.4.0
         version: 8.4.0
       puppeteer-core:
         specifier: ^24.39.1
@@ -881,7 +881,7 @@ packages:
     resolution: {integrity: sha512-TsQLe4i2gvoTtrHje625ngThGBySOgSK3Xo2XRYOdqGN1teR8+I7vchQC46uLJi8OF62YTYA3AhSpumtkhsaKQ==}
     engines: {node: '>=18.14.1'}
     peerDependencies:
-      hono: '>=4.12.16'
+      hono: 4.12.21
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -3049,8 +3049,8 @@ packages:
     resolution: {integrity: sha512-5Hh7Y1wQbvY5ooGgPbDaL5iYLAPzMTUrjMulskHLH6wnv/A+1q5rgEaiuqEjB+oxGXIVZs1FF+R/KPN3ZSQYYg==}
     engines: {node: '>=12'}
 
-  ip-address@10.2.0:
-    resolution: {integrity: sha512-/+S6j4E9AHvW9SWMSEY9Xfy66O5PWvVEJ08O0y5JGyEKQpojb0K0GKpz/v5HJ/G0vi3D2sjGK78119oXZeE0qA==}
+  ip-address@10.1.1:
+    resolution: {integrity: sha512-1FMu8/N15Ck1BL551Jf42NYIoin2unWjLQ2Fze/DXryJRl5twqtwNHlO39qERGbIOcKYWHdgRryhOC+NG4eaLw==}
     engines: {node: '>= 12'}
 
   ipaddr.js@1.9.1:
@@ -6877,7 +6877,7 @@ snapshots:
   express-rate-limit@8.3.1(express@5.2.1):
     dependencies:
       express: 5.2.1
-      ip-address: 10.2.0
+      ip-address: 10.1.1
 
   express@5.2.1:
     dependencies:
@@ -7207,7 +7207,7 @@ snapshots:
 
   internmap@2.0.3: {}
 
-  ip-address@10.2.0: {}
+  ip-address@10.1.1: {}
 
   ipaddr.js@1.9.1: {}
 
@@ -8272,7 +8272,7 @@ snapshots:
 
   socks@2.8.7:
     dependencies:
-      ip-address: 10.2.0
+      ip-address: 10.1.1
       smart-buffer: 4.2.0
 
   sonic-boom@4.2.1:
