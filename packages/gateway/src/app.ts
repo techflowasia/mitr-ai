@@ -30,6 +30,7 @@ import { registerAgentRoutes } from './routes/register-agent-routes.js';
 import { registerDataRoutes } from './routes/register-data-routes.js';
 import { registerAutomationRoutes } from './routes/register-automation-routes.js';
 import { registerIntegrationRoutes } from './routes/register-integration-routes.js';
+import { registerOpenApiRoutes } from './routes/openapi.js';
 import { registerV2Routes } from './routes/register-v2-routes.js';
 import {
   RATE_LIMIT_WINDOW_MS,
@@ -252,6 +253,11 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   // v2 API (side-by-side with v1 — same handlers, new routes for future breaking changes)
   registerV2Routes(app);
 
+  // OpenAPI spec + Swagger UI (must register after all routes are mounted so
+  // the generator's app.routes walk picks everything up — Hono fires handlers
+  // lazily, so registration order here is fine).
+  registerOpenApiRoutes(app);
+
   // Root route (API-only mode, when UI is not bundled)
   if (!UI_AVAILABLE) {
     app.get('/', (c) => {
@@ -267,6 +273,8 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   app.get('/api/v1', (c) => {
     return c.json({
       version: 'v1',
+      documentation: '/openapi.json',
+      explorer: '/docs',
       endpoints: {
         health: '/health',
         auth: '/api/v1/auth',
@@ -363,6 +371,8 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
     return c.json({
       version: 'v2',
       status: 'active',
+      documentation: '/openapi.json',
+      explorer: '/docs',
       note: 'v2 mounts the same routes as v1 and is reserved for breaking changes. v1 remains the primary, supported API; no end-of-life is planned.',
       endpoints: {
         health: '/health',
