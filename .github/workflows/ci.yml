@@ -110,6 +110,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # The smoke test imports gateway source via tsx, which in turn imports
+      # `@ownpilot/core` — and gateway's resolution points at core's compiled
+      # `dist/index.js`. Without this build step the smoke test fails with
+      # `Cannot find module '@ownpilot/core/dist/index.js'` before it ever
+      # touches the database.
+      - name: Build core dependency
+        run: pnpm --filter @ownpilot/core build
+
       - name: Run migration smoke test
         env:
           POSTGRES_HOST: localhost
