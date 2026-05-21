@@ -17,19 +17,17 @@ import { createMiddleware } from 'hono/factory';
 import { validateSession, isPasswordConfigured } from '../services/ui-session.js';
 import { apiError, ERROR_CODES } from '../routes/helpers.js';
 import { getUiSessionAuth } from '../utils/ui-session-cookie.js';
+import { getRequestOrigin } from '../utils/trusted-proxy.js';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
+// H-S8: requestOrigin only honors X-Forwarded-* when TRUSTED_PROXY is set.
+// Otherwise an attacker could spoof those headers to make their origin match
+// our canonical origin and bypass the CSRF same-origin check.
 function requestOrigin(c: {
   req: { url: string; header: (name: string) => string | undefined };
 }): string {
-  const url = new URL(c.req.url);
-  const forwardedProto = c.req.header('X-Forwarded-Proto');
-  const forwardedHost = c.req.header('X-Forwarded-Host');
-  if (forwardedProto && forwardedHost) {
-    return `${forwardedProto}://${forwardedHost}`;
-  }
-  return url.origin;
+  return getRequestOrigin(c.req);
 }
 
 function configuredOrigins(): Set<string> {

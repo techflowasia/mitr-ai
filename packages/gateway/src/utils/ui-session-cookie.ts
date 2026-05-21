@@ -1,5 +1,6 @@
 import type { Context } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
+import { isSecureRequest } from './trusted-proxy.js';
 
 export const UI_SESSION_COOKIE = 'ownpilot_ui_session';
 
@@ -15,7 +16,8 @@ export interface UiSessionAuthOptions {
 function isSecureCookie(c: Context): boolean {
   if (process.env.UI_SESSION_COOKIE_SECURE === 'true') return true;
   if (process.env.UI_SESSION_COOKIE_SECURE === 'false') return false;
-  return c.req.url.startsWith('https://') || c.req.header('X-Forwarded-Proto') === 'https';
+  // H-S8: X-Forwarded-Proto trusted only behind TRUSTED_PROXY config.
+  return isSecureRequest(c.req);
 }
 
 export function getUiSessionToken(c: Context, options?: UiSessionAuthOptions): string | undefined {

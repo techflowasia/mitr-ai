@@ -17,6 +17,7 @@ import { getChannelService } from '@ownpilot/core';
 import { getChannelServiceImpl } from '../../service-impl.js';
 import type { SmsChannelAPI } from './sms-api.js';
 import { getLog } from '../../../services/log.js';
+import { getRequestUrl } from '../../../utils/trusted-proxy.js';
 
 const log = getLog('SMS-Webhook');
 
@@ -92,9 +93,11 @@ export function createSmsWebhookRoute(): Hono {
         log.warn('Missing X-Twilio-Signature header');
         return c.text('Forbidden', 403);
       }
-      const protocol = c.req.header('X-Forwarded-Proto') ?? 'https';
-      const host = c.req.header('X-Forwarded-Host') ?? c.req.header('Host') ?? '';
-      const webhookUrl = `${protocol}://${host}${c.req.path}`;
+      // H-S7: honor X-Forwarded-* only when a trusted proxy is configured
+      // (TRUSTED_PROXY=true + TRUSTED_PROXY_IPS). When the gateway is directly
+      // exposed, these headers are attacker-controllable and we use the
+      // request's actual origin instead.
+      const webhookUrl = getRequestUrl(c.req, c.req.path);
 
       if (!validateTwilioSignature(authToken, twilioSignature, webhookUrl, params)) {
         log.warn('Invalid Twilio signature', { url: webhookUrl });
