@@ -431,6 +431,11 @@ export function getSubagentManager(): SubagentManager {
   return _manager;
 }
 
+/** Returns the current singleton without constructing one. */
+export function tryGetSubagentManager(): SubagentManager | null {
+  return _manager;
+}
+
 export function resetSubagentManager(): void {
   if (_manager) {
     _manager.dispose();

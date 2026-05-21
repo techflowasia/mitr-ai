@@ -835,6 +835,39 @@ async function main() {
       log.warn('MCP server cleanup error', { error: String(e) });
     }
 
+    // 8.1. Stop metrics service (H-C1: refresh timer queried DB after pool close)
+    try {
+      const { stopMetricsService } = await import('./services/metrics-service.js');
+      stopMetricsService();
+    } catch (e) {
+      log.warn('Metrics service stop error', { error: String(e) });
+    }
+
+    // 8.2. Stop claw manager (H-C20: persist & retention timers)
+    try {
+      const { resetClawManager } = await import('./services/claw-manager.js');
+      resetClawManager();
+    } catch (e) {
+      log.warn('Claw manager stop error', { error: String(e) });
+    }
+
+    // 8.3. Dispose subagent manager (H-C4: cleanup timer)
+    try {
+      const { tryGetSubagentManager } = await import('./services/subagent-manager.js');
+      tryGetSubagentManager()?.dispose();
+    } catch (e) {
+      log.warn('Subagent manager dispose error', { error: String(e) });
+    }
+
+    // 8.4. Shutdown browser service (H-C3: cleanup timer + open Playwright pages)
+    try {
+      const { tryGetBrowserService } = await import('./services/browser-service.js');
+      const svc = tryGetBrowserService();
+      if (svc) await svc.shutdown();
+    } catch (e) {
+      log.warn('Browser service shutdown error', { error: String(e) });
+    }
+
     // 9. Close DB connection pool
     try {
       const { closeAdapter } = await import('./db/adapters/index.js');

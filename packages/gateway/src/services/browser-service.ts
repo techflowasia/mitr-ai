@@ -409,7 +409,7 @@ export class BrowserService {
 
       // SSRF protection: abort redirects to private/internal addresses
       const url = req.url();
-      if (isBlockedUrl(url) || await isPrivateUrlAsync(url)) {
+      if (isBlockedUrl(url) || (await isPrivateUrlAsync(url))) {
         req.abort();
         return;
       }
@@ -622,5 +622,11 @@ let instance: BrowserService | null = null;
 
 export function getBrowserService(): BrowserService {
   if (!instance) instance = new BrowserService();
+  return instance;
+}
+
+/** Returns the current singleton without constructing one. Used by graceful
+ *  shutdown to avoid instantiating an idle service just to tear it down. */
+export function tryGetBrowserService(): BrowserService | null {
   return instance;
 }
