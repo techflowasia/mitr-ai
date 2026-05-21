@@ -84,3 +84,29 @@ export async function isPrivateUrlAsync(urlString: string): Promise<boolean> {
     return true; // DNS failure: block the request (fail-closed for safety)
   }
 }
+
+/**
+ * Uncached variant of {@link isPrivateUrlAsync} — performs a fresh DNS lookup
+ * every call. Use this as the LAST guard immediately before the actual fetch
+ * to narrow the DNS-rebinding TOCTOU window (H-S4): cached resolutions can
+ * return a public IP while a subsequent fetch resolves to a private one.
+ *
+ * Residual risk: there is still a microsecond gap between this lookup and
+ * the libuv/undici DNS lookup inside `fetch`. A complete fix requires
+ * hostname-pinning via `undici.Agent.connect.lookup`, which would add an
+ * `undici` runtime dependency. This function reduces the practical exposure
+ * by ~6 orders of magnitude (60s cache → microsecond gap) without that dep.
+ */
+export async function isPrivateUrlAsyncFresh(urlString: string): Promise<boolean> {
+  try {
+    const hostname = new URL(urlString).hostname;
+    const records = await lookup(hostname, { all: true });
+    const ips = records.map((r) => r.address);
+    // Refresh the cache opportunistically — anything else that looked up the
+    // same hostname recently gets the same answer we are about to act on.
+    dnsCache.set(hostname, { ips, ts: Date.now() });
+    return ips.some((ip) => PRIVATE_RANGES.some((re) => re.test(ip)));
+  } catch {
+    return true;
+  }
+}

@@ -87,11 +87,25 @@ export const DANGEROUS_CODE_PATTERNS: ReadonlyArray<CodeValidationPattern> = [
 
   // ── Prototype manipulation (sandbox escape vectors) ───────────
   { pattern: /__proto__/, message: '__proto__ access is not allowed' },
-  // Only block .constructor property access on instances (prototype chain escape via
-  // [].constructor.constructor or obj.constructor.constructor), NOT the standalone
-  // `constructor` keyword (needed for class constructors and class expressions).
-  // Must use negative lookbehind to avoid matching `constructor` after dot-like contexts.
-  { pattern: /(?<![.[])\bconstructor\b(?!\s*[{(])/, message: 'constructor property access is not allowed' },
+  // H-S5 fix: block `.constructor` and `[constructor]` property access — the
+  // primary escape vector when any host-realm function is exposed to the
+  // sandbox (e.g. setTimeout.constructor walks up to the host Function
+  // constructor, which compiles strings in the host realm, bypassing
+  // `codeGeneration.strings:false`).
+  //
+  // Class/function method definitions are still allowed because the literal
+  // `constructor` token in `class Foo { constructor() { ... } }` is NOT
+  // preceded by `.` or `[`.
+  //
+  // Residual risk: dynamic property access via string concat
+  // (`obj["construct"+"or"]`) can evade this regex. eval and dynamic code
+  // compilation are blocked via the VM context's codeGeneration option and
+  // other passes block Reflect.*; a future hardening pass should freeze
+  // every host value injected into the context.
+  {
+    pattern: /[.[]\s*['"]?\s*constructor\b/,
+    message: 'constructor property access is not allowed',
+  },
   { pattern: /\bgetPrototypeOf\b/, message: 'getPrototypeOf is not allowed' },
   { pattern: /\bsetPrototypeOf\b/, message: 'setPrototypeOf is not allowed' },
   { pattern: /\bReflect\.construct\b/, message: 'Reflect.construct is not allowed' },

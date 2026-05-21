@@ -6,7 +6,7 @@
  * - Caps total redirects to prevent infinite redirect loops
  */
 
-import { isPrivateUrlAsync } from './ssrf.js';
+import { isBlockedUrl, isPrivateUrlAsync, isPrivateUrlAsyncFresh } from './ssrf.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('safeFetch');
@@ -16,8 +16,12 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 
 /**
  * Options for safeFetch.
+ *
+ * `redirect` is forced to `'manual'` internally and cannot be overridden.
+ * `signal` is honored when provided; otherwise safeFetch installs its own
+ * AbortController tied to `timeoutMs`.
  */
-export interface SafeFetchOptions extends Omit<RequestInit, 'signal' | 'redirect'> {
+export interface SafeFetchOptions extends Omit<RequestInit, 'redirect'> {
   /** Maximum redirects to follow (default 5). 0 = no redirects. */
   maxRedirects?: number;
   /** Request timeout in ms (default 30000). */
@@ -37,10 +41,7 @@ interface RedirectChain {
  * @param options  Fetch options (redirect is forced to 'manual')
  * @returns  The fetch Response, or throws on SSRF block / redirect loop / timeout
  */
-export async function safeFetch(
-  url: string,
-  options: SafeFetchOptions = {}
-): Promise<Response> {
+export async function safeFetch(url: string, options: SafeFetchOptions = {}): Promise<Response> {
   const {
     maxRedirects = DEFAULT_MAX_REDIRECTS,
     timeoutMs = DEFAULT_TIMEOUT_MS,
@@ -65,16 +66,37 @@ export async function safeFetch(
   let currentUrl = url;
   const chain: RedirectChain = { urls: [url] };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const signal = ((fetchOptions as any).signal as AbortSignal | undefined) ?? controller.signal;
+  const signal = fetchOptions.signal ?? controller.signal;
 
   try {
     for (let attempt = 0; attempt <= maxRedirects; attempt++) {
-      // SSRF check on every hop
+      // H-S17 fix: synchronous policy gate on EVERY hop. Catches blocked
+      // protocols, embedded credentials in the URL, and numeric-IP
+      // obfuscation in redirects — the original code only checked these on
+      // the entry URL and re-checked `isPrivateUrl` (DNS) on redirects.
+      if (isBlockedUrl(currentUrl)) {
+        log.warn('safeFetch: blocked URL by sync policy', { url: currentUrl });
+        throw new SafeFetchError(`Request to blocked URL: ${currentUrl}`, 'SSRF_BLOCKED');
+      }
+
+      // H-S4 fix: SSRF check on every hop, with a FRESH uncached DNS lookup
+      // immediately before fetch. The cached `isPrivateUrlAsync` still
+      // applies first (cheap shortcut), but the fresh check is what matters
+      // here — it minimises the window in which an attacker DNS can return a
+      // public IP to our check and a private IP to the fetch's own lookup.
       if (await isPrivateUrlAsync(currentUrl)) {
-        log.warn('safeFetch: blocked private URL in redirect chain', { url: currentUrl });
+        log.warn('safeFetch: blocked private URL (cached)', { url: currentUrl });
         throw new SafeFetchError(
           `Request to private/internal address not allowed: ${currentUrl}`,
+          'SSRF_BLOCKED'
+        );
+      }
+      if (await isPrivateUrlAsyncFresh(currentUrl)) {
+        log.warn('safeFetch: blocked private URL (fresh lookup — possible DNS rebinding)', {
+          url: currentUrl,
+        });
+        throw new SafeFetchError(
+          `Request to private/internal address not allowed (post-rebind check): ${currentUrl}`,
           'SSRF_BLOCKED'
         );
       }
@@ -123,7 +145,12 @@ export async function safeFetch(
 export class SafeFetchError extends Error {
   constructor(
     message: string,
-    public readonly code: 'SSRF_BLOCKED' | 'TOO_MANY_REDIRECTS' | 'BODY_TOO_LARGE' | 'TIMEOUT' | 'UNKNOWN'
+    public readonly code:
+      | 'SSRF_BLOCKED'
+      | 'TOO_MANY_REDIRECTS'
+      | 'BODY_TOO_LARGE'
+      | 'TIMEOUT'
+      | 'UNKNOWN'
   ) {
     super(message);
     this.name = 'SafeFetchError';

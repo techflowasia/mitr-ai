@@ -102,8 +102,31 @@ function computeSlackSignature(body: string, timestamp: string, secret: string):
   return 'v0=' + createHmac('sha256', secret).update(sigBaseString).digest('hex');
 }
 
-function computeWebhookSignature(body: string, secret: string): string {
-  return createHmac('sha256', secret).update(body).digest('hex');
+/**
+ * Compute the new replay-resistant webhook HMAC.
+ * Production routes now sign `${timestamp}.${body}` (H-S9 fix).
+ */
+function computeWebhookSignature(timestamp: string, body: string, secret: string): string {
+  return createHmac('sha256', secret).update(`${timestamp}.${body}`).digest('hex');
+}
+
+/** Unix-seconds timestamp inside the freshness window. */
+function freshTimestamp(): string {
+  return String(Math.floor(Date.now() / 1000));
+}
+
+/**
+ * Build the headers the trigger/workflow webhook routes now require:
+ *   X-Webhook-Timestamp: <unix-seconds>
+ *   X-Webhook-Signature: hmac-sha256(secret, `${ts}.${body}`)
+ */
+function signedWebhookHeaders(body: string, secret: string): Record<string, string> {
+  const ts = freshTimestamp();
+  return {
+    'Content-Type': 'application/json',
+    'X-Webhook-Timestamp': ts,
+    'X-Webhook-Signature': computeWebhookSignature(ts, body, secret),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -293,7 +316,8 @@ describe('Webhook Routes', () => {
         body: JSON.stringify(body),
         headers: {
           'Content-Type': 'application/json',
-          'x-slack-request-timestamp': '1234567890',
+          // Fresh timestamp so we hit the signature check, not the freshness check.
+          'x-slack-request-timestamp': freshTimestamp(),
           'x-slack-signature': 'v0=invalidsignature',
         },
       });
@@ -313,7 +337,7 @@ describe('Webhook Routes', () => {
 
       const body = { type: 'event_callback', event: { type: 'message' } };
       const rawBody = JSON.stringify(body);
-      const timestamp = '1609459200';
+      const timestamp = freshTimestamp();
       const signature = computeSlackSignature(rawBody, timestamp, SLACK_SIGNING_SECRET);
 
       const res = await app.request('/webhooks/slack/events', {
@@ -340,7 +364,7 @@ describe('Webhook Routes', () => {
       const event = { type: 'message', user: 'U123', text: 'hello', ts: '1234', channel: 'C1' };
       const body = { type: 'event_callback', event };
       const rawBody = JSON.stringify(body);
-      const timestamp = '1609459200';
+      const timestamp = freshTimestamp();
       const sigHeaders = {
         'Content-Type': 'application/json',
         'x-slack-request-timestamp': timestamp,
@@ -370,7 +394,7 @@ describe('Webhook Routes', () => {
         event: { type: 'message', subtype: 'bot_message', text: 'bot said hi' },
       };
       const rawBody = JSON.stringify(body);
-      const timestamp = '1609459200';
+      const timestamp = freshTimestamp();
       const sigHeaders = {
         'Content-Type': 'application/json',
         'x-slack-request-timestamp': timestamp,
@@ -397,7 +421,7 @@ describe('Webhook Routes', () => {
 
       const body = { type: 'event_callback', event: { type: 'reaction_added' } };
       const rawBody = JSON.stringify(body);
-      const timestamp = '1609459200';
+      const timestamp = freshTimestamp();
       const sigHeaders = {
         'Content-Type': 'application/json',
         'x-slack-request-timestamp': timestamp,
@@ -423,7 +447,7 @@ describe('Webhook Routes', () => {
 
       const body = { type: 'event_callback' };
       const rawBody = JSON.stringify(body);
-      const timestamp = '1609459200';
+      const timestamp = freshTimestamp();
       const sigHeaders = {
         'Content-Type': 'application/json',
         'x-slack-request-timestamp': timestamp,
@@ -450,7 +474,7 @@ describe('Webhook Routes', () => {
 
       const body = { type: 'event_callback', event: { type: 'message' } };
       const rawBody = JSON.stringify(body);
-      const timestamp = '1609459200';
+      const timestamp = freshTimestamp();
       const sigHeaders = {
         'Content-Type': 'application/json',
         'x-slack-request-timestamp': timestamp,
@@ -573,6 +597,50 @@ describe('Webhook Routes', () => {
       expect(json.error.message).toContain('Missing X-Webhook-Signature');
     });
 
+    it('returns 403 when X-Webhook-Timestamp header is missing (H-S9 replay protection)', async () => {
+      mockTriggersRepo.getByIdGlobal.mockResolvedValue(
+        makeTrigger({ config: { secret: 'webhook-secret' } })
+      );
+
+      const res = await app.request('/webhooks/trigger/trig-001', {
+        method: 'POST',
+        body: '{"data":"hello"}',
+        headers: {
+          'Content-Type': 'application/json',
+          // Provide signature but no timestamp — must be rejected.
+          'x-webhook-signature': 'doesnotmatter',
+        },
+      });
+
+      expect(res.status).toBe(403);
+      const json = await res.json();
+      expect(json.error.code).toBe('ACCESS_DENIED');
+      expect(json.error.message).toContain('Missing timestamp');
+    });
+
+    it('returns 403 when timestamp is outside the freshness window', async () => {
+      mockTriggersRepo.getByIdGlobal.mockResolvedValue(
+        makeTrigger({ config: { secret: 'webhook-secret' } })
+      );
+      const staleTs = String(Math.floor(Date.now() / 1000) - 3600); // 1h ago
+      const signature = computeWebhookSignature(staleTs, '{"data":"hello"}', 'webhook-secret');
+
+      const res = await app.request('/webhooks/trigger/trig-001', {
+        method: 'POST',
+        body: '{"data":"hello"}',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-webhook-timestamp': staleTs,
+          'x-webhook-signature': signature,
+        },
+      });
+
+      expect(res.status).toBe(403);
+      const json = await res.json();
+      expect(json.error.code).toBe('ACCESS_DENIED');
+      expect(json.error.message).toContain('freshness');
+    });
+
     it('returns 403 when signature is invalid', async () => {
       mockTriggersRepo.getByIdGlobal.mockResolvedValue(
         makeTrigger({ config: { secret: 'webhook-secret' } })
@@ -583,6 +651,7 @@ describe('Webhook Routes', () => {
         body: '{"data":"hello"}',
         headers: {
           'Content-Type': 'application/json',
+          'x-webhook-timestamp': freshTimestamp(),
           'x-webhook-signature': 'invalidsig',
         },
       });
@@ -596,17 +665,13 @@ describe('Webhook Routes', () => {
     it('returns 200 when HMAC-SHA256 signature is valid', async () => {
       const secret = 'webhook-secret';
       const rawBody = '{"data":"hello"}';
-      const signature = computeWebhookSignature(rawBody, secret);
 
       mockTriggersRepo.getByIdGlobal.mockResolvedValue(makeTrigger({ config: { secret } }));
 
       const res = await app.request('/webhooks/trigger/trig-001', {
         method: 'POST',
         body: rawBody,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-webhook-signature': signature,
-        },
+        headers: signedWebhookHeaders(rawBody, secret),
       });
 
       expect(res.status).toBe(200);
@@ -630,12 +695,11 @@ describe('Webhook Routes', () => {
       });
 
       const body = '{}';
-      const signature = createHmac('sha256', 'test-secret').update(body).digest('hex');
 
       const res = await app.request('/webhooks/trigger/trig-001', {
         method: 'POST',
         body,
-        headers: { 'Content-Type': 'application/json', 'X-Webhook-Signature': signature },
+        headers: signedWebhookHeaders(body, 'test-secret'),
       });
 
       expect(res.status).toBe(200);
@@ -661,12 +725,11 @@ describe('Webhook Routes', () => {
       });
 
       const body = '{}';
-      const signature = createHmac('sha256', 'test-secret').update(body).digest('hex');
 
       const res = await app.request('/webhooks/trigger/trig-001', {
         method: 'POST',
         body,
-        headers: { 'Content-Type': 'application/json', 'X-Webhook-Signature': signature },
+        headers: signedWebhookHeaders(body, 'test-secret'),
       });
 
       expect(res.status).toBe(200);
@@ -688,12 +751,11 @@ describe('Webhook Routes', () => {
       });
 
       const body = '{}';
-      const signature = createHmac('sha256', 'test-secret').update(body).digest('hex');
 
       const res = await app.request('/webhooks/trigger/trig-001', {
         method: 'POST',
         body,
-        headers: { 'Content-Type': 'application/json', 'X-Webhook-Signature': signature },
+        headers: signedWebhookHeaders(body, 'test-secret'),
       });
 
       expect(res.status).toBe(200);
@@ -713,12 +775,11 @@ describe('Webhook Routes', () => {
       });
 
       const body = '{}';
-      const signature = createHmac('sha256', 'test-secret').update(body).digest('hex');
 
       const res = await app.request('/webhooks/trigger/trig-001', {
         method: 'POST',
         body,
-        headers: { 'Content-Type': 'application/json', 'X-Webhook-Signature': signature },
+        headers: signedWebhookHeaders(body, 'test-secret'),
       });
 
       // Route still returns 200 because service error is caught internally
@@ -734,15 +795,11 @@ describe('Webhook Routes', () => {
       );
 
       const body = '{}';
-      const signature = createHmac('sha256', 'test-secret').update(body).digest('hex');
 
       const res = await app.request('/webhooks/trigger/trig-xyz', {
         method: 'POST',
         body,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Webhook-Signature': signature,
-        },
+        headers: signedWebhookHeaders(body, 'test-secret'),
       });
 
       expect(res.status).toBe(200);

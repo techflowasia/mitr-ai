@@ -16,6 +16,32 @@ import { WorkflowsRepository, type TriggerNodeData } from '../db/repositories/wo
 
 const log = getLog('Webhooks');
 
+/**
+ * Maximum age of a webhook request based on its signed timestamp. Beyond this
+ * window the request is treated as a replay and rejected. 5 minutes matches
+ * Slack's recommendation and is wide enough to tolerate clock skew between
+ * the caller and the gateway. Override per-deployment with
+ * `WEBHOOK_TIMESTAMP_TOLERANCE_SEC`.
+ */
+function webhookTimestampToleranceMs(): number {
+  const env = Number.parseInt(process.env.WEBHOOK_TIMESTAMP_TOLERANCE_SEC ?? '', 10);
+  const seconds = Number.isFinite(env) && env > 0 ? env : 300;
+  return seconds * 1000;
+}
+
+/**
+ * Verify a Unix-seconds timestamp is within the freshness window. Returns
+ * null on success, or a short reason string for the 403 response.
+ */
+function verifyTimestampFreshness(timestamp: string | undefined): string | null {
+  if (!timestamp) return 'Missing timestamp header';
+  const tsSec = Number.parseInt(timestamp, 10);
+  if (!Number.isFinite(tsSec)) return 'Invalid timestamp';
+  const skewMs = Math.abs(Date.now() - tsSec * 1000);
+  if (skewMs > webhookTimestampToleranceMs()) return 'Timestamp outside freshness window';
+  return null;
+}
+
 export const webhookRoutes = new Hono();
 
 /**
@@ -158,7 +184,20 @@ webhookRoutes.post('/slack/events', async (c) => {
   const handler = getSlackWebhookHandler();
 
   try {
-    const body = await c.req.json();
+    // H-S3 fix: HMAC must be computed over the RAW request bytes Slack signed,
+    // not a re-stringified JSON value. `JSON.parse` then `JSON.stringify` is
+    // not bijective (key order, whitespace, numeric formatting), so the prior
+    // implementation could accept forged requests whose normalized form
+    // happened to round-trip to the same string. Read the raw text first,
+    // verify, THEN parse.
+    const rawBody = await c.req.text();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let body: any;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Invalid JSON body' }, 400);
+    }
 
     // URL verification challenge (Slack sends this when configuring the events URL).
     // Only respond if a Slack handler is configured — prevents unauthorized URL registration.
@@ -200,7 +239,19 @@ webhookRoutes.post('/slack/events', async (c) => {
         403
       );
     }
-    const rawBody = JSON.stringify(body);
+
+    // H-S3 fix: freshness check. Slack recommends rejecting requests whose
+    // timestamp differs from the current time by more than 5 minutes; without
+    // this, a captured signed request can be replayed indefinitely.
+    const freshnessError = verifyTimestampFreshness(timestamp);
+    if (freshnessError) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.ACCESS_DENIED, message: `Slack timestamp rejected: ${freshnessError}` },
+        403
+      );
+    }
+
     const sigBaseString = `v0:${timestamp}:${rawBody}`;
     const expected =
       'v0=' + createHmac('sha256', handler.signingSecret).update(sigBaseString).digest('hex');
@@ -263,7 +314,23 @@ webhookRoutes.post('/trigger/:triggerId', async (c) => {
     }
 
     const rawBody = await c.req.text();
-    const expected = createHmac('sha256', config.secret).update(rawBody).digest('hex');
+    // H-S9 fix: replay protection. The HMAC now covers a freshness timestamp
+    // alongside the body, and the timestamp must be within
+    // WEBHOOK_TIMESTAMP_TOLERANCE_SEC of now. Without this, any captured
+    // signed body can be replayed forever — and these workflows can invoke
+    // any registered tool (filesystem, network, claw runtime). Callers must
+    // send `X-Webhook-Timestamp: <unix-seconds>` and sign `${ts}.${body}`.
+    const timestamp = c.req.header('x-webhook-timestamp');
+    const freshnessError = verifyTimestampFreshness(timestamp);
+    if (freshnessError) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.ACCESS_DENIED, message: `Webhook ${freshnessError}` },
+        403
+      );
+    }
+    const signedPayload = `${timestamp}.${rawBody}`;
+    const expected = createHmac('sha256', config.secret).update(signedPayload).digest('hex');
 
     if (!safeKeyCompare(signature, expected)) {
       return apiError(
@@ -345,7 +412,20 @@ webhookRoutes.post('/workflow/:path', async (c) => {
     }
 
     const rawBody = await c.req.text();
-    const expected = createHmac('sha256', triggerData.webhookSecret).update(rawBody).digest('hex');
+    // H-S9 fix: same replay protection as the trigger webhook above.
+    const timestamp = c.req.header('x-webhook-timestamp');
+    const freshnessError = verifyTimestampFreshness(timestamp);
+    if (freshnessError) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.ACCESS_DENIED, message: `Webhook ${freshnessError}` },
+        403
+      );
+    }
+    const signedPayload = `${timestamp}.${rawBody}`;
+    const expected = createHmac('sha256', triggerData.webhookSecret)
+      .update(signedPayload)
+      .digest('hex');
 
     if (!safeKeyCompare(signature, expected)) {
       return apiError(

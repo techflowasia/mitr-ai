@@ -386,10 +386,14 @@ vi.mock('./chat-state.js', () => ({
 
 const mockIsBlockedUrl = vi.hoisted(() => vi.fn(() => false));
 const mockIsPrivateUrlAsync = vi.hoisted(() => vi.fn(async () => false));
+// H-S4 fix added isPrivateUrlAsyncFresh — uncached re-validation right
+// before the actual fetch. Same default as isPrivateUrlAsync.
+const mockIsPrivateUrlAsyncFresh = vi.hoisted(() => vi.fn(async () => false));
 
 vi.mock('../utils/ssrf.js', () => ({
   isBlockedUrl: (...args: unknown[]) => mockIsBlockedUrl(...args),
   isPrivateUrlAsync: (...args: unknown[]) => mockIsPrivateUrlAsync(...args),
+  isPrivateUrlAsyncFresh: (...args: unknown[]) => mockIsPrivateUrlAsyncFresh(...args),
 }));
 
 // ─── Import route + mocked modules ──────────────────────────────

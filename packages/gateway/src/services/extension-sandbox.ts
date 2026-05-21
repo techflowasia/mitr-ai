@@ -180,8 +180,23 @@ function workerMain() {
         decodeURIComponent,
         encodeURI,
         decodeURI,
-        setTimeout: globalThis.setTimeout,
-        clearTimeout: globalThis.clearTimeout,
+        // H-S5 defense-in-depth: wrap timers in narrow shims so the sandbox
+        // never holds a reference to the host setTimeout directly. The
+        // code-validator regex catches `.constructor`/`[constructor]` access
+        // statically, but a frozen wrapper also denies casual prototype
+        // walking at runtime if any new exposure pattern slips past the
+        // validator. We intentionally don't return the host timer handle —
+        // callers can only cancel via `clearTimeout(id)` with the integer id
+        // returned here. Tools that need long sleeps should call the host via
+        // utils.callTool() instead.
+        setTimeout: Object.freeze((cb: () => void, ms: number): number => {
+          const h = globalThis.setTimeout(cb, ms);
+          // Return a numeric id (in Node, timers are objects with Symbol.toPrimitive).
+          return typeof h === 'object' && h !== null ? Number(h) : (h as unknown as number);
+        }),
+        clearTimeout: Object.freeze((id: number): void => {
+          globalThis.clearTimeout(id as unknown as NodeJS.Timeout);
+        }),
         // Extension SDK
         args,
         utils: {
