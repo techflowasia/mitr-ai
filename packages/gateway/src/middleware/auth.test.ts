@@ -59,7 +59,7 @@ async function buildJWT(
   expiresIn?: string | number
 ): Promise<string> {
   const key = createSecretKey(Buffer.from(secret, 'utf-8'));
-  let builder = new SignJWT(claims).setProtectedHeader({ alg });
+  let builder = new SignJWT(claims).setProtectedHeader({ alg }).setIssuedAt();
   if (expiresIn !== undefined) {
     builder = builder.setExpirationTime(expiresIn);
   } else {
@@ -74,6 +74,7 @@ async function buildExpiredJWT(sub: string, secret: string = JWT_SECRET_LONG): P
   const pastExp = Math.floor(Date.now() / 1000) - 3600;
   return new SignJWT({ sub })
     .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt(pastExp - 60)
     .setExpirationTime(pastExp)
     .sign(key);
 }
@@ -83,6 +84,7 @@ async function buildJWTWithoutSub(secret: string = JWT_SECRET_LONG): Promise<str
   const key = createSecretKey(Buffer.from(secret, 'utf-8'));
   return new SignJWT({ role: 'admin', extra: 'data' })
     .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
     .setExpirationTime('1h')
     .sign(key);
 }

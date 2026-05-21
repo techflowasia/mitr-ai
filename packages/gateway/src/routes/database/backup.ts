@@ -7,7 +7,7 @@
  */
 
 import { Hono } from 'hono';
-import { spawn } from 'child_process';
+import { spawn, type ChildProcess } from 'child_process';
 import { existsSync, unlinkSync, readdirSync, statSync } from 'fs';
 import { createReadStream } from 'node:fs';
 import { join, basename } from 'path';
@@ -21,6 +21,53 @@ import { attachmentDisposition } from '../../utils/file-safety.js';
 import { validateBody } from '../../middleware/validation.js';
 
 const log = getLog('Database');
+
+// H-S6: cap pg_dump/pg_restore runtime so a hung process doesn't leave
+// operationStatus.isRunning = true forever and block all future backups.
+const BACKUP_TIMEOUT_MS = parseInt(process.env.DB_BACKUP_TIMEOUT_MS ?? '900000', 10); // 15 min
+
+/**
+ * Sanitize a stderr line from pg_dump / pg_restore / psql before pushing it
+ * into the operation-status output buffer (which the admin UI reads).
+ *
+ * Drops lines that contain DB password material, file system paths, or
+ * connection-string details that aren't useful diagnostic noise.
+ */
+function sanitizePgStderr(line: string): string | null {
+  const lower = line.toLowerCase();
+  if (
+    lower.includes('password') ||
+    lower.includes('pgpassword') ||
+    lower.includes('authentication failed') ||
+    lower.includes('pgservicefile') ||
+    lower.includes('pgpassfile')
+  ) {
+    return 'pg_dump: authentication or credential error (see server logs)';
+  }
+  return line;
+}
+
+/**
+ * Spawn pg_dump/pg_restore/psql with a hard timeout. If the timeout fires,
+ * the child is SIGKILL'd and the operation-status is marked failure so the
+ * isRunning gate releases.
+ */
+function attachTimeout(child: ChildProcess, label: string): void {
+  const t = setTimeout(() => {
+    log.warn(`[${label}] timed out after ${BACKUP_TIMEOUT_MS}ms — killing process`);
+    try {
+      child.kill('SIGKILL');
+    } catch {
+      /* already exited */
+    }
+    operationStatus.isRunning = false;
+    operationStatus.lastResult = 'failure';
+    operationStatus.lastError = `${label} timed out after ${BACKUP_TIMEOUT_MS}ms`;
+  }, BACKUP_TIMEOUT_MS);
+  t.unref();
+  child.on('close', () => clearTimeout(t));
+  child.on('error', () => clearTimeout(t));
+}
 
 const backupCreateSchema = z.object({
   format: z.enum(['sql', 'custom']).optional(),
@@ -155,6 +202,7 @@ backupRoutes.post('/backup', async (c) => {
     config.postgresUser || 'ownpilot',
     '-d',
     config.postgresDatabase || 'ownpilot',
+    '-w', // H-S6: never prompt for password — fail fast on auth instead of hanging on stdin
     '-f',
     backupPath,
   ];
@@ -173,6 +221,7 @@ backupRoutes.post('/backup', async (c) => {
   };
 
   const backup = spawn('pg_dump', args, { env });
+  attachTimeout(backup, 'pg_dump');
 
   backup.stdout.on('data', (data) => {
     const line = data.toString().trim();
@@ -184,10 +233,11 @@ backupRoutes.post('/backup', async (c) => {
 
   backup.stderr.on('data', (data) => {
     const line = data.toString().trim();
-    if (line) {
-      operationStatus.output?.push(line);
-      log.info(`${line}`);
-    }
+    if (!line) return;
+    // H-S6: full stderr to server log, sanitized line to operation-status
+    log.warn(`pg_dump stderr: ${line}`);
+    const safe = sanitizePgStderr(line);
+    if (safe) operationStatus.output?.push(safe);
   });
 
   backup.on('close', (code) => {
@@ -278,6 +328,7 @@ backupRoutes.post('/restore', async (c) => {
         config.postgresUser || 'ownpilot',
         '-d',
         config.postgresDatabase || 'ownpilot',
+        '-w', // H-S6: never prompt for password
         '--clean', // Drop objects before recreating
         '--if-exists',
         backupPath,
@@ -291,6 +342,7 @@ backupRoutes.post('/restore', async (c) => {
         config.postgresUser || 'ownpilot',
         '-d',
         config.postgresDatabase || 'ownpilot',
+        '-w', // H-S6: never prompt for password
         '-f',
         backupPath,
       ];
@@ -303,6 +355,7 @@ backupRoutes.post('/restore', async (c) => {
   };
 
   const restore = spawn(command, args, { env });
+  attachTimeout(restore, command);
 
   restore.stdout.on('data', (data) => {
     const line = data.toString().trim();
@@ -314,10 +367,11 @@ backupRoutes.post('/restore', async (c) => {
 
   restore.stderr.on('data', (data) => {
     const line = data.toString().trim();
-    if (line) {
-      operationStatus.output?.push(line);
-      log.info(`${line}`);
-    }
+    if (!line) return;
+    // H-S6: full stderr to server log, sanitized line to operation-status
+    log.warn(`${command} stderr: ${line}`);
+    const safe = sanitizePgStderr(line);
+    if (safe) operationStatus.output?.push(safe);
   });
 
   restore.on('close', (code) => {

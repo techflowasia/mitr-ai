@@ -52,7 +52,9 @@ async function signToken(
   expiresIn: string = '1h'
 ) {
   const key = createSecretKey(Buffer.from(secret, 'utf-8'));
-  let builder = new SignJWT(claims as Record<string, unknown>).setProtectedHeader({ alg: 'HS256' });
+  let builder = new SignJWT(claims as Record<string, unknown>)
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt();
   if (claims.sub) {
     builder = builder.setSubject(claims.sub as string);
   }
@@ -260,6 +262,7 @@ describe('createAuthMiddleware', () => {
       const key = createSecretKey(Buffer.from(JWT_SECRET, 'utf-8'));
       const token = await new SignJWT({ role: 'admin' })
         .setProtectedHeader({ alg: 'HS256' })
+        .setIssuedAt()
         .setExpirationTime('1h')
         .sign(key);
 

@@ -30,6 +30,10 @@ import { getEventSystem } from '@ownpilot/core';
 import { MS_PER_MINUTE } from '../config/defaults.js';
 
 const MIN_PASSWORD_LENGTH = 8;
+// H-S13: minimum entropy for BOOTSTRAP_TOKEN. 32 chars of randomness gives ≥128
+// bits if it's truly random; short tokens are brute-forceable in the first-time
+// setup window. We refuse to honor any BOOTSTRAP_TOKEN shorter than this.
+const MIN_BOOTSTRAP_TOKEN_LENGTH = 32;
 
 import { getClientIp as getClientIpShared } from '../utils/client-ip.js';
 
@@ -211,16 +215,56 @@ uiAuthRoutes.post('/password', async (c) => {
       } as never);
       return apiError(
         c,
-        { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Initial password setup is disabled. Set BOOTSTRAP_TOKEN environment variable to enable first-time setup.' },
+        {
+          code: ERROR_CODES.SERVICE_UNAVAILABLE,
+          message:
+            'Initial password setup is disabled. Set BOOTSTRAP_TOKEN environment variable to enable first-time setup.',
+        },
         503
+      );
+    }
+
+    // H-S13: refuse weak bootstrap tokens. The operator's token is unauthenticated
+    // input from the network — a short/predictable one is brute-forceable, and
+    // the throttle (5/15min) on /auth/password gives ~480 attempts/day per IP.
+    if (bootstrapToken.length < MIN_BOOTSTRAP_TOKEN_LENGTH) {
+      getEventSystem().emit('audit.security.privesc_blocked' as never, 'ui-auth', {
+        reason: 'first_password_setup_weak_bootstrap_token',
+        ip: getClientIpHttp(c),
+      } as never);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.SERVICE_UNAVAILABLE,
+          message: `BOOTSTRAP_TOKEN must be at least ${MIN_BOOTSTRAP_TOKEN_LENGTH} characters of high-entropy randomness.`,
+        },
+        503
+      );
+    }
+
+    // H-S13: rate-limit first-time setup attempts by IP. Without this, an
+    // attacker who reaches the gateway before the operator can guess the token
+    // unboundedly.
+    const setupIp = getClientIpHttp(c);
+    const setupThrottle = loginThrottle.check(setupIp);
+    if (!setupThrottle.allowed) {
+      c.header('Retry-After', String(Math.ceil(setupThrottle.retryAfterMs / 1000)));
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.ACCESS_DENIED,
+          message: 'Too many setup attempts. Please try again later.',
+        },
+        429
       );
     }
 
     const providedToken = c.req.header('X-Bootstrap-Token') ?? '';
     if (!providedToken || !safeKeyCompare(providedToken, bootstrapToken)) {
+      loginThrottle.recordFailure(setupIp);
       getEventSystem().emit('audit.security.privesc_blocked' as never, 'ui-auth', {
         reason: 'first_password_setup_invalid_token',
-        ip: getClientIpHttp(c),
+        ip: setupIp,
       } as never);
       return apiError(
         c,
@@ -228,6 +272,7 @@ uiAuthRoutes.post('/password', async (c) => {
         403
       );
     }
+    loginThrottle.recordSuccess(setupIp);
   }
 
   // Hash and store the new password

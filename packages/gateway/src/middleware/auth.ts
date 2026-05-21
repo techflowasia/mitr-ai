@@ -5,33 +5,43 @@
 
 import { createMiddleware } from 'hono/factory';
 import { jwtVerify } from 'jose';
-import { createSecretKey, timingSafeEqual } from 'node:crypto';
+import { createHash, createSecretKey, timingSafeEqual } from 'node:crypto';
 import type { AuthConfig } from '../types/index.js';
 import { apiError, ERROR_CODES, getErrorMessage } from '../routes/helpers.js';
 
+// H-S14: bound candidate length so an attacker can't force megabyte-sized
+// comparisons. Real API keys are <256 chars; longer values are rejected before
+// reaching the comparison loop.
+const MAX_API_KEY_LENGTH = 256;
+
 /**
  * Timing-safe API key check.
+ *
+ * H-S14: hashes both candidate and each valid key to a fixed-size SHA-256
+ * digest and compares the digests with `timingSafeEqual`. This removes the
+ * length-dependent timing leak in the previous variable-length padded compare
+ * (per-iteration buffer alloc + compare cost depended on max(candidate,key)
+ * length, which leaked information about valid-key lengths to an attacker
+ * controlling candidate length).
+ *
+ * The hash on its own is variable-time over the candidate length, but the
+ * candidate is capped above and all keys hash to the same 32-byte digest, so
+ * an attacker can't distinguish key lengths via comparison timing.
+ *
  * Returns true if `candidate` matches any key in `validKeys`.
  */
 function apiKeyMatches(candidate: string, validKeys: string[]): boolean {
-  const candidateBuf = Buffer.from(candidate);
+  if (candidate.length === 0 || candidate.length > MAX_API_KEY_LENGTH) return false;
+  const candidateDigest = createHash('sha256').update(candidate, 'utf8').digest();
   let result = false;
-
   for (const key of validKeys) {
-    const keyBuf = Buffer.from(key);
-    // Always perform timing-safe comparison to avoid leaking key length info
-    // Pad shorter buffer to match longer one to prevent early return timing leaks
-    const maxLen = Math.max(candidateBuf.length, keyBuf.length);
-    const paddedCandidate = Buffer.alloc(maxLen);
-    const paddedKey = Buffer.alloc(maxLen);
-    candidateBuf.copy(paddedCandidate);
-    keyBuf.copy(paddedKey);
-
-    // Only mark as match if lengths are equal AND content matches
-    const equal = timingSafeEqual(paddedCandidate, paddedKey);
-    result = result || (candidateBuf.length === keyBuf.length && equal);
+    if (!key) continue;
+    const keyDigest = createHash('sha256').update(key, 'utf8').digest();
+    // Both buffers are exactly 32 bytes — timingSafeEqual is constant-time
+    // over its (fixed) input length.
+    const equal = timingSafeEqual(candidateDigest, keyDigest);
+    result = result || equal;
   }
-
   return result;
 }
 
@@ -101,6 +111,13 @@ export function createAuthMiddleware(config: AuthConfig) {
   });
 }
 
+// H-S18: bound JWT lifetime. jose enforces `exp` when present, but a token
+// without `exp` would be valid forever. We require `exp` AND `iat`, and cap the
+// age via `maxTokenAge`. Operators can adjust the ceiling via JWT_MAX_TOKEN_AGE
+// (jose accepts "7d", "12h", "3600", etc.).
+const JWT_MAX_TOKEN_AGE = process.env.JWT_MAX_TOKEN_AGE ?? '7d';
+const JWT_CLOCK_TOLERANCE_SEC = parseInt(process.env.JWT_CLOCK_TOLERANCE_SEC ?? '30', 10);
+
 /**
  * JWT validation with proper signature verification using jose
  */
@@ -116,6 +133,9 @@ async function validateJWT(
 
   const { payload } = await jwtVerify(token, secretKey, {
     algorithms: ['HS256'], // Only allow HS256 to prevent algorithm confusion attacks
+    requiredClaims: ['sub', 'exp', 'iat'], // H-S18: reject ever-valid tokens
+    maxTokenAge: JWT_MAX_TOKEN_AGE, // H-S18: bound total lifetime relative to iat
+    clockTolerance: JWT_CLOCK_TOLERANCE_SEC,
   });
 
   if (!payload.sub) {

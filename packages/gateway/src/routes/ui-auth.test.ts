@@ -50,8 +50,9 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
 });
 
-// Set BOOTSTRAP_TOKEN before routes are loaded (used by first-time password setup route)
-process.env.BOOTSTRAP_TOKEN = 'test-bootstrap-token';
+// Set BOOTSTRAP_TOKEN before routes are loaded (used by first-time password setup route).
+// H-S13: must be ≥32 chars to satisfy MIN_BOOTSTRAP_TOKEN_LENGTH.
+process.env.BOOTSTRAP_TOKEN = 'test-bootstrap-token-min32chars-padding';
 
 import { isPasswordConfigured, getPasswordHash, validateSession } from '../services/ui-session.js';
 
@@ -265,7 +266,7 @@ describe('UI Auth Routes', () => {
         body: JSON.stringify({ password: 'new-password-123' }),
         headers: {
           'Content-Type': 'application/json',
-          'X-Bootstrap-Token': 'test-bootstrap-token',
+          'X-Bootstrap-Token': 'test-bootstrap-token-min32chars-padding',
         },
       });
       expect(res.status).toBe(200);
