@@ -28,6 +28,8 @@ import { configServicesRepo } from '../db/repositories/config-services.js';
 import { getLog } from '../services/log.js';
 import { wsGateway } from '../ws/server.js';
 import { hasConfiguredData } from '../services/config-entry-validation.js';
+import { getEventSystem } from '@ownpilot/core';
+import { getClientIp } from '../utils/client-ip.js';
 
 const log = getLog('Plugins');
 
@@ -260,6 +262,15 @@ pluginsRoutes.post('/:id/enable', async (c) => {
 
   wsGateway.broadcast('data:changed', { entity: 'plugin', action: 'updated', id });
 
+  // Audit plugin enable — re-activates the plugin's declared permissions
+  // (network, storage, exec) and its tool/handler registrations.
+  getEventSystem().emit('audit.plugin.enabled' as never, 'plugins', {
+    ip: getClientIp(c.req),
+    pluginId: id,
+    pluginName: plugin.manifest.name,
+    permissions: plugin.manifest.permissions ?? [],
+  } as never);
+
   return apiResponse(c, {
     message: `Plugin ${plugin.manifest.name} enabled`,
     plugin: toPluginInfo(plugin),
@@ -284,6 +295,13 @@ pluginsRoutes.post('/:id/disable', async (c) => {
   const plugin = registry.get(id)!;
 
   wsGateway.broadcast('data:changed', { entity: 'plugin', action: 'updated', id });
+
+  // Audit plugin disable.
+  getEventSystem().emit('audit.plugin.disabled' as never, 'plugins', {
+    ip: getClientIp(c.req),
+    pluginId: id,
+    pluginName: plugin.manifest.name,
+  } as never);
 
   return apiResponse(c, {
     message: `Plugin ${plugin.manifest.name} disabled`,
@@ -315,6 +333,19 @@ pluginsRoutes.put('/:id/config', async (c) => {
   }
 
   wsGateway.broadcast('data:changed', { entity: 'plugin', action: 'updated', id });
+
+  // Audit plugin config change. We log the keys that were mutated but
+  // NOT the values — plugin settings frequently hold API keys, OAuth
+  // tokens, and webhook secrets. Listing keys is enough for forensics
+  // ("the slack token was changed at 14:23 from 1.2.3.4") without
+  // shipping the secret to wherever the audit log ends up.
+  const changedKeys = Object.keys(body.settings ?? {});
+  getEventSystem().emit('audit.plugin.configChanged' as never, 'plugins', {
+    ip: getClientIp(c.req),
+    pluginId: id,
+    pluginName: plugin.manifest.name,
+    changedKeys,
+  } as never);
 
   return apiResponse(c, {
     message: 'Configuration updated',

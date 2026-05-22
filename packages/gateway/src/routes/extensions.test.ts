@@ -110,6 +110,9 @@ vi.mock('@ownpilot/core', () => ({
     error: vi.fn(),
     debug: vi.fn(),
   })),
+  // AUDIT-003 added emit() calls — stub the event system so the
+  // install/uninstall/enable/disable paths don't crash on emit.
+  getEventSystem: vi.fn(() => ({ emit: vi.fn() })),
 }));
 
 vi.mock('./settings.js', () => ({
