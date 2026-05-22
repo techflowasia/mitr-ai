@@ -212,9 +212,16 @@ export class SandboxExecutor {
           return err(new TimeoutError('sandbox:cpu', this.limits.maxCpuTime));
         }
 
-        // Handle other errors
+        // Handle other errors. Note: after C1's host-constructor cleanup, the
+        // sandbox uses the VM context's own `Error` constructor, so errors
+        // thrown from sandbox code are NOT `instanceof Error` here (different
+        // realm). Reach for `.stack` structurally instead of via the brand.
         const errorMessage = getErrorMessage(error);
-        let errorStack = this.debug && error instanceof Error ? error.stack : undefined;
+        const rawStack =
+          this.debug && error && typeof error === 'object' && 'stack' in error
+            ? (error as { stack?: unknown }).stack
+            : undefined;
+        let errorStack = typeof rawStack === 'string' ? rawStack : undefined;
         // Strip host paths from stack trace when debug mode is enabled
         if (errorStack) {
           errorStack = stripHostPaths(errorStack);

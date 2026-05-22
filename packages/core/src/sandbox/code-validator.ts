@@ -106,6 +106,17 @@ export const DANGEROUS_CODE_PATTERNS: ReadonlyArray<CodeValidationPattern> = [
     pattern: /[.[]\s*['"]?\s*constructor\b/,
     message: 'constructor property access is not allowed',
   },
+  // String-concat bypass — `obj['construct'+'or']` evades the literal-token
+  // check above. Legitimate code does not assemble the word "constructor"
+  // from fragments. Catch the common splits explicitly.
+  {
+    pattern: /(['"]construct['"]|['"]constr['"]|['"]con['"]).*\+/,
+    message: 'string-concat constructor access is not allowed',
+  },
+  {
+    pattern: /\+.*?(['"]uctor['"]|['"]ructor['"]|['"]tor['"]|['"]structor['"])/,
+    message: 'string-concat constructor access is not allowed',
+  },
   { pattern: /\bgetPrototypeOf\b/, message: 'getPrototypeOf is not allowed' },
   { pattern: /\bsetPrototypeOf\b/, message: 'setPrototypeOf is not allowed' },
   { pattern: /\bReflect\.construct\b/, message: 'Reflect.construct is not allowed' },

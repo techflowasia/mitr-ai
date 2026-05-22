@@ -23,8 +23,8 @@ return \`Hello, \${name}!\`;
 // ---------------------------------------------------------------------------
 
 describe('DANGEROUS_CODE_PATTERNS', () => {
-  it('contains 34 patterns', () => {
-    expect(DANGEROUS_CODE_PATTERNS).toHaveLength(35);
+  it('contains 37 patterns', () => {
+    expect(DANGEROUS_CODE_PATTERNS).toHaveLength(37);
   });
 });
 

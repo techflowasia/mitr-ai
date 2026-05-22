@@ -189,6 +189,108 @@ export function buildTimers(allowed: boolean, onTimeout: () => void) {
 }
 
 /**
+ * Sandbox-realm Function stub returned from any `.constructor` access on a
+ * wrapped host constructor or instance, so the
+ * `URL → .constructor → .constructor('return process')()` host-realm RCE
+ * chain dead-ends here instead of reaching the real host Function.
+ *
+ * The stub is itself a Proxy that:
+ *  - returns itself for `.constructor` (so the chain stays inside the stub
+ *    forever — `STUB.constructor.constructor.constructor === STUB`)
+ *  - hides `.bind` / `.apply` / `.call` / `.prototype` (each of those would
+ *    leak back to host Function.prototype via the stub's own prototype chain)
+ *  - throws on call so dynamic-code attempts fail loudly.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let SANDBOX_FUNCTION_STUB: any;
+{
+  const stubTarget = function FunctionConstructorDisabled(): never {
+    throw new Error('Function constructor is disabled in the sandbox');
+  };
+  SANDBOX_FUNCTION_STUB = new Proxy(stubTarget, {
+    get(_target, prop) {
+      if (prop === 'constructor') return SANDBOX_FUNCTION_STUB;
+      if (prop === 'name') return 'FunctionConstructorDisabled';
+      if (prop === Symbol.toPrimitive || prop === 'toString') {
+        return () => 'function FunctionConstructorDisabled() { [disabled] }';
+      }
+      // Everything else — `prototype`, `bind`, `apply`, `call`, static slots,
+      // arbitrary symbols — is blocked. They would otherwise leak host realm.
+      return undefined;
+    },
+    getPrototypeOf() {
+      return null;
+    },
+    setPrototypeOf() {
+      return false;
+    },
+    apply() {
+      throw new Error('Function constructor is disabled in the sandbox');
+    },
+    construct() {
+      throw new Error('Function constructor is disabled in the sandbox');
+    },
+  });
+}
+
+/**
+ * Wrap a host-realm constructor so the sandbox cannot walk its prototype chain
+ * into the host Function constructor. Both `Ctor.constructor` and
+ * `(new Ctor(...)).constructor` resolve to {@link SANDBOX_FUNCTION_STUB}.
+ *
+ * Without this wrapper, an injected host constructor like `URL` would let any
+ * sandbox code run `new URL('http://x').constructor.constructor('return process')()`
+ * and obtain HOST-realm code execution — even with `codeGeneration.strings:false`,
+ * which only governs the VM realm's own Function constructor.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function wrapHostConstructor<T extends abstract new (...args: any[]) => any>(HostCtor: T): T {
+  const handler: ProxyHandler<T> = {
+    get(target, prop, receiver) {
+      if (prop === 'constructor') return SANDBOX_FUNCTION_STUB;
+      return Reflect.get(target, prop, receiver);
+    },
+    construct(target, args, newTarget) {
+      const instance = Reflect.construct(
+        target as unknown as new (...a: unknown[]) => unknown,
+        args as unknown[],
+        newTarget === wrapped ? (target as unknown as new (...a: unknown[]) => unknown) : newTarget
+      );
+      return new Proxy(instance as object, {
+        // For host classes with private internal slots (URL, Response, Headers,
+        // TextEncoder…), accessor getters require `this` to be the real
+        // instance, NOT the wrapping Proxy. Forward the real target as
+        // receiver. The Proxy's only job here is to block `.constructor`.
+        get(t, p) {
+          if (p === 'constructor') return SANDBOX_FUNCTION_STUB;
+          const v = Reflect.get(t, p, t);
+          if (typeof v === 'function') {
+            return v.bind(t);
+          }
+          return v;
+        },
+      }) as unknown as object;
+    },
+  };
+  const wrapped = new Proxy(HostCtor, handler);
+  return wrapped;
+}
+
+/**
+ * Wrap a host-realm function (e.g. bound `fetch`) so `.constructor` resolves
+ * to the sandbox stub instead of host Function. The returned function value
+ * is still callable normally.
+ */
+function wrapHostFunction<F extends (...args: never[]) => unknown>(hostFn: F): F {
+  return new Proxy(hostFn, {
+    get(target, prop, receiver) {
+      if (prop === 'constructor') return SANDBOX_FUNCTION_STUB;
+      return Reflect.get(target, prop, receiver);
+    },
+  }) as F;
+}
+
+/**
  * Build the sandbox global context
  */
 export function buildSandboxContext(
@@ -204,27 +306,26 @@ export function buildSandboxContext(
   const timers = buildTimers(perms.timers, () => {});
 
   // Build the context object.
-  // NOTE: Do NOT pass host constructors (Object, Array, Map, etc.) here.
-  // vm.createContext() creates its own V8 built-ins for the sandbox context.
-  // Passing host constructors would share prototype chains, allowing sandbox code
-  // to mutate host prototypes (e.g. Array.prototype.push = ...).
+  //
+  // CRITICAL — host vs VM realm:
+  // `vm.createContext()` gives the sandbox its OWN V8 built-ins (Object, Array,
+  // Function, String, Number, Boolean, Date, RegExp, Error and subclasses, JSON,
+  // Math, Promise, Symbol, Map, Set, WeakMap, WeakSet, Proxy, Reflect, BigInt,
+  // ArrayBuffer, DataView, all typed arrays). Those VM-realm constructors are
+  // SAFE: walking `.constructor.constructor` from a VM-realm value lands on the
+  // VM-realm Function constructor, which compiles strings inside the VM context
+  // (and is blocked by `codeGeneration.strings:false`).
+  //
+  // HOST-realm constructors injected here are NOT safe — `.constructor.constructor`
+  // from a host value lands on the host Function constructor, which compiles
+  // strings in the HOST realm with full `process` access. So we must:
+  //   1. Not inject anything V8 already provides (redundant escape surface).
+  //   2. Wrap the host constructors we DO need to expose (URL, URLSearchParams,
+  //      TextEncoder, TextDecoder, and the network constructors) so their
+  //      `.constructor` returns a sandbox stub instead of host Function.
   const context: Record<string, unknown> = {
-    // Safe globals — namespaces and stateless constructors only.
-    // Do NOT add Object, Array, Map, Set, WeakMap, WeakSet, Promise, Symbol, etc.
-    // Those are created by V8 per-context; passing the host versions shares prototypes.
     console: buildConsole(onLog),
-    JSON,
-    Math,
-    Date,
-    RegExp,
-    Error,
-    TypeError,
-    RangeError,
-    SyntaxError,
-    URIError,
-    // Proxy and Reflect intentionally excluded — can be used for sandbox escape attacks
-
-    // String utilities
+    // Stateless coercion utilities — pure functions with no prototype chain leak.
     encodeURIComponent,
     decodeURIComponent,
     encodeURI,
@@ -234,25 +335,13 @@ export function buildSandboxContext(
     isNaN,
     isFinite,
 
-    // Typed arrays (for data processing)
-    ArrayBuffer,
-    Uint8Array,
-    Uint16Array,
-    Uint32Array,
-    Int8Array,
-    Int16Array,
-    Int32Array,
-    Float32Array,
-    Float64Array,
-    DataView,
-
-    // Text encoding
-    TextEncoder,
-    TextDecoder,
-
-    // URL parsing
-    URL,
-    URLSearchParams,
+    // Node-only host constructors that V8's per-context globals do NOT provide.
+    // Each is Proxy-wrapped so `instance.constructor.constructor` resolves to a
+    // sandbox-realm throwing stub instead of the host Function constructor.
+    URL: wrapHostConstructor(URL),
+    URLSearchParams: wrapHostConstructor(URLSearchParams),
+    TextEncoder: wrapHostConstructor(TextEncoder),
+    TextDecoder: wrapHostConstructor(TextDecoder),
 
     // Timers (if allowed)
     ...(perms.timers
@@ -267,13 +356,15 @@ export function buildSandboxContext(
     // Crypto utilities (if allowed)
     ...(perms.crypto ? { crypto: buildCrypto(true) } : {}),
 
-    // Network utilities (if allowed)
+    // Network utilities (if allowed). `fetch` is wrapped so the returned host
+    // Response's `.constructor.constructor` cannot be walked into host Function.
+    // The constructors themselves are wrapped for the same reason.
     ...(perms.network
       ? {
-          fetch: globalThis.fetch,
-          Response: globalThis.Response,
-          Request: globalThis.Request,
-          Headers: globalThis.Headers,
+          fetch: wrapHostFunction(globalThis.fetch.bind(globalThis)),
+          Response: wrapHostConstructor(globalThis.Response),
+          Request: wrapHostConstructor(globalThis.Request),
+          Headers: wrapHostConstructor(globalThis.Headers),
         }
       : {}),
 

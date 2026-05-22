@@ -269,18 +269,24 @@ describe('buildSandboxContext', () => {
     expect(typeof result.cleanup).toBe('function');
   });
 
-  it('includes safe globals (namespaces and stateless constructors)', () => {
+  it('does NOT inject V8-provided constructors (vm.createContext provides them)', () => {
+    // After the C1 fix, anything V8 supplies per-context is NOT injected from
+    // the host realm. Injecting host versions creates a host-realm RCE chain
+    // via `instance.constructor.constructor`. The VM context already has
+    // Date/RegExp/Error/JSON/Math/typed-arrays/etc. as its own per-context
+    // built-ins, so the sandbox sees them without us passing host references.
     const { context } = buildSandboxContext();
-    expect(context.JSON).toBe(JSON);
-    expect(context.Math).toBe(Math);
-    expect(context.Date).toBe(Date);
-    expect(context.RegExp).toBe(RegExp);
-    expect(context.Error).toBe(Error);
-  });
+    expect(context.JSON).toBeUndefined();
+    expect(context.Math).toBeUndefined();
+    expect(context.Date).toBeUndefined();
+    expect(context.RegExp).toBeUndefined();
+    expect(context.Error).toBeUndefined();
+    expect(context.TypeError).toBeUndefined();
+    expect(context.Uint8Array).toBeUndefined();
+    expect(context.ArrayBuffer).toBeUndefined();
+    expect(context.DataView).toBeUndefined();
 
-  it('excludes host constructors with mutable prototypes to prevent pollution', () => {
-    const { context } = buildSandboxContext();
-    // These must NOT be the host's constructors — vm.createContext() provides its own
+    // Mutable-prototype constructors (assertion preserved from earlier audit).
     expect(context.Array).toBeUndefined();
     expect(context.Object).toBeUndefined();
     expect(context.String).toBeUndefined();
@@ -301,23 +307,31 @@ describe('buildSandboxContext', () => {
     expect(context.isFinite).toBe(isFinite);
   });
 
-  it('includes typed arrays', () => {
+  it('wraps Node-only host constructors (URL, TextEncoder) to block the constructor-chain escape', () => {
+    // V8's per-context globals do NOT include URL / URLSearchParams /
+    // TextEncoder / TextDecoder, so we must inject them — but they are
+    // Proxy-wrapped so `instance.constructor.constructor('return process')()`
+    // dead-ends in a sandbox-realm stub instead of host Function.
     const { context } = buildSandboxContext();
-    expect(context.Uint8Array).toBe(Uint8Array);
-    expect(context.ArrayBuffer).toBe(ArrayBuffer);
-    expect(context.DataView).toBe(DataView);
-  });
+    // Not the host identity any more — wrapped Proxies.
+    expect(context.URL).not.toBe(URL);
+    expect(context.URLSearchParams).not.toBe(URLSearchParams);
+    expect(context.TextEncoder).not.toBe(TextEncoder);
+    expect(context.TextDecoder).not.toBe(TextDecoder);
 
-  it('includes text encoding', () => {
-    const { context } = buildSandboxContext();
-    expect(context.TextEncoder).toBe(TextEncoder);
-    expect(context.TextDecoder).toBe(TextDecoder);
-  });
+    // But they must remain functionally usable.
+    const URLWrap = context.URL as typeof URL;
+    const u = new URLWrap('https://example.com/path?q=1');
+    expect(u.hostname).toBe('example.com');
+    expect(u.pathname).toBe('/path');
 
-  it('includes URL parsing', () => {
-    const { context } = buildSandboxContext();
-    expect(context.URL).toBe(URL);
-    expect(context.URLSearchParams).toBe(URLSearchParams);
+    // And the constructor-chain escape must be blocked.
+    const ctor = (u as unknown as { constructor: unknown }).constructor as unknown as {
+      constructor: (src: string) => () => unknown;
+    };
+    expect(() => ctor.constructor('return typeof process')()).toThrow(
+      /Function constructor is disabled in the sandbox/
+    );
   });
 
   it('blocks dangerous globals as undefined', () => {
