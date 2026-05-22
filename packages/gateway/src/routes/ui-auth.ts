@@ -124,6 +124,13 @@ uiAuthRoutes.post('/login', async (c) => {
   loginThrottle.recordSuccess(clientIp);
   const session = await createSession();
   setUiSessionCookie(c, session.token, session.expiresAt);
+  // Audit successful logins as well as failures — without this, the
+  // audit log shows only attacker noise (failed attempts) and never
+  // the legitimate "who actually got in" signal. Knowing baseline
+  // login behavior is what makes anomaly detection possible.
+  getEventSystem().emit('audit.auth.loginSucceeded' as never, 'ui-auth', {
+    ip: clientIp,
+  } as never);
   return apiResponse(c, {
     expiresAt: session.expiresAt.toISOString(),
   });
@@ -141,6 +148,9 @@ uiAuthRoutes.post('/logout', async (c) => {
 
   await invalidateSession(token);
   clearUiSessionCookie(c);
+  getEventSystem().emit('audit.auth.logout' as never, 'ui-auth', {
+    ip: getClientIpHttp(c),
+  } as never);
   return apiResponse(c, { message: 'Logged out' });
 });
 
@@ -286,6 +296,15 @@ uiAuthRoutes.post('/password', async (c) => {
   const session = await createSession();
   setUiSessionCookie(c, session.token, session.expiresAt);
 
+  // Audit password set/change. This is the highest-value sensitive
+  // operation in the auth surface — without it we have no trail of
+  // who acquired credential access and when.
+  getEventSystem().emit(
+    (existingHash ? 'audit.auth.passwordChanged' : 'audit.auth.passwordSet') as never,
+    'ui-auth',
+    { ip: getClientIpHttp(c) } as never
+  );
+
   return apiResponse(c, {
     message: existingHash ? 'Password changed' : 'Password set',
     expiresAt: session.expiresAt.toISOString(),
@@ -308,6 +327,11 @@ uiAuthRoutes.delete('/password', async (c) => {
 
   await removePassword();
   clearUiSessionCookie(c);
+  // Audit password removal — disabling UI auth is a privilege-relevant
+  // change that should be visible in incident response.
+  getEventSystem().emit('audit.auth.passwordRemoved' as never, 'ui-auth', {
+    ip: getClientIpHttp(c),
+  } as never);
   return apiResponse(c, { message: 'Password removed' });
 });
 
