@@ -1,3 +1,4 @@
--- Add last_cycle_at column to fleet_sessions for orphan detection
--- This column tracks when the fleet last ran a cycle, used by getOrphanedSessions()
-ALTER TABLE fleet_sessions ADD COLUMN IF NOT EXISTS last_cycle_at TIMESTAMPTZ;
+-- No-op (fleet system dropped in migration 038).
+-- This file is kept to preserve migration numbering; the original
+-- ALTER TABLE fleet_sessions ... statement is now obsolete.
+SELECT 1;

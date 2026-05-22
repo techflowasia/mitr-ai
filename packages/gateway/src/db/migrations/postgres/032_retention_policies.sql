@@ -20,7 +20,6 @@ INSERT INTO retention_policies (table_name, retention_days, enabled) VALUES
   ('plan_history',      90, true),
   ('trigger_history',   30, true),
   ('heartbeat_log',    30, true),
-  ('subagent_history', 90, true),
   ('embedding_cache',    7, true),
   ('jobs',              30, true),
   ('job_history',       90, true),

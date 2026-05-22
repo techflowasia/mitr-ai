@@ -9,9 +9,7 @@
 -- have been removed. If those tables are introduced in a later migration,
 -- add their indexes there alongside the CREATE TABLE.
 
--- Fleet tasks: scheduler queries by status + priority ordering
-CREATE INDEX IF NOT EXISTS idx_fleet_tasks_status_priority
-  ON fleet_tasks (status, priority DESC, created_at ASC);
+-- Fleet tasks index removed — fleet system dropped in migration 038.
 
 -- Memories: type-filtered queries
 CREATE INDEX IF NOT EXISTS idx_memories_type ON memories (type);

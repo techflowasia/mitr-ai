@@ -1,18 +1,9 @@
 -- 037_perf_indexes.sql
--- Hot-path indexes that match the actual query shapes used by
--- FleetManager.tick() and the trigger dispatch loop.
+-- Hot-path indexes for the trigger dispatch loop and channel message queries.
 --
--- Both queries today rely on single-column indexes that the planner
--- has to combine + sort over. With realistic row counts (queued
--- tasks per fleet, total enabled schedule triggers) these turn into
--- visible CPU floors in the polling loops.
-
--- FleetManager.tick() calls FleetRepository.getReadyTasks(fleetId, limit)
--- which runs: WHERE fleet_id = $1 AND status = 'queued' ORDER BY priority, created_at
--- Existing indexes are on (fleet_id) and (status) separately. The composite
--- lets Postgres filter on both predicates from a single index scan.
-CREATE INDEX IF NOT EXISTS idx_fleet_tasks_fleet_status
-  ON fleet_tasks(fleet_id, status);
+-- The original migration also created idx_fleet_tasks_fleet_status, but the
+-- fleet system was dropped in migration 038, so only trigger + channel-message
+-- indexes remain here.
 
 -- TriggersRepository.getDueTriggers() runs:
 -- WHERE user_id = $1 AND enabled = true AND type = 'schedule'
