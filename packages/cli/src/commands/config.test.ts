@@ -231,18 +231,21 @@ describe('Config CLI Commands', () => {
       expect(mockSettingsRepo.set).toHaveBeenCalledWith('gateway_rate_limit_window_ms', '60000');
     });
 
-    it('passes unknown keys through with the same dbKey, isApiKey: false', async () => {
-      await configSet({ key: 'some_random_key', value: 'some-value' });
-      expect(mockSettingsRepo.set).toHaveBeenCalledWith('some_random_key', 'some-value');
+    it('refuses to set unknown keys (fail-closed against arbitrary key writes)', async () => {
+      await expect(configSet({ key: 'some_random_key', value: 'some-value' })).rejects.toThrow(
+        'process.exit'
+      );
+      expect(mockSettingsRepo.set).not.toHaveBeenCalled();
       // Not an API key provider — no env var
       expect(process.env['SOME_RANDOM_API_KEY']).toBeUndefined();
     });
 
-    it('treats an unknown provider format "unknown-api-key" as an unknown key, not isApiKey', async () => {
-      // "unknown" is not in VALID_PROVIDERS; falls through to the unknown-key branch
-      await configSet({ key: 'unknown-api-key', value: 'val' });
-      // dbKey should be the raw key string, not api_key:unknown
-      expect(mockSettingsRepo.set).toHaveBeenCalledWith('unknown-api-key', 'val');
+    it('refuses unknown provider formats (e.g. "unknown-api-key") rather than writing api_key:unknown', async () => {
+      // "unknown" is not in VALID_PROVIDERS — must NOT silently fall through.
+      await expect(configSet({ key: 'unknown-api-key', value: 'val' })).rejects.toThrow(
+        'process.exit'
+      );
+      expect(mockSettingsRepo.set).not.toHaveBeenCalled();
     });
   });
 
@@ -393,9 +396,11 @@ describe('Config CLI Commands', () => {
       expect(mockSettingsRepo.set).toHaveBeenCalledWith('default_ai_model', 'gpt-4o');
     });
 
-    it('stores value for an unknown key without error', async () => {
-      await configSet({ key: 'custom_setting', value: 'my-value' });
-      expect(mockSettingsRepo.set).toHaveBeenCalledWith('custom_setting', 'my-value');
+    it('refuses to store an unknown key (settings-table integrity)', async () => {
+      await expect(configSet({ key: 'custom_setting', value: 'my-value' })).rejects.toThrow(
+        'process.exit'
+      );
+      expect(mockSettingsRepo.set).not.toHaveBeenCalled();
     });
 
     it('propagates errors thrown by initializeAdapter', async () => {
@@ -635,10 +640,11 @@ describe('Config CLI Commands', () => {
       expect(mockSettingsRepo.delete).toHaveBeenCalledWith('gateway_jwt_secret');
     });
 
-    it('handles deleting an unknown key that exists in DB', async () => {
-      mockSettingsRepo.has.mockResolvedValueOnce(true);
-      await configDelete({ key: 'custom_key' });
-      expect(mockSettingsRepo.delete).toHaveBeenCalledWith('custom_key');
+    it('refuses to delete unknown keys (fail-closed)', async () => {
+      // No has mock queued — configDelete must exit before reaching has().
+      await expect(configDelete({ key: 'custom_key' })).rejects.toThrow('process.exit');
+      expect(mockSettingsRepo.has).not.toHaveBeenCalled();
+      expect(mockSettingsRepo.delete).not.toHaveBeenCalled();
     });
 
     it('propagates errors from settingsRepo.has', async () => {

@@ -158,20 +158,54 @@ export async function startBot(options: BotOptions): Promise<void> {
 
   // Start bot
   if (options.webhook) {
+    let webhookUrl: URL;
     try {
-      const webhookUrl = new URL(options.webhook);
-      if (webhookUrl.protocol !== 'https:') {
-        console.error('❌ Webhook URL must use HTTPS');
-        process.exit(1);
-      }
+      webhookUrl = new URL(options.webhook);
+    } catch {
+      console.error(`❌ Invalid webhook URL: ${options.webhook}`);
+      process.exit(1);
+    }
+
+    // HTTPS-only — Telegram's setWebhook requires it. Plain http would
+    // expose the bot token (Telegram appends X-Telegram-Bot-Api-Secret-Token
+    // since 2021, but the path/query can still leak otherwise).
+    if (webhookUrl.protocol !== 'https:') {
+      console.error('❌ Webhook URL must use HTTPS');
+      process.exit(1);
+    }
+
+    // Reject embedded credentials. `https://user:pass@example.com/...`
+    // would be sent to Telegram, which then surfaces them in dashboard
+    // diagnostics and in every update POST — a credential-leak sink.
+    if (webhookUrl.username || webhookUrl.password) {
+      console.error('❌ Webhook URL must not embed credentials (user:pass@host)');
+      process.exit(1);
+    }
+
+    // Warn loudly on private/loopback hostnames — Telegram cannot reach
+    // them, so this is almost certainly a misconfiguration. We refuse
+    // (not just warn) because silently calling setWebhook with such a
+    // URL still mutates Telegram's webhook state and may break long
+    // polling without producing any working delivery channel.
+    const host = webhookUrl.hostname.toLowerCase();
+    const PRIVATE_HOST_RE =
+      /^(localhost|127(\.\d+){3}|10(\.\d+){3}|192\.168(\.\d+){2}|172\.(1[6-9]|2\d|3[0-1])(\.\d+){2}|169\.254(\.\d+){2}|::1|fc[0-9a-f]{2}:|fe80::)/i;
+    if (PRIVATE_HOST_RE.test(host) || host.endsWith('.local') || host.endsWith('.internal')) {
+      console.error(
+        `❌ Webhook host "${host}" looks private/internal; Telegram cannot reach it.\n` +
+          '   Use a public HTTPS URL (e.g. a Cloudflare tunnel or ngrok endpoint).'
+      );
+      process.exit(1);
+    }
+
+    try {
       await bot.setWebhook(options.webhook);
+      // Only log origin + path — never the query string, which is
+      // commonly used to carry a secret token.
       console.log(`✅ Webhook set to: ${webhookUrl.origin}${webhookUrl.pathname}`);
     } catch (err) {
-      if (err instanceof TypeError) {
-        console.error(`❌ Invalid webhook URL: ${options.webhook}`);
-        process.exit(1);
-      }
-      throw err;
+      console.error('❌ Failed to set webhook:', err instanceof Error ? err.message : String(err));
+      process.exit(1);
     }
   } else {
     await bot.start();

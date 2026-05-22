@@ -93,27 +93,62 @@ async function readLine(prompt: string): Promise<string> {
 // Sensitive keys that should be masked
 const SENSITIVE_KEYS = ['gateway_api_keys', 'gateway_jwt_secret', 'telegram_bot_token'] as const;
 
+interface ParsedKey {
+  dbKey: string;
+  isApiKey: boolean;
+  isSensitive: boolean;
+  isKnown: boolean;
+}
+
 /**
- * Parse key to database key
+ * Parse key to database key.
+ *
+ * Returns isKnown=false for keys that do not match a known provider API key
+ * pattern or OTHER_KEYS allow-list. Callers that mutate state (configSet,
+ * configDelete) MUST refuse on isKnown=false so the CLI cannot be used to
+ * write arbitrary keys into the settings table — which would let a stray
+ * argument poison gateway-internal keys (e.g. provider defaults, rate
+ * limits, JWT secret) and would also let an attacker with shell access
+ * pivot a setting later read by another component.
  */
-function parseKey(key: string): { dbKey: string; isApiKey: boolean; isSensitive: boolean } {
+function parseKey(key: string): ParsedKey {
   // Check if it's an API key format (e.g., openai-api-key)
   const apiKeyMatch = key.match(/^(\w+)-api-key$/);
   if (apiKeyMatch) {
     const provider = apiKeyMatch[1];
     if (VALID_PROVIDERS.includes(provider as Provider)) {
-      return { dbKey: `${API_KEY_PREFIX}${provider}`, isApiKey: true, isSensitive: true };
+      return {
+        dbKey: `${API_KEY_PREFIX}${provider}`,
+        isApiKey: true,
+        isSensitive: true,
+        isKnown: true,
+      };
     }
   }
 
   // Direct key (e.g., default_ai_provider)
   if (OTHER_KEYS.includes(key as OtherKey)) {
     const isSensitive = SENSITIVE_KEYS.includes(key as (typeof SENSITIVE_KEYS)[number]);
-    return { dbKey: key, isApiKey: false, isSensitive };
+    return { dbKey: key, isApiKey: false, isSensitive, isKnown: true };
   }
 
-  // Unknown key
-  return { dbKey: key, isApiKey: false, isSensitive: false };
+  // Unknown key — callers must refuse for write/delete operations.
+  return { dbKey: key, isApiKey: false, isSensitive: false, isKnown: false };
+}
+
+function listKnownKeys(): string {
+  const apiKeys = VALID_PROVIDERS.map((p) => `${p}-api-key`).join(', ');
+  const others = OTHER_KEYS.join(', ');
+  return `  API keys: ${apiKeys}\n  Other:    ${others}`;
+}
+
+function refuseUnknownKey(key: string, action: 'set' | 'delete'): never {
+  console.error(`\nError: "${key}" is not a recognized configuration key.`);
+  console.error(`Refusing to ${action} arbitrary keys in the settings table.`);
+  console.error('Known keys:');
+  console.error(listKnownKeys());
+  console.error('');
+  process.exit(1);
 }
 
 /**
@@ -125,7 +160,11 @@ export async function configSet(options: ConfigSetOptions): Promise<void> {
   // Initialize database
   await initializeAdapter();
 
-  const { dbKey, isApiKey } = parseKey(key);
+  const parsed = parseKey(key);
+  if (!parsed.isKnown) {
+    refuseUnknownKey(key, 'set');
+  }
+  const { dbKey, isApiKey } = parsed;
 
   // Get value if not provided
   let configValue = value;
@@ -188,7 +227,11 @@ export async function configDelete(options: ConfigDeleteOptions): Promise<void> 
   // Initialize database
   await initializeAdapter();
 
-  const { dbKey, isApiKey } = parseKey(key);
+  const parsed = parseKey(key);
+  if (!parsed.isKnown) {
+    refuseUnknownKey(key, 'delete');
+  }
+  const { dbKey, isApiKey } = parsed;
 
   if (await settingsRepo.has(dbKey)) {
     await settingsRepo.delete(dbKey);

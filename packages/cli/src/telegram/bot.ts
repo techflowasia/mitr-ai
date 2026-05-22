@@ -304,11 +304,22 @@ export class TelegramBot {
   }
 
   /**
-   * Set webhook URL
+   * Set webhook URL.
+   *
+   * The full URL frequently carries a secret token (query string or
+   * path segment). We log only the origin + pathname so the secret
+   * does not land in stdout, file logs, or shipped log aggregations.
    */
   async setWebhook(url: string): Promise<void> {
     await this.bot.api.setWebhook(url);
-    log.info(`Telegram webhook set to: ${url}`);
+    try {
+      const parsed = new URL(url);
+      log.info(`Telegram webhook set to: ${parsed.origin}${parsed.pathname}`);
+    } catch {
+      // Should not happen — caller already validated the URL — but if
+      // it does, log a redacted value rather than the raw input.
+      log.info('Telegram webhook set (URL redacted)');
+    }
   }
 
   /**

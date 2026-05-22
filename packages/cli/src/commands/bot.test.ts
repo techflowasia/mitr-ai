@@ -448,18 +448,55 @@ describe('Bot CLI Command', () => {
         expect(exitSpy).toHaveBeenCalledWith(1);
       });
 
-      it('re-throws non-TypeError errors from webhook setup', async () => {
+      it('exits cleanly (no stack trace) when setWebhook fails', async () => {
         mockSettingsRepo.get.mockResolvedValue('test-token');
         mockGetDefaultProvider.mockResolvedValue('openai');
         mockGetApiKey.mockResolvedValue('test-key');
 
-        // setWebhook throws a non-TypeError after URL is validated
-        const networkError = new Error('Network failure');
-        mockSetWebhook.mockRejectedValueOnce(networkError);
+        // setWebhook rejects after URL validation passes. The CLI must
+        // surface a friendly error and exit(1) rather than re-throwing —
+        // an unhandled rejection would dump the bot token in the trace.
+        mockSetWebhook.mockRejectedValueOnce(new Error('Network failure'));
 
-        await expect(
-          startBot({ token: 'test-token', webhook: 'https://example.com/hook' })
-        ).rejects.toThrow('Network failure');
+        await startBot({ token: 'test-token', webhook: 'https://example.com/hook' }).catch(
+          () => {}
+        );
+
+        expect(errorSpy).toHaveBeenCalledWith(
+          '❌ Failed to set webhook:',
+          expect.stringContaining('Network failure')
+        );
+        expect(exitSpy).toHaveBeenCalledWith(1);
+      });
+
+      it('refuses webhook URLs with embedded credentials', async () => {
+        mockSettingsRepo.get.mockResolvedValue('test-token');
+        mockGetDefaultProvider.mockResolvedValue('openai');
+        mockGetApiKey.mockResolvedValue('test-key');
+
+        await startBot({
+          token: 'test-token',
+          webhook: 'https://user:pass@example.com/hook',
+        }).catch(() => {});
+
+        expect(errorSpy).toHaveBeenCalledWith(
+          expect.stringContaining('must not embed credentials')
+        );
+        expect(exitSpy).toHaveBeenCalledWith(1);
+      });
+
+      it('refuses private/internal webhook hostnames (Telegram cannot reach them)', async () => {
+        mockSettingsRepo.get.mockResolvedValue('test-token');
+        mockGetDefaultProvider.mockResolvedValue('openai');
+        mockGetApiKey.mockResolvedValue('test-key');
+
+        await startBot({
+          token: 'test-token',
+          webhook: 'https://192.168.1.1/hook',
+        }).catch(() => {});
+
+        expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('looks private/internal'));
+        expect(exitSpy).toHaveBeenCalledWith(1);
       });
     });
 
