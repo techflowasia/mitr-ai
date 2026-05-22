@@ -1,7 +1,7 @@
 /**
  * Orphan Session Reconciliation
  *
- * At boot, autonomous systems (Claw, Fleet, Plan, Workflow) may have
+ * At boot, autonomous systems (Claw, Plan, Workflow) may have
  * sessions that were running when the parent process was killed (OOM, crash,
  * SIGKILL, deploy). These sessions are "orphaned" — the DB reflects a running
  * state but no actual process is executing them.
@@ -78,39 +78,6 @@ export async function reconcileOrphanedClaws(): Promise<ReconciliationResult> {
     }
   } catch (err) {
     const msg = `Claw reconciliation failed: ${err}`;
-    log.error(msg);
-    result.errors.push(msg);
-  }
-
-  return result;
-}
-
-// ============================================================================
-// Fleet Reconciliation
-// ============================================================================
-
-/**
- * Reconcile orphaned fleet sessions and tasks.
- * - Fleet sessions: marks state='stopped' if no heartbeat within ORPHAN_THRESHOLD_MS
- * - Fleet tasks: requeues tasks stuck in 'running' (orphaned) for the session
- */
-export async function reconcileOrphanedFleets(): Promise<ReconciliationResult> {
-  const result: ReconciliationResult = { system: 'fleet', orphaned: 0, recovered: 0, errors: [] };
-
-  try {
-    const { getFleetRepository } = await import('../db/repositories/fleet.js');
-    const repo = getFleetRepository();
-
-    // Requeue orphaned tasks (stuck in 'running' from previous crash)
-    const requeuedTasks = await repo.requeueOrphanedTasks('__all__');
-    result.orphaned += requeuedTasks;
-    result.recovered += requeuedTasks;
-
-    if (requeuedTasks > 0) {
-      log.warn(`[reconcile] Fleet: requeued ${requeuedTasks} orphaned tasks`);
-    }
-  } catch (err) {
-    const msg = `Fleet reconciliation failed: ${err}`;
     log.error(msg);
     result.errors.push(msg);
   }
@@ -236,7 +203,6 @@ export async function reconcileOrphanedSessions(): Promise<ReconciliationResult[
 
   const results = await Promise.allSettled([
     reconcileOrphanedClaws(),
-    reconcileOrphanedFleets(),
     reconcileOrphanedWorkflows(),
     reconcileOrphanedPlans(),
   ]);

@@ -44,7 +44,7 @@ import {
   Receipt,
   RefreshCw,
 } from '../components/icons';
-import { costsApi, summaryApi, clawsApi, soulsApi, fleetApi, workflowsApi } from '../api';
+import { costsApi, summaryApi, clawsApi, soulsApi, workflowsApi } from '../api';
 import type { ProviderBreakdown, DailyUsage } from '../api';
 import type { SummaryData, CostsData } from '../types';
 import { Skeleton } from '../components/Skeleton';
@@ -66,7 +66,6 @@ interface ClawStats {
 interface AgentCounts {
   souls: number;
   claws: number;
-  fleets: number;
   workflows: number;
 }
 
@@ -361,7 +360,6 @@ export function AnalyticsPage() {
   const [agentCounts, setAgentCounts] = useState<AgentCounts>({
     souls: 0,
     claws: 0,
-    fleets: 0,
     workflows: 0,
   });
   const [subscriptionData, setSubscriptionData] = useState<{
@@ -380,25 +378,16 @@ export function AnalyticsPage() {
       if (showRefresh) setIsRefreshing(true);
       else setIsLoading(true);
       try {
-        const [
-          usageRes,
-          breakdownRes,
-          summaryRes,
-          clawStatsRes,
-          soulsRes,
-          fleetsRes,
-          wfRes,
-          subsRes,
-        ] = await Promise.allSettled([
-          costsApi.usage(),
-          costsApi.getBreakdown(period),
-          summaryApi.get(),
-          clawsApi.stats(),
-          soulsApi.list(),
-          fleetApi.list(),
-          workflowsApi.list(),
-          costsApi.getSubscriptions(),
-        ]);
+        const [usageRes, breakdownRes, summaryRes, clawStatsRes, soulsRes, wfRes, subsRes] =
+          await Promise.allSettled([
+            costsApi.usage(),
+            costsApi.getBreakdown(period),
+            summaryApi.get(),
+            clawsApi.stats(),
+            soulsApi.list(),
+            workflowsApi.list(),
+            costsApi.getSubscriptions(),
+          ]);
 
         if (usageRes.status === 'fulfilled') setUsage(usageRes.value);
         if (breakdownRes.status === 'fulfilled') setBreakdown(breakdownRes.value);
@@ -418,7 +407,6 @@ export function AnalyticsPage() {
         setAgentCounts({
           souls: count(soulsRes),
           claws: clawStatsRes.status === 'fulfilled' ? (clawStatsRes.value as ClawStats).total : 0,
-          fleets: count(fleetsRes),
           workflows: count(wfRes),
         });
 
@@ -482,7 +470,6 @@ export function AnalyticsPage() {
   const agentBarData = [
     { name: 'Soul Agents', count: agentCounts.souls, fill: '#6366f1' },
     { name: 'Claws', count: agentCounts.claws, fill: '#ec4899' },
-    { name: 'Fleet', count: agentCounts.fleets, fill: '#f97316' },
     { name: 'Workflows', count: agentCounts.workflows, fill: '#22c55e' },
   ];
 

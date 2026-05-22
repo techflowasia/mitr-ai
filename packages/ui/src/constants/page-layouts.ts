@@ -141,10 +141,9 @@ const DASHBOARD_PAGE: PageLayout = {
       label: 'Agents Tab',
       lines: [201, 350],
       file: 'pages/DashboardPage.tsx',
-      description: 'Soul agents, fleet overview',
+      description: 'Soul agents overview',
       subComponents: [
         { name: 'SoulAgentsWidget', file: 'components/dashboard/SoulAgentsWidget.tsx', lines: 80 },
-        { name: 'FleetWidget', file: 'components/dashboard/FleetWidget.tsx', lines: 80 },
       ],
     },
     {

@@ -2,7 +2,7 @@
  * Safe Value Utilities
  *
  * Guards against NaN, Infinity, negative values in cost/duration calculations.
- * Centralizes the safeCost pattern originally from ClawManager and FleetManager.
+ * Centralizes the safeCost pattern originally from ClawManager.
  */
 
 // ============================================================================

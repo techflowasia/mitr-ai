@@ -2,7 +2,7 @@
  * LLM Concurrency Semaphore
  *
  * Limits the number of simultaneous LLM API calls across all agents
- * (claws, fleet workers, subagents). When all slots are occupied,
+ * (claws, etc.). When all slots are occupied,
  * new callers wait in a FIFO queue — no busy-polling.
  *
  * Each slot tracks which agentId is holding it, enabling the UI to

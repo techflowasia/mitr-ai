@@ -10,7 +10,6 @@
  *  - artifacts         (create/updateArtifact)
  *  - pulse directives  (pulseDirectives)
  *  - tool execution    (executeTool, batchExecuteTools)
- *  - fleets            (create/updateFleet, addFleetTasks, broadcastToFleet)
  */
 
 import { z } from 'zod';
@@ -396,99 +395,4 @@ export const batchExecuteToolsSchema = z.object({
     )
     .min(1)
     .max(20),
-});
-
-// ─── Fleets ──────────────────────────────────────────────────────
-//
-// API uses snake_case but internal types are camelCase. The worker
-// schema accepts either spelling per field; route handlers prefer
-// snake_case when both are present (matching the pre-validation
-// behaviour).
-
-const fleetWorkerTypeEnum = z.enum(['ai-chat', 'coding-cli', 'api-call', 'mcp-bridge', 'claw']);
-const fleetScheduleTypeEnum = z.enum(['continuous', 'interval', 'cron', 'event', 'on-demand']);
-const fleetTaskPriorityEnum = z.enum(['low', 'normal', 'high', 'critical']);
-
-const fleetWorkerSchema = z.object({
-  name: z.string().min(1).max(200),
-  type: fleetWorkerTypeEnum,
-  description: z.string().max(2000).optional(),
-  provider: z.string().max(100).optional(),
-  model: z.string().max(200).optional(),
-  system_prompt: z.string().max(50_000).optional(),
-  systemPrompt: z.string().max(50_000).optional(),
-  allowed_tools: z.array(z.string().max(200)).max(500).optional(),
-  allowedTools: z.array(z.string().max(200)).max(500).optional(),
-  skills: z.array(z.string().max(200)).max(100).optional(),
-  cli_provider: z.string().max(100).optional(),
-  cliProvider: z.string().max(100).optional(),
-  cwd: z.string().max(1000).optional(),
-  mcp_server: z.string().max(200).optional(),
-  mcpServer: z.string().max(200).optional(),
-  mcp_tools: z.array(z.string().max(200)).max(200).optional(),
-  mcpTools: z.array(z.string().max(200)).max(200).optional(),
-  max_turns: z.number().int().positive().max(1000).optional(),
-  maxTurns: z.number().int().positive().max(1000).optional(),
-  max_tokens: z.number().int().positive().max(1_000_000).optional(),
-  maxTokens: z.number().int().positive().max(1_000_000).optional(),
-  timeout_ms: z.number().int().positive().max(3_600_000).optional(),
-  timeoutMs: z.number().int().positive().max(3_600_000).optional(),
-});
-
-export const createFleetSchema = z.object({
-  name: z.string().min(1).max(300),
-  mission: z.string().min(1).max(10_000),
-  description: z.string().max(5000).optional(),
-  workers: z.array(fleetWorkerSchema).min(1).max(100),
-  schedule_type: fleetScheduleTypeEnum.optional(),
-  schedule_config: z.record(z.string(), z.unknown()).optional(),
-  budget: z.record(z.string(), z.unknown()).optional(),
-  concurrency_limit: z.number().int().positive().max(1000).optional(),
-  auto_start: z.boolean().optional(),
-  provider: z.string().max(100).optional(),
-  model: z.string().max(200).optional(),
-  shared_context: z.record(z.string(), z.unknown()).optional(),
-});
-
-export const updateFleetSchema = z.object({
-  name: z.string().min(1).max(300).optional(),
-  mission: z.string().min(1).max(10_000).optional(),
-  description: z.string().max(5000).optional(),
-  workers: z.array(fleetWorkerSchema).max(100).optional(),
-  schedule_type: fleetScheduleTypeEnum.optional(),
-  schedule_config: z.record(z.string(), z.unknown()).optional(),
-  budget: z.record(z.string(), z.unknown()).optional(),
-  concurrency_limit: z.number().int().positive().max(1000).optional(),
-  auto_start: z.boolean().optional(),
-  provider: z.string().max(100).optional(),
-  model: z.string().max(200).optional(),
-  shared_context: z.record(z.string(), z.unknown()).optional(),
-});
-
-const fleetTaskInputSchema = z.object({
-  title: z.string().min(1).max(500),
-  description: z.string().max(10_000).optional(),
-  assigned_worker: z.string().max(200).optional(),
-  priority: fleetTaskPriorityEnum.optional(),
-  input: z.record(z.string(), z.unknown()).optional(),
-  depends_on: z.array(z.string().max(200)).max(100).optional(),
-  max_retries: z.number().int().min(0).max(20).optional(),
-});
-
-/**
- * POST /:id/tasks accepts:
- *   - a single task object
- *   - an array of tasks
- *   - an envelope { tasks: [...] }
- *
- * The route handler normalises to an array; the schema accepts the union.
- */
-export const addFleetTasksSchema = z.union([
-  fleetTaskInputSchema,
-  z.array(fleetTaskInputSchema).min(1).max(100),
-  z.object({ tasks: z.array(fleetTaskInputSchema).min(1).max(100) }),
-]);
-
-export const broadcastToFleetSchema = z.object({
-  message: z.string().min(1).max(10_000),
 });

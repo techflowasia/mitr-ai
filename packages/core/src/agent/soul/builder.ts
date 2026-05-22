@@ -74,7 +74,7 @@ ${soul.identity.boundaries.map((b) => `- ${b}`).join('\n')}`
   if (soul.autonomy.level === 5 && soul.autonomy.clawMode?.enabled) {
     const caps: string[] = ['All tools available (unrestricted access)'];
     if (soul.autonomy.clawMode.canManageAgents) {
-      caps.push('Can spawn subagents and manage fleets');
+      caps.push('Can spawn subclaws');
     }
     if (soul.autonomy.clawMode.canCreateTools) {
       caps.push('Can create tools at runtime');

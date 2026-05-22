@@ -142,7 +142,6 @@ export type {
   CrewMemoryEntry,
   CrewTask,
 } from './souls';
-export { fleetApi } from './fleet';
 export { clawsApi } from './claws';
 export type {
   ClawConfig,
@@ -162,21 +161,6 @@ export type {
   CreateClawInput,
   UpdateClawInput,
 } from './claws';
-export type {
-  FleetConfig,
-  FleetSession,
-  FleetTask,
-  FleetWorkerConfig,
-  FleetWorkerResult,
-  FleetWorkerType,
-  FleetScheduleType,
-  FleetSessionState,
-  FleetTaskPriority,
-  FleetTaskStatus,
-  FleetBudget,
-  CreateFleetInput,
-  CreateFleetTaskInput,
-} from './fleet';
 export { edgeApi } from './edge';
 export type {
   EdgeDevice,

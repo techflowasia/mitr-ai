@@ -70,7 +70,7 @@ export function HelpPanel({ onClose }: Props) {
               </div>
               <p className="text-xs text-text-muted dark:text-dark-text-muted">
                 Autonomous agents with workspace, directives, and audit trail. Run continuously, on
-                intervals, event-driven, or single-shot. Use Fleet for multi-worker coordination.
+                intervals, event-driven, or single-shot. Spawn subclaws for parallel work.
               </p>
             </div>
           </section>

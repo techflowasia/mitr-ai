@@ -1,7 +1,7 @@
 /**
  * Shared utilities for autonomous agent runners.
  *
- * Eliminates duplication across SubagentRunner and FleetWorker
+ * Eliminates duplication across autonomous runners (claws, etc.)
  * by extracting common patterns:
  * - Tool registration pipeline
  * - Agent creation from provider config
@@ -188,7 +188,7 @@ export async function createConfiguredAgent(opts: CreateAgentOptions): Promise<A
   const providerInstance = createProvider(agentProviderConfig);
 
   // Compute a model-aware memory cap and output buffer so autonomous runners
-  // (claws, subagents, fleet workers) stay inside the model's context window
+  // (claws, etc.) stay inside the model's context window
   // on small models too. Pass `dynamicInjectionReserve: 0` because autonomous
   // runners don't go through the chat context-injection middleware.
   const ctxWindow = resolveContextWindow(opts.provider, opts.model);

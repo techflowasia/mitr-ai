@@ -3,13 +3,11 @@
  *
  * Provides army-level commands:
  * - Broadcast commands to multiple agents
- * - Deploy fleets (crews with missions)
  * - Monitor all agents at once
  * - Aggregate results from multiple agents
  */
 
 import { Hono } from 'hono';
-import { randomUUID } from 'node:crypto';
 import {
   apiResponse,
   apiError,
@@ -21,14 +19,10 @@ import {
 import { getSoulsRepository } from '../db/repositories/souls.js';
 import { getCrewsRepository } from '../db/repositories/crews.js';
 import { getHeartbeatLogRepository } from '../db/repositories/heartbeat-log.js';
-import { getFleetRepository } from '../db/repositories/fleet.js';
-import { agentsRepo } from '../db/repositories/agents.js';
-import { getFleetService } from '../services/fleet-service.js';
 import { getClawService } from '../services/claw-service.js';
 import {
   validateBody,
   agentCommandSchema,
-  deployFleetSchema,
   agentMissionSchema,
   agentExecuteSchema,
   agentToolsBatchUpdateSchema,
@@ -37,7 +31,7 @@ import {
 export const agentCommandCenterRoutes = new Hono();
 
 // ═══════════════════════════════════════════════════════════════════════════
-// FLEET OPERATIONS (Multi-Agent Commands)
+// MULTI-AGENT COMMANDS
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ── POST /command — broadcast command to multiple agents ──────────────────
@@ -148,157 +142,6 @@ agentCommandCenterRoutes.post('/command', async (c) => {
   }
 });
 
-// ── POST /deploy-fleet — deploy multiple agents with a shared mission ─────
-
-agentCommandCenterRoutes.post('/deploy-fleet', async (c) => {
-  try {
-    const body = validateBody(deployFleetSchema, await c.req.json());
-
-    const count = Math.min(body.agentCount ?? 1, 10); // Max 10 agents per fleet
-    const { settingsRepo } = await import('../db/repositories/index.js');
-
-    const [defaultProvider, defaultModel] = await Promise.all([
-      settingsRepo.get<string>('default_ai_provider'),
-      settingsRepo.get<string>('default_ai_model'),
-    ]);
-
-    const provider = body.provider ?? defaultProvider ?? 'anthropic';
-    const model = body.model ?? defaultModel ?? 'claude-sonnet-4-5-20251001';
-
-    const soulRepo = getSoulsRepository();
-    const agents: { agentId: string; role: string; name: string }[] = [];
-
-    // Create fleet crew
-    const crewRepo = getCrewsRepository();
-    const crew = await crewRepo.create({
-      name: body.name,
-      description: body.mission,
-      templateId: 'fleet',
-      coordinationPattern: body.coordinationPattern ?? 'hub_spoke',
-      status: 'active',
-    });
-
-    // Create agents with different roles
-    const defaultRoles = ['coordinator', 'researcher', 'executor', 'reviewer'];
-    const roles = body.roles ?? defaultRoles;
-
-    for (let i = 0; i < count; i++) {
-      const agentId = randomUUID();
-      const role = roles[i % roles.length] ?? 'member';
-      const name = `${body.name} ${role.charAt(0).toUpperCase() + role.slice(1)} ${i + 1}`;
-
-      // Create agent
-      await agentsRepo.create({
-        id: agentId,
-        name,
-        systemPrompt: `You are ${role} in fleet "${body.name}". Mission: ${body.mission}`,
-        provider,
-        model,
-      });
-
-      // Create soul with role-specific configuration
-      await soulRepo.create({
-        agentId,
-        identity: {
-          name,
-          emoji:
-            role === 'coordinator'
-              ? '👑'
-              : role === 'researcher'
-                ? '🔍'
-                : role === 'executor'
-                  ? '⚡'
-                  : '✓',
-          role: role.charAt(0).toUpperCase() + role.slice(1),
-          personality: `Specialized ${role} agent`,
-          voice: { tone: 'professional', language: 'en', quirks: [] },
-          boundaries: [],
-        },
-        purpose: {
-          mission: `${body.mission} (Role: ${role})`,
-          goals: [`Execute ${role} duties`, 'Collaborate with fleet members'],
-          expertise: [role],
-          toolPreferences: [],
-        },
-        autonomy: {
-          level: 3,
-          allowedActions: [
-            'search_web',
-            'create_note',
-            'read_url',
-            'search_memories',
-            'send_message_to_user',
-          ],
-          blockedActions: ['delete_data', 'execute_code'],
-          requiresApproval: [],
-          maxCostPerCycle: 0.5,
-          maxCostPerDay: 5.0,
-          maxCostPerMonth: 100.0,
-          pauseOnConsecutiveErrors: 5,
-          pauseOnBudgetExceeded: true,
-          notifyUserOnPause: true,
-        },
-        heartbeat: {
-          enabled: true,
-          interval: '0 */6 * * *',
-          checklist: [],
-          selfHealingEnabled: true,
-          maxDurationMs: 120000,
-        },
-        relationships: {
-          delegates: [],
-          peers: [], // Will be populated with other fleet members
-          channels: [],
-          crewId: crew.id,
-        },
-        evolution: {
-          version: 1,
-          evolutionMode: 'supervised',
-          coreTraits: [],
-          mutableTraits: [],
-          learnings: [],
-          feedbackLog: [],
-        },
-        bootSequence: {
-          onStart: ['announce_presence'],
-          onHeartbeat: ['read_inbox', 'check_fleet_status'],
-          onMessage: ['respond_and_act'],
-        },
-      });
-
-      // Add to crew
-      await crewRepo.addMember(crew.id, agentId, role);
-      agents.push({ agentId, role, name });
-    }
-
-    // Update peer relationships
-    for (const agent of agents) {
-      const peers = agents.filter((a) => a.agentId !== agent.agentId).map((a) => a.agentId);
-      const soul = await soulRepo.getByAgentId(agent.agentId);
-      if (soul) {
-        soul.relationships.peers = peers;
-        await soulRepo.update(soul);
-      }
-    }
-
-    return apiResponse(
-      c,
-      {
-        fleetId: crew.id,
-        name: body.name,
-        mission: body.mission,
-        agents,
-        coordinationPattern: body.coordinationPattern ?? 'hub_spoke',
-      },
-      201
-    );
-  } catch (err) {
-    if (err instanceof Error && err.message.startsWith('Validation failed:'))
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
-    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
-  }
-});
-
 // ── GET /overview — Unified view of all agent runners ──────────────────────
 
 agentCommandCenterRoutes.get('/overview', async (c) => {
@@ -306,272 +149,200 @@ agentCommandCenterRoutes.get('/overview', async (c) => {
     const userId = getUserId(c);
     const hbRepo = getHeartbeatLogRepository();
     const crewRepo = getCrewsRepository();
-    const fleetRepo = getFleetRepository();
     const soulRepo = getSoulsRepository();
     const clawService = getClawService();
 
-    const [
-      fleetStats,
-      fleetHealth,
-      soulStats,
-      soulHealth,
-      crewStats,
-      crewHealth,
-      souls,
-      crews,
-      clawStats,
-      clawHealth,
-    ] = await Promise.all([
-      fleetRepo.getStats(userId).catch(() => ({
-        totalFleets: 0,
-        totalSessions: 0,
-        totalWorkers: 0,
-        successRate: 0,
-        avgCost: 0,
-        avgDuration: 0,
-        totalCost: 0,
-        errorRate: 0,
-        byState: {},
-        totalTokens: { input: 0, output: 0 },
-        tasksCompleted: 0,
-        tasksFailed: 0,
-      })),
-      (async () => {
-        try {
-          const service = getFleetService();
-          const configs = await service.listFleets(userId);
-          const sessions = await fleetRepo.listSessions(userId);
-          const signals: string[] = [];
-          const recommendations: string[] = [];
-          const running = sessions.filter((s) => s.state === 'running');
-          const noWorkers = running.filter((s) => s.activeWorkers === 0);
-          const overBudget = (
-            configs as Array<{ id: string; budget?: { maxCostUsd?: number } }>
-          ).filter((cfg) => {
-            if (!cfg.budget?.maxCostUsd) return false;
-            const session = sessions.find((s) => s.fleetId === (cfg as { id: string }).id);
-            return session && session.totalCostUsd >= cfg.budget.maxCostUsd;
-          });
-          let score = 80;
-          let status: 'healthy' | 'watch' | 'stuck' | 'failed' | 'expensive' = 'healthy';
-          if (overBudget.length > 0) {
-            score = Math.min(score, 25);
-            status = 'expensive';
+    const [soulStats, soulHealth, crewStats, crewHealth, souls, crews, clawStats, clawHealth] =
+      await Promise.all([
+        hbRepo
+          .getStatsByUser(userId)
+          .catch(() => ({ totalCycles: 0, totalCost: 0, avgDurationMs: 0, failureRate: 0 })),
+        (async () => {
+          try {
+            const stats = await hbRepo
+              .getStatsByUser(userId)
+              .catch(() => ({ totalCycles: 0, totalCost: 0, avgDurationMs: 0, failureRate: 0 }));
+            const score = stats.failureRate > 0.5 ? 30 : stats.failureRate > 0.2 ? 55 : 90;
+            const status: 'healthy' | 'watch' | 'stuck' | 'failed' =
+              stats.failureRate > 0.5 ? 'failed' : stats.failureRate > 0.2 ? 'watch' : 'healthy';
+            const signals: string[] =
+              stats.failureRate > 0.2
+                ? [`high failure rate: ${(stats.failureRate * 100).toFixed(1)}%`]
+                : [];
+            const recommendations: string[] =
+              stats.failureRate > 0.2
+                ? ['Review failed heartbeat tasks and agent configuration']
+                : [];
+            return {
+              status,
+              score,
+              signals,
+              recommendations,
+              totalCycles: stats.totalCycles,
+              totalCost: stats.totalCost,
+              failureRate: stats.failureRate,
+            };
+          } catch {
+            return {
+              status: 'healthy' as const,
+              score: 90,
+              signals: [] as string[],
+              recommendations: [] as string[],
+              totalCycles: 0,
+              totalCost: 0,
+              failureRate: 0,
+            };
           }
-          if (noWorkers.length > 0) {
-            score = Math.min(score, 40);
-            status = 'stuck';
-          }
-          if (running.length === 0 && sessions.length > 0) {
-            score = 65;
-            status = 'watch';
-          }
-          return {
-            status,
-            score,
-            signals,
-            recommendations,
-            activeFleets: running.length,
-            totalFleets: sessions.length,
-          };
-        } catch {
-          return {
-            status: 'healthy' as const,
-            score: 80,
-            signals: [] as string[],
-            recommendations: [] as string[],
-            activeFleets: 0,
-          };
-        }
-      })(),
-      hbRepo
-        .getStatsByUser(userId)
-        .catch(() => ({ totalCycles: 0, totalCost: 0, avgDurationMs: 0, failureRate: 0 })),
-      (async () => {
-        try {
-          const stats = await hbRepo
-            .getStatsByUser(userId)
-            .catch(() => ({ totalCycles: 0, totalCost: 0, avgDurationMs: 0, failureRate: 0 }));
-          const score = stats.failureRate > 0.5 ? 30 : stats.failureRate > 0.2 ? 55 : 90;
-          const status: 'healthy' | 'watch' | 'stuck' | 'failed' =
-            stats.failureRate > 0.5 ? 'failed' : stats.failureRate > 0.2 ? 'watch' : 'healthy';
-          const signals: string[] =
-            stats.failureRate > 0.2
-              ? [`high failure rate: ${(stats.failureRate * 100).toFixed(1)}%`]
-              : [];
-          const recommendations: string[] =
-            stats.failureRate > 0.2
-              ? ['Review failed heartbeat tasks and agent configuration']
-              : [];
-          return {
-            status,
-            score,
-            signals,
-            recommendations,
-            totalCycles: stats.totalCycles,
-            totalCost: stats.totalCost,
-            failureRate: stats.failureRate,
-          };
-        } catch {
-          return {
-            status: 'healthy' as const,
-            score: 90,
-            signals: [] as string[],
-            recommendations: [] as string[],
+        })(),
+        crewRepo
+          .list(userId, 1000, 0)
+          .then((crews) => ({
+            totalCrews: crews.length,
             totalCycles: 0,
             totalCost: 0,
             failureRate: 0,
-          };
-        }
-      })(),
-      crewRepo
-        .list(userId, 1000, 0)
-        .then((crews) => ({
-          totalCrews: crews.length,
-          totalCycles: 0,
-          totalCost: 0,
-          failureRate: 0,
-          byStatus: crews.reduce(
-            (acc, cr) => {
-              acc[cr.status] = (acc[cr.status] ?? 0) + 1;
-              return acc;
-            },
-            {} as Record<string, number>
-          ),
-        }))
-        .catch(() => ({
-          totalCrews: 0,
-          totalCycles: 0,
-          totalCost: 0,
-          failureRate: 0,
-          byStatus: {} as Record<string, number>,
-        })),
-      (async () => {
-        try {
-          const crews = await crewRepo.list(userId, 100, 0);
-          const allMembers = await Promise.all(crews.map((crew) => crewRepo.getMembers(crew.id)));
-          const agentIds = allMembers.flatMap((m) => m.map((mem) => mem.agentId));
-          const latestHBMap = await hbRepo.getLatestByAgentIds(agentIds);
-          let totalErrors = 0;
-          let neverRun = 0;
-          for (const members of allMembers) {
-            for (const m of members) {
-              const lastHB = latestHBMap.get(m.agentId);
-              if (!lastHB) neverRun++;
-              else if (lastHB.tasksFailed.length > 0) totalErrors++;
-            }
-          }
-          const score =
-            totalErrors > 0 ? Math.max(30, 70 - totalErrors * 10) : neverRun > 0 ? 75 : 85;
-          const status: 'healthy' | 'watch' | 'stuck' | 'failed' =
-            totalErrors > 3 ? 'watch' : 'healthy';
-          const signals: string[] = [];
-          const recommendations: string[] = [];
-          if (totalErrors > 0) {
-            signals.push(totalErrors + ' agents with errors');
-            recommendations.push('Review individual agent heartbeat logs');
-          }
-          if (neverRun > 0) signals.push(neverRun + ' agents never run');
-          return {
-            status,
-            score,
-            signals,
-            recommendations,
-            totalCrews: crews.length,
-            pausedCrews: crews.filter((c) => c.status === 'paused').length,
-          };
-        } catch {
-          return {
-            status: 'healthy' as const,
-            score: 80,
-            signals: [] as string[],
-            recommendations: [] as string[],
+            byStatus: crews.reduce(
+              (acc, cr) => {
+                acc[cr.status] = (acc[cr.status] ?? 0) + 1;
+                return acc;
+              },
+              {} as Record<string, number>
+            ),
+          }))
+          .catch(() => ({
             totalCrews: 0,
-            pausedCrews: 0,
-          };
-        }
-      })(),
-      soulRepo.list(userId, 1000, 0).catch(() => []),
-      crewRepo.list(userId, 100, 0).catch(() => []),
-      (async () => {
-        try {
-          const configs = await clawService.listClaws(userId);
-          const sessions = clawService.listSessions(userId);
-          const totalCost = sessions.reduce((s, ses) => s + ses.totalCostUsd, 0);
-          const totalCycles = sessions.reduce((s, ses) => s + ses.cyclesCompleted, 0);
-          const byMode: Record<string, number> = {};
-          const byState: Record<string, number> = {};
-          for (const cfg of configs) {
-            byMode[cfg.mode] = (byMode[cfg.mode] ?? 0) + 1;
-            const state = sessions.find((s) => s.config.id === cfg.id)?.state ?? 'stopped';
-            byState[state] = (byState[state] ?? 0) + 1;
+            totalCycles: 0,
+            totalCost: 0,
+            failureRate: 0,
+            byStatus: {} as Record<string, number>,
+          })),
+        (async () => {
+          try {
+            const crews = await crewRepo.list(userId, 100, 0);
+            const allMembers = await Promise.all(crews.map((crew) => crewRepo.getMembers(crew.id)));
+            const agentIds = allMembers.flatMap((m) => m.map((mem) => mem.agentId));
+            const latestHBMap = await hbRepo.getLatestByAgentIds(agentIds);
+            let totalErrors = 0;
+            let neverRun = 0;
+            for (const members of allMembers) {
+              for (const m of members) {
+                const lastHB = latestHBMap.get(m.agentId);
+                if (!lastHB) neverRun++;
+                else if (lastHB.tasksFailed.length > 0) totalErrors++;
+              }
+            }
+            const score =
+              totalErrors > 0 ? Math.max(30, 70 - totalErrors * 10) : neverRun > 0 ? 75 : 85;
+            const status: 'healthy' | 'watch' | 'stuck' | 'failed' =
+              totalErrors > 3 ? 'watch' : 'healthy';
+            const signals: string[] = [];
+            const recommendations: string[] = [];
+            if (totalErrors > 0) {
+              signals.push(totalErrors + ' agents with errors');
+              recommendations.push('Review individual agent heartbeat logs');
+            }
+            if (neverRun > 0) signals.push(neverRun + ' agents never run');
+            return {
+              status,
+              score,
+              signals,
+              recommendations,
+              totalCrews: crews.length,
+              pausedCrews: crews.filter((c) => c.status === 'paused').length,
+            };
+          } catch {
+            return {
+              status: 'healthy' as const,
+              score: 80,
+              signals: [] as string[],
+              recommendations: [] as string[],
+              totalCrews: 0,
+              pausedCrews: 0,
+            };
           }
-          return {
-            total: configs.length,
-            running: sessions.filter((s) => ['running', 'starting', 'waiting'].includes(s.state))
-              .length,
-            totalCost: Math.round(totalCost * 10000) / 10000,
-            totalCycles,
-            byMode,
-            byState,
-          };
-        } catch {
-          return { total: 0, running: 0, totalCost: 0, totalCycles: 0, byMode: {}, byState: {} };
-        }
-      })(),
-      (async () => {
-        try {
-          const configs = await clawService.listClaws(userId);
-          const sessions = clawService.listSessions(userId);
-          const signals: string[] = [];
-          const recommendations: string[] = [];
-          const failedConfigs = configs.filter((cfg) => {
-            const session = sessions.find((s) => s.config.id === cfg.id);
-            if (!session) return false;
-            if (session.state === 'failed') return true;
-            if (session.lastCycleError) return true;
-            return false;
-          });
-          const runningCount = sessions.filter((s) =>
-            ['running', 'starting', 'waiting'].includes(s.state)
-          ).length;
-          if (failedConfigs.length > 0) {
-            signals.push(`${failedConfigs.length} claw(s) need attention`);
-            recommendations.push('Review claws with failed/stuck status');
+        })(),
+        soulRepo.list(userId, 1000, 0).catch(() => []),
+        crewRepo.list(userId, 100, 0).catch(() => []),
+        (async () => {
+          try {
+            const configs = await clawService.listClaws(userId);
+            const sessions = clawService.listSessions(userId);
+            const totalCost = sessions.reduce((s, ses) => s + ses.totalCostUsd, 0);
+            const totalCycles = sessions.reduce((s, ses) => s + ses.cyclesCompleted, 0);
+            const byMode: Record<string, number> = {};
+            const byState: Record<string, number> = {};
+            for (const cfg of configs) {
+              byMode[cfg.mode] = (byMode[cfg.mode] ?? 0) + 1;
+              const state = sessions.find((s) => s.config.id === cfg.id)?.state ?? 'stopped';
+              byState[state] = (byState[state] ?? 0) + 1;
+            }
+            return {
+              total: configs.length,
+              running: sessions.filter((s) => ['running', 'starting', 'waiting'].includes(s.state))
+                .length,
+              totalCost: Math.round(totalCost * 10000) / 10000,
+              totalCycles,
+              byMode,
+              byState,
+            };
+          } catch {
+            return { total: 0, running: 0, totalCost: 0, totalCycles: 0, byMode: {}, byState: {} };
           }
-          if (runningCount === 0 && configs.length > 0) {
-            signals.push('No claws currently running');
-            recommendations.push('Start a claw or set one to auto-start');
+        })(),
+        (async () => {
+          try {
+            const configs = await clawService.listClaws(userId);
+            const sessions = clawService.listSessions(userId);
+            const signals: string[] = [];
+            const recommendations: string[] = [];
+            const failedConfigs = configs.filter((cfg) => {
+              const session = sessions.find((s) => s.config.id === cfg.id);
+              if (!session) return false;
+              if (session.state === 'failed') return true;
+              if (session.lastCycleError) return true;
+              return false;
+            });
+            const runningCount = sessions.filter((s) =>
+              ['running', 'starting', 'waiting'].includes(s.state)
+            ).length;
+            if (failedConfigs.length > 0) {
+              signals.push(`${failedConfigs.length} claw(s) need attention`);
+              recommendations.push('Review claws with failed/stuck status');
+            }
+            if (runningCount === 0 && configs.length > 0) {
+              signals.push('No claws currently running');
+              recommendations.push('Start a claw or set one to auto-start');
+            }
+            const score =
+              failedConfigs.length === 0
+                ? runningCount > 0
+                  ? 90
+                  : 75
+                : Math.max(30, 70 - failedConfigs.length * 15);
+            const status: 'healthy' | 'watch' | 'stuck' | 'failed' =
+              failedConfigs.length > 2 ? 'stuck' : failedConfigs.length > 0 ? 'watch' : 'healthy';
+            return {
+              status,
+              score,
+              signals,
+              recommendations,
+              needsAttention: failedConfigs.length,
+            };
+          } catch {
+            return {
+              status: 'healthy' as const,
+              score: 75,
+              signals: [] as string[],
+              recommendations: [] as string[],
+              needsAttention: 0,
+            };
           }
-          const score =
-            failedConfigs.length === 0
-              ? runningCount > 0
-                ? 90
-                : 75
-              : Math.max(30, 70 - failedConfigs.length * 15);
-          const status: 'healthy' | 'watch' | 'stuck' | 'failed' =
-            failedConfigs.length > 2 ? 'stuck' : failedConfigs.length > 0 ? 'watch' : 'healthy';
-          return { status, score, signals, recommendations, needsAttention: failedConfigs.length };
-        } catch {
-          return {
-            status: 'healthy' as const,
-            score: 75,
-            signals: [] as string[],
-            recommendations: [] as string[],
-            needsAttention: 0,
-          };
-        }
-      })(),
-    ]);
+        })(),
+      ]);
 
-    const totalCost =
-      (fleetStats.totalCost ?? 0) + (soulStats.totalCost ?? 0) + (clawStats.totalCost ?? 0);
+    const totalCost = (soulStats.totalCost ?? 0) + (clawStats.totalCost ?? 0);
 
     return apiResponse(c, {
-      fleet: {
-        stats: fleetStats,
-        health: fleetHealth,
-      },
       soul: {
         stats: soulStats,
         health: soulHealth,
@@ -877,7 +648,7 @@ agentCommandCenterRoutes.post('/execute', async (c) => {
   }
 });
 
-// ── GET /analytics — get fleet-wide analytics ─────────────────────────────
+// ── GET /analytics — get aggregate agent analytics ────────────────────────
 
 agentCommandCenterRoutes.get('/analytics', async (c) => {
   try {

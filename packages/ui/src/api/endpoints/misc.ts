@@ -76,44 +76,6 @@ export const autonomyApi = {
 
 // ---- Agent Command Center ----
 
-interface SubagentStats {
-  total: number;
-  active: number;
-  successRate: number;
-  avgCost: number;
-  avgDuration: number;
-  totalCost: number;
-  errorRate: number;
-  byState: Record<string, number>;
-  totalTokens: { input: number; output: number };
-}
-interface SubagentHealth {
-  status: string;
-  score: number;
-  signals: string[];
-  recommendations: string[];
-}
-interface FleetStats {
-  totalFleets: number;
-  totalSessions: number;
-  totalWorkers: number;
-  successRate: number;
-  avgCost: number;
-  avgDuration: number;
-  totalCost: number;
-  errorRate: number;
-  byState: Record<string, number>;
-  totalTokens: { input: number; output: number };
-  tasksCompleted: number;
-  tasksFailed: number;
-}
-interface FleetHealth {
-  status: string;
-  score: number;
-  signals: string[];
-  recommendations: string[];
-  activeFleets: number;
-}
 interface OrchestraStats {
   total: number;
   active: number;
@@ -177,8 +139,6 @@ interface ClawHealth {
 }
 
 export interface AgentOverview {
-  subagent: { stats: SubagentStats; health: SubagentHealth };
-  fleet: { stats: FleetStats; health: FleetHealth };
   orchestra: { stats: OrchestraStats; health: OrchestraHealth };
   soul: { stats: SoulStats; health: SoulHealth };
   crew: { stats: CrewStats; health: CrewHealth };

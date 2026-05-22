@@ -253,8 +253,7 @@ export interface ServerEvents {
       | 'mcp_server'
       | 'workflow'
       | 'artifact'
-      | 'edge-device'
-      | 'fleet';
+      | 'edge-device';
     action: 'created' | 'updated' | 'deleted';
     id?: string;
     count?: number;
@@ -465,36 +464,6 @@ export interface ServerEvents {
     totalDurationMs: number;
     tasksSucceeded: number;
     tasksFailed: number;
-  };
-
-  // Fleet events
-  'fleet:started': { fleetId: string; name: string };
-  'fleet:stopped': { fleetId: string };
-  'fleet:paused': { fleetId: string };
-  'fleet:resumed': { fleetId: string };
-  'fleet:cycle:start': { fleetId: string; cycle: number; taskCount: number };
-  'fleet:cycle:end': {
-    fleetId: string;
-    cycle: number;
-    tasksCompleted: number;
-    tasksFailed: number;
-    cycleCost: number;
-  };
-  'fleet:worker:started': {
-    fleetId: string;
-    taskId: string;
-    workerName: string;
-    workerType: string;
-  };
-  'fleet:worker:completed': {
-    fleetId: string;
-    taskId: string;
-    workerName: string;
-    workerType: string;
-    success: boolean;
-    output: string;
-    durationMs: number;
-    costUsd: number;
   };
 
   // WebChat events

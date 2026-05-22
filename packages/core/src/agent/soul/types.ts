@@ -125,7 +125,7 @@ export interface SoulAutonomy {
 export interface ClawModeConfig {
   /** Whether claw mode is active */
   enabled: boolean;
-  /** Can spawn/manage other agents (subagents, fleets) */
+  /** Can spawn/manage other agents (subclaws) */
   canManageAgents: boolean;
   /** Can create tools at runtime */
   canCreateTools: boolean;

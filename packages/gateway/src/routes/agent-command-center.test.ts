@@ -3,12 +3,11 @@
  *
  * Tests for all endpoints:
  *  POST /command         — broadcast command to multiple agents
- *  POST /deploy-fleet    — deploy agents with a shared mission
  *  GET  /status          — get status of all agents
  *  POST /mission         — assign mission to agents / crews
  *  GET  /activity        — recent activity from all agents
  *  POST /execute         — execute agents immediately
- *  GET  /analytics       — fleet-wide analytics
+ *  GET  /analytics       — aggregate agent analytics
  *  POST /tools/batch-update — update tools for multiple agents
  */
 
@@ -189,7 +188,7 @@ function makeCrew(id = 'crew-1', overrides: Record<string, unknown> = {}) {
     id,
     name: 'Test Crew',
     description: 'A test crew',
-    templateId: 'fleet',
+    templateId: 'default',
     coordinationPattern: 'hub_spoke',
     status: 'active',
     workspaceId: 'user-1',
@@ -528,148 +527,6 @@ describe('Agent Command Center Routes', () => {
   });
 
   // ===========================================================================
-  // POST /acc/deploy-fleet
-  // ===========================================================================
-
-  describe('POST /acc/deploy-fleet', () => {
-    it('returns 400 when name is missing', async () => {
-      const res = await app.request('/acc/deploy-fleet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mission: 'Do stuff', agentCount: 2 }),
-      });
-      expect(res.status).toBe(400);
-      const json = await res.json();
-      expect(json.success).toBe(false);
-      expect(json.error.message).toMatch(/Validation failed:.*name/i);
-    });
-
-    it('returns 400 when mission is missing', async () => {
-      const res = await app.request('/acc/deploy-fleet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Alpha Fleet', agentCount: 2 }),
-      });
-      expect(res.status).toBe(400);
-      const json = await res.json();
-      expect(json.success).toBe(false);
-    });
-
-    it('deploys a fleet with 201 status', async () => {
-      const crew = makeCrew('crew-fleet-1', { name: 'Alpha Fleet' });
-      mockCrewsRepo.create.mockResolvedValue(crew);
-      mockAgentsRepo.create.mockResolvedValue({
-        id: 'new-agent',
-        name: 'Alpha Fleet Coordinator 1',
-      });
-      mockSoulsRepo.create.mockResolvedValue(makeSoul('new-agent'));
-      mockCrewsRepo.addMember.mockResolvedValue(undefined);
-      mockSoulsRepo.getByAgentId.mockResolvedValue(
-        makeSoul('new-agent', { relationships: { peers: [], delegates: [], channels: [] } })
-      );
-      mockSoulsRepo.update.mockResolvedValue(undefined);
-
-      const res = await app.request('/acc/deploy-fleet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: 'Alpha Fleet',
-          mission: 'Conquer search results',
-          agentCount: 2,
-        }),
-      });
-
-      expect(res.status).toBe(201);
-      const json = await res.json();
-      expect(json.success).toBe(true);
-      expect(json.data.name).toBe('Alpha Fleet');
-      expect(json.data.mission).toBe('Conquer search results');
-      expect(json.data.fleetId).toBe('crew-fleet-1');
-      expect(Array.isArray(json.data.agents)).toBe(true);
-    });
-
-    it('returns 400 when agentCount exceeds max of 10', async () => {
-      const res = await app.request('/acc/deploy-fleet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: 'Big Fleet',
-          mission: 'Take over',
-          agentCount: 50,
-        }),
-      });
-
-      expect(res.status).toBe(400);
-      const json = await res.json();
-      expect(json.success).toBe(false);
-      expect(json.error.message).toMatch(/Validation failed:.*agentCount/i);
-    });
-
-    it('uses default hub_spoke pattern when not specified', async () => {
-      const crew = makeCrew('crew-1');
-      mockCrewsRepo.create.mockResolvedValue(crew);
-      mockAgentsRepo.create.mockResolvedValue({ id: 'x', name: 'X' });
-      mockSoulsRepo.create.mockResolvedValue(makeSoul('x'));
-      mockCrewsRepo.addMember.mockResolvedValue(undefined);
-      mockSoulsRepo.getByAgentId.mockResolvedValue(
-        makeSoul('x', { relationships: { peers: [], delegates: [], channels: [] } })
-      );
-      mockSoulsRepo.update.mockResolvedValue(undefined);
-
-      const res = await app.request('/acc/deploy-fleet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Fleet X', mission: 'Do X', agentCount: 1 }),
-      });
-
-      expect(res.status).toBe(201);
-      const json = await res.json();
-      expect(json.data.coordinationPattern).toBe('hub_spoke');
-    });
-
-    it('uses provided coordination pattern', async () => {
-      const crew = makeCrew('crew-2', { coordinationPattern: 'pipeline' });
-      mockCrewsRepo.create.mockResolvedValue(crew);
-      mockAgentsRepo.create.mockResolvedValue({ id: 'y', name: 'Y' });
-      mockSoulsRepo.create.mockResolvedValue(makeSoul('y'));
-      mockCrewsRepo.addMember.mockResolvedValue(undefined);
-      mockSoulsRepo.getByAgentId.mockResolvedValue(
-        makeSoul('y', { relationships: { peers: [], delegates: [], channels: [] } })
-      );
-      mockSoulsRepo.update.mockResolvedValue(undefined);
-
-      const res = await app.request('/acc/deploy-fleet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: 'Pipeline Fleet',
-          mission: 'Pipeline tasks',
-          agentCount: 1,
-          coordinationPattern: 'pipeline',
-        }),
-      });
-
-      expect(res.status).toBe(201);
-      const json = await res.json();
-      expect(json.data.coordinationPattern).toBe('pipeline');
-    });
-
-    it('returns 500 when crew creation fails', async () => {
-      mockCrewsRepo.create.mockRejectedValue(new Error('DB failure'));
-
-      const res = await app.request('/acc/deploy-fleet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Fail Fleet', mission: 'Fail', agentCount: 1 }),
-      });
-
-      expect(res.status).toBe(500);
-      const json = await res.json();
-      expect(json.success).toBe(false);
-    });
-  });
-
-  // ===========================================================================
   // GET /acc/status
   // ===========================================================================
 
@@ -836,7 +693,7 @@ describe('Agent Command Center Routes', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           crewIds: ['crew-1'],
-          mission: 'Fleet mission',
+          mission: 'Crew mission',
         }),
       });
 

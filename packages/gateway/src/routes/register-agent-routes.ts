@@ -17,7 +17,6 @@ import {
   debugRoutes,
   auditRoutes,
   heartbeatsRoutes,
-  fleetRoutes,
   clawRoutes,
 } from './index.js';
 
@@ -40,9 +39,6 @@ export function registerAgentRoutes(app: Hono): void {
 
   // Heartbeats (NL-to-cron periodic tasks)
   app.route('/api/v1/heartbeats', heartbeatsRoutes);
-
-  // Fleet (coordinated agent army)
-  app.route('/api/v1/fleet', fleetRoutes);
 
   // Claws (unified autonomous agent runtime)
   app.route('/api/v1/claws', clawRoutes);

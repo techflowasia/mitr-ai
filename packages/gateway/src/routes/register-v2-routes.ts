@@ -39,7 +39,6 @@ import {
   debugRoutes,
   auditRoutes,
   heartbeatsRoutes,
-  fleetRoutes,
   clawRoutes,
   // Data
   personalDataRoutes,
@@ -138,9 +137,6 @@ export function registerV2Routes(app: Hono): void {
 
   // Heartbeats
   app.route('/api/v2/heartbeats', heartbeatsRoutes);
-
-  // Fleet
-  app.route('/api/v2/fleet', fleetRoutes);
 
   // Claws
   app.route('/api/v2/claws', clawRoutes);

@@ -7,10 +7,9 @@
  *  - autonomy policy + caps  (autonomyConfig/Level/Budget, pulseSettings)
  *  - autonomy decision flow  (autonomyDecision, approve/reject, assess,
  *                             approvalRequest, toolPermission)
- *  - command center          (agentCommand, deployFleet, agentMission,
+ *  - command center          (agentCommand, agentMission,
  *                             agentExecute, agentToolsBatchUpdate)
  *  - inter-agent messaging   (sendAgentMessage)
- *  - subagent spawning       (spawnSubagent)
  */
 
 import { z } from 'zod';
@@ -154,16 +153,6 @@ export const agentCommandSchema = z.object({
   timeoutMs: z.number().int().positive().max(300000).optional(),
 });
 
-export const deployFleetSchema = z.object({
-  name: z.string().min(1).max(200),
-  mission: z.string().min(1).max(5000),
-  agentCount: z.number().int().min(1).max(10).optional(),
-  roles: z.array(z.string().max(100)).max(10).optional(),
-  provider: z.string().max(100).optional(),
-  model: z.string().max(200).optional(),
-  coordinationPattern: z.enum(['hub_spoke', 'peer_to_peer', 'pipeline']).optional(),
-});
-
 export const agentMissionSchema = z.object({
   agentIds: z.array(z.string().max(200)).max(100).optional(),
   crewIds: z.array(z.string().max(200)).max(50).optional(),
@@ -222,25 +211,4 @@ export const sendAgentMessageSchema = z.object({
   requiresResponse: z.boolean().optional(),
   deadline: z.string().max(100).optional(),
   crewId: z.string().max(200).optional(),
-});
-
-// ─── Subagents ───────────────────────────────────────────────────
-
-export const spawnSubagentSchema = z.object({
-  name: z.string().min(1).max(200),
-  task: z.string().min(1).max(50000),
-  parentId: z.string().max(200).optional(),
-  parentType: z.enum(['chat', 'claw', 'subagent']).optional(),
-  context: z.string().max(50000).optional(),
-  allowedTools: z.array(z.string().max(200)).max(200).optional(),
-  provider: z.string().max(100).optional(),
-  model: z.string().max(200).optional(),
-  limits: z
-    .object({
-      maxTokens: z.number().int().min(1).max(128000).optional(),
-      maxTurns: z.number().int().min(1).max(100).optional(),
-      maxToolCalls: z.number().int().min(1).max(500).optional(),
-      timeout: z.number().int().min(1000).max(600000).optional(),
-    })
-    .optional(),
 });

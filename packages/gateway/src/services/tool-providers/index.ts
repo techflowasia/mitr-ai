@@ -37,8 +37,6 @@ import {
   executeEdgeTool,
   SKILL_TOOLS,
   executeSkillTool,
-  FLEET_TOOLS,
-  executeFleetTool,
 } from '../../tools/index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../config-tools.js';
 import { getErrorMessage } from '../../routes/helpers.js';
@@ -371,20 +369,6 @@ export function createSkillToolProvider(userId: string): ToolProvider {
       SKILL_TOOLS.map((def) => ({
         definition: def,
         executor: wrapGatewayExecutor(def, executeSkillTool, userId),
-      })),
-  };
-}
-
-/**
- * Create a provider for fleet management tools (requires userId).
- */
-export function createFleetToolProvider(userId: string): ToolProvider {
-  return {
-    name: 'fleet',
-    getTools: () =>
-      FLEET_TOOLS.map((def) => ({
-        definition: def,
-        executor: wrapGatewayExecutor(def, executeFleetTool, userId),
       })),
   };
 }

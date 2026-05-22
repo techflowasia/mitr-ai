@@ -114,7 +114,7 @@ export function EventMonitorPage() {
   const eventIdCounter = useRef(0);
 
   // Subscribe to event:message, event:subscribed, event:publish:ack, event:publish:error
-  // Also subscribe to raw legacy WS events (claw:*, fleet:*, orchestra:*, etc.)
+  // Also subscribe to raw legacy WS events (claw:*, orchestration:*, etc.)
   useEffect(() => {
     const unsubs = [
       subscribe<{ type: string; source: string; data: unknown; timestamp: string }>(
@@ -168,20 +168,12 @@ export function EventMonitorPage() {
           'claw:cycle:start',
           'claw:cycle:complete',
           'claw:cycle:skipped',
-          'fleet:started',
-          'fleet:stopped',
-          'fleet:paused',
-          'fleet:resumed',
-          'fleet:cycle:start',
-          'fleet:cycle:end',
           'orchestration:created',
           'orchestration:step:started',
           'orchestration:step:completed',
           'orchestration:finished',
           'orchestration:cancelled',
           'orchestration:error',
-          'subagent:spawned',
-          'subagent:completed',
           'soul:heartbeat:completed',
           'crew:task:created',
           'crew:task:claimed',

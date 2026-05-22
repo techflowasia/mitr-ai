@@ -36,12 +36,10 @@ export {
   autonomyAssessSchema,
   autonomyApprovalRequestSchema,
   agentCommandSchema,
-  deployFleetSchema,
   agentMissionSchema,
   agentExecuteSchema,
   agentToolsBatchUpdateSchema,
   sendAgentMessageSchema,
-  spawnSubagentSchema,
 } from './schemas/agent.js';
 
 export {
@@ -96,10 +94,6 @@ export {
   clawApplyRecommendationsSchema,
   executeToolSchema,
   batchExecuteToolsSchema,
-  createFleetSchema,
-  updateFleetSchema,
-  addFleetTasksSchema,
-  broadcastToFleetSchema,
 } from './schemas/workflow-claws.js';
 
 export {

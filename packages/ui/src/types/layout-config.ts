@@ -65,7 +65,6 @@ export type SidebarSectionId =
   | 'agents'
   | 'claws'
   | 'triggers'
-  | 'fleet'
   | 'artifacts'
   // Tools & Extensions
   | 'tools'
@@ -146,7 +145,6 @@ export const SIDEBAR_SECTION_LABELS: Record<string, string> = {
   agents: 'Agents',
   claws: 'Claws',
   triggers: 'Triggers',
-  fleet: 'Fleet Command',
   artifacts: 'Artifacts',
   // Tools & Extensions
   tools: 'Tools',

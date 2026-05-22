@@ -46,7 +46,6 @@ import {
   ShieldCheck,
   Send,
   MonitorCheck,
-  Layers,
   LayoutTemplate,
   Wifi,
 } from '../components/icons';
@@ -145,7 +144,6 @@ export const navGroups: NavGroup[] = [
     badge: 'Beta',
     items: [
       { to: '/claws', icon: Zap, label: 'Claws' },
-      { to: '/fleet', icon: Layers, label: 'Fleet Command' },
       { to: '/edge-devices', icon: Wifi, label: 'Edge Devices' },
       { to: '/coding-agents', icon: Terminal, label: 'Coding Agents' },
       { to: '/orchestration', icon: Zap, label: 'Orchestration' },

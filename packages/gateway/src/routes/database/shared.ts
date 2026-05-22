@@ -68,11 +68,6 @@ export const EXPORT_TABLES = [
   'claw_sessions',
   'claw_history',
   'claw_audit_log',
-  // Fleets
-  'fleets',
-  'fleet_sessions',
-  'fleet_tasks',
-  'fleet_worker_history',
   // Extensions & Plugins
   'user_extensions',
   'plugins',

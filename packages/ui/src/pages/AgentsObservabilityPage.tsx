@@ -3,7 +3,7 @@
  *
  * Tab structure:
  * - Home: unified overview of all runners
- * - Fleet / Orchestra / Soul / Crew / Claw: per-runner drill-down
+ * - Orchestra / Soul / Crew / Claw: per-runner drill-down
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -13,7 +13,6 @@ import {
   XCircle,
   Clock,
   DollarSign,
-  Layers,
   Zap,
   Users,
   Heart,
@@ -26,7 +25,7 @@ import {
 import { apiClient } from '../api';
 import { useGateway } from '../hooks/useWebSocket';
 import { useToast } from '../components/ToastProvider';
-import { fleetApi, orchestrationApi, soulsApi, crewsApi, clawsApi } from '../api';
+import { orchestrationApi, soulsApi, crewsApi, clawsApi } from '../api';
 import type { HeartbeatLog } from '../api/endpoints/souls';
 import { heartbeatLogsApi } from '../api';
 import { silentCatch } from '../utils/ignore-error';
@@ -38,27 +37,6 @@ interface RunnerHealth {
   score: number;
   signals: string[];
   recommendations: string[];
-}
-
-interface FleetStats {
-  totalFleets: number;
-  running: number;
-  totalWorkers: number;
-  successRate: number;
-  avgCost: number;
-  avgDuration: number;
-  totalCost: number;
-  errorRate: number;
-  byState: Record<string, number>;
-  totalTokens: { input: number; output: number };
-  tasksCompleted: number;
-  tasksFailed: number;
-  activeWorkers: number;
-  [key: string]: unknown;
-}
-interface FleetHealth extends RunnerHealth {
-  activeFleets: number;
-  totalFleets: number;
 }
 
 interface OrchestraStats {
@@ -122,11 +100,10 @@ interface ClawHealth extends RunnerHealth {
 
 // ── Tab definitions ───────────────────────────────────────────────────────────
 
-type TabId = 'home' | 'fleet' | 'orchestra' | 'soul' | 'crew' | 'claw';
+type TabId = 'home' | 'orchestra' | 'soul' | 'crew' | 'claw';
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'home', label: 'Home', icon: Home },
-  { id: 'fleet', label: 'Fleet', icon: Layers },
   { id: 'orchestra', label: 'Orchestra', icon: Zap },
   { id: 'soul', label: 'Soul', icon: Heart },
   { id: 'crew', label: 'Crew', icon: Users },
@@ -267,14 +244,12 @@ function StatsCard({
 // ── Home tab ──────────────────────────────────────────────────────────────────
 
 function HomeTab({
-  fleet,
   orchestra,
   soul,
   crew,
   claw,
   onSelectTab,
 }: {
-  fleet: { stats: FleetStats | null; health: FleetHealth | null };
   orchestra: { stats: OrchestraStats | null; health: OrchestraHealth | null };
   soul: { stats: SoulStats | null; health: SoulHealth | null };
   crew: { stats: CrewStats | null; health: CrewHealth | null };
@@ -282,7 +257,6 @@ function HomeTab({
   onSelectTab: (tab: TabId) => void;
 }) {
   const totalCost =
-    (fleet.stats?.totalCost ?? 0) +
     (orchestra.stats?.totalCost ?? 0) +
     (soul.stats?.totalCost ?? 0) +
     (crew.stats?.totalCost ?? 0) +
@@ -292,13 +266,6 @@ function HomeTab({
     <div className="space-y-6">
       {/* Summary strip */}
       <div className="flex items-center gap-6 px-4 py-3 bg-bg-tertiary/50 dark:bg-dark-bg-tertiary/50 rounded-xl border border-border dark:border-dark-border text-xs">
-        {fleet.stats && (
-          <div className="flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5 text-purple-500" />
-            <span className="text-text-secondary font-medium">{fleet.stats.totalFleets}</span>
-            <span className="text-text-muted">fleets</span>
-          </div>
-        )}
         {orchestra.stats && (
           <div className="flex items-center gap-1.5">
             <Zap className="w-3.5 h-3.5 text-amber-500" />
@@ -340,16 +307,6 @@ function HomeTab({
       {/* Runner cards grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <RunnerCard
-          title="Fleet Command"
-          icon={Layers}
-          iconColor="text-purple-500"
-          stats={
-            fleet.stats ?? { totalFleets: 0, totalWorkers: 0, tasksCompleted: 0, totalCost: 0 }
-          }
-          health={fleet.health}
-          onClick={() => onSelectTab('fleet')}
-        />
-        <RunnerCard
           title="Orchestration"
           icon={Zap}
           iconColor="text-amber-500"
@@ -385,42 +342,6 @@ function HomeTab({
 
       {/* Detail panels */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {fleet.stats && (
-          <div className="card-elevated p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
-            <div className="flex items-center gap-2 mb-3">
-              <Layers className="w-4 h-4 text-purple-500" />
-              <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">
-                Fleet
-              </h3>
-            </div>
-            <div className="space-y-1">
-              <StatRow
-                label="Total Fleets"
-                value={fleet.stats.totalFleets.toString()}
-                icon={Layers}
-                color="text-purple-500"
-              />
-              <StatRow
-                label="Running"
-                value={fleet.stats.running.toString()}
-                icon={Activity}
-                color="text-green-500"
-              />
-              <StatRow
-                label="Tasks Completed"
-                value={fleet.stats.tasksCompleted.toLocaleString()}
-                icon={CheckCircle2}
-                color="text-emerald-500"
-              />
-              <StatRow
-                label="Total Cost"
-                value={`$${fleet.stats.totalCost.toFixed(4)}`}
-                icon={DollarSign}
-                color="text-amber-500"
-              />
-            </div>
-          </div>
-        )}
         {orchestra.stats && (
           <div className="card-elevated p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
             <div className="flex items-center gap-2 mb-3">
@@ -554,97 +475,6 @@ function HomeTab({
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-// ── Fleet tab ─────────────────────────────────────────────────────────────────
-
-function FleetTab({ stats, health }: { stats: FleetStats | null; health: FleetHealth | null }) {
-  return (
-    <div className="space-y-6">
-      {health && (
-        <div
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium w-fit ${
-            health.status === 'healthy'
-              ? 'text-green-500'
-              : health.status === 'watch'
-                ? 'text-yellow-500'
-                : health.status === 'expensive'
-                  ? 'text-orange-500'
-                  : 'text-red-500'
-          } bg-opacity-20`}
-        >
-          {health.status} (score: {health.score})
-          {health.signals.length > 0 && ` · ${health.signals.join(', ')}`}
-        </div>
-      )}
-
-      {stats && (
-        <div className="grid grid-cols-4 gap-4">
-          <StatsCard
-            label="Total Fleets"
-            value={stats.totalFleets.toString()}
-            icon={Layers}
-            color="text-purple-500"
-          />
-          <StatsCard
-            label="Running"
-            value={stats.running.toString()}
-            icon={Activity}
-            color="text-green-500"
-          />
-          <StatsCard
-            label="Total Workers"
-            value={stats.totalWorkers.toString()}
-            icon={Users}
-            color="text-blue-500"
-          />
-          <StatsCard
-            label="Tasks Completed"
-            value={stats.tasksCompleted.toLocaleString()}
-            icon={CheckCircle2}
-            color="text-emerald-500"
-          />
-          <StatsCard
-            label="Tasks Failed"
-            value={stats.tasksFailed.toLocaleString()}
-            icon={XCircle}
-            color="text-red-500"
-          />
-          <StatsCard
-            label="Success Rate"
-            value={`${(stats.successRate * 100).toFixed(1)}%`}
-            icon={CheckCircle2}
-            color="text-emerald-500"
-          />
-          <StatsCard
-            label="Avg Cost"
-            value={`$${stats.avgCost.toFixed(4)}`}
-            icon={DollarSign}
-            color="text-amber-500"
-          />
-          <StatsCard
-            label="Total Cost"
-            value={`$${stats.totalCost.toFixed(4)}`}
-            icon={DollarSign}
-            color="text-indigo-500"
-          />
-        </div>
-      )}
-
-      {health && health.recommendations.length > 0 && (
-        <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-          <h3 className="text-sm font-medium text-yellow-500 mb-2">Recommendations</h3>
-          <ul className="space-y-1">
-            {health.recommendations.map((r, i) => (
-              <li key={i} className="text-xs text-yellow-400">
-                → {r}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   );
 }
@@ -1134,10 +964,6 @@ export function AgentsObservabilityPage() {
 
   const [activeTab, setActiveTab] = useState<TabId>('home');
 
-  const [fleet, setFleet] = useState<{ stats: FleetStats | null; health: FleetHealth | null }>({
-    stats: null,
-    health: null,
-  });
   const [orchestra, setOrchestra] = useState<{
     stats: OrchestraStats | null;
     health: OrchestraHealth | null;
@@ -1160,8 +986,7 @@ export function AgentsObservabilityPage() {
   const loadAll = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [fl, orc, soulRes, crewRes, clawStatsResult] = await Promise.allSettled([
-        Promise.all([fleetApi.stats(), fleetApi.health()]),
+      const [orc, soulRes, crewRes, clawStatsResult] = await Promise.allSettled([
         Promise.all([orchestrationApi.stats(), orchestrationApi.health()]),
         Promise.all([soulsApi.stats(), soulsApi.health()]),
         Promise.all([crewsApi.stats(), crewsApi.health()]),
@@ -1175,7 +1000,6 @@ export function AgentsObservabilityPage() {
         /* not available */
       }
 
-      if (fl.status === 'fulfilled') setFleet({ stats: fl.value[0], health: fl.value[1] });
       if (orc.status === 'fulfilled') setOrchestra({ stats: orc.value[0], health: orc.value[1] });
       if (soulRes.status === 'fulfilled')
         setSoul({ stats: soulRes.value[0], health: soulRes.value[1] });
@@ -1200,7 +1024,6 @@ export function AgentsObservabilityPage() {
       subscribe('orchestration:step:completed', loadAll),
       subscribe('crew:task:completed', loadAll),
       subscribe('soul:heartbeat:completed', loadAll),
-      subscribe('fleet:worker:completed', loadAll),
     ];
     return () => unsubs.forEach((u) => u());
   }, [subscribe, loadAll]);
@@ -1248,7 +1071,6 @@ export function AgentsObservabilityPage() {
       <div className="flex-1 overflow-auto p-6">
         {activeTab === 'home' && (
           <HomeTab
-            fleet={fleet}
             orchestra={orchestra}
             soul={soul}
             crew={crew}
@@ -1256,7 +1078,6 @@ export function AgentsObservabilityPage() {
             onSelectTab={setActiveTab}
           />
         )}
-        {activeTab === 'fleet' && <FleetTab stats={fleet.stats} health={fleet.health} />}
         {activeTab === 'orchestra' && (
           <OrchestraTab stats={orchestra.stats} health={orchestra.health} />
         )}

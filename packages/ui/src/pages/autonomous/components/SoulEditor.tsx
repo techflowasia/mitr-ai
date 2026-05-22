@@ -371,7 +371,7 @@ export function SoulEditor({ agentId }: Props) {
                     })
                   }
                 />
-                Can manage agents (spawn subagents, fleets)
+                Can manage agents (spawn subclaws)
               </label>
               <label className="flex items-center gap-2 cursor-pointer text-sm">
                 <input

@@ -331,7 +331,7 @@ export const PULSE_QUIET_HOURS_END = 7;
 export const PULSE_LOG_RETENTION_DAYS = 30;
 
 // ============================================================================
-// Autonomous Agent Scheduling (shared by FleetManager)
+// Autonomous Agent Scheduling
 // ============================================================================
 
 /** Max consecutive errors before auto-pause */
@@ -339,12 +339,6 @@ export const MANAGER_MAX_CONSECUTIVE_ERRORS = 5;
 
 /** Session persist interval — save to DB periodically (ms) */
 export const MANAGER_SESSION_PERSIST_INTERVAL_MS = 30_000; // 30 seconds
-
-/** Fleet: adaptive delay bounds for continuous mode (ms) */
-export const FLEET_CONTINUOUS_MIN_DELAY_MS = 1_000;
-export const FLEET_CONTINUOUS_MAX_DELAY_MS = 10_000;
-export const FLEET_CONTINUOUS_IDLE_DELAY_MS = 5_000;
-export const FLEET_DEFAULT_INTERVAL_MS = 60_000; // 1 minute
 
 // ============================================================================
 // Heartbeat Engine (Pulse)
@@ -490,7 +484,7 @@ export const RISK_HIGH_TOKEN_THRESHOLD = 5000;
 // LLM Concurrency
 // ============================================================================
 
-/** Default maximum concurrent LLM calls across all agents (claws, fleet, subagents) */
+/** Default maximum concurrent LLM calls across all agents (claws, etc.) */
 export const DEFAULT_MAX_LLM_CONCURRENCY = 3;
 
 // ============================================================================

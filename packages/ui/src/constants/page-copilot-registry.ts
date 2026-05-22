@@ -317,17 +317,6 @@ export const PAGE_COPILOT_REGISTRY: Record<string, PageCopilotConfig> = {
     ],
   },
 
-  fleet: {
-    pageType: 'fleet',
-    systemPromptHint:
-      'You are helping manage Fleet Command — parallel task execution across multiple worker types (ai-chat, coding-cli, api-call, mcp-bridge, claw). Focus on task status, worker health, dependency cascades, and failure diagnosis.',
-    suggestions: [
-      'What is the current status of my fleet?',
-      'Show failed tasks across all fleet workers',
-      'Help me create a new fleet configuration',
-    ],
-  },
-
   triggers: {
     pageType: 'trigger',
     systemPromptHint:

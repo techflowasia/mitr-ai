@@ -39,7 +39,6 @@ import {
   SkillsWidget,
   HeartbeatLogsWidget,
   CrewsWidget,
-  FleetWidget,
   ClawsWidget,
 } from '../components/dashboard';
 
@@ -360,9 +359,8 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* Claws + Fleet Overview */}
+      {/* Claws Overview */}
       <ClawsWidget limit={4} />
-      <FleetWidget limit={4} />
 
       {/* Two-column: Timeline + Quick Actions */}
       <div className="grid gap-6 lg:grid-cols-2">
@@ -448,7 +446,6 @@ export function DashboardPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <SoulAgentsWidget limit={8} />
         <ClawsWidget limit={8} />
-        <FleetWidget limit={8} />
         <CrewsWidget limit={8} />
       </div>
     </div>

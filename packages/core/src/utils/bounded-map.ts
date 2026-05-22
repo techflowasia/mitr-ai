@@ -3,7 +3,6 @@
  *
  * Used wherever in-memory collections need a hard size cap:
  * - ClawManager.tracks (MAX_CONCURRENT_CLAWS)
- * - FleetManager.fleets
  * - DynamicToolRegistry cached tools
  * - Idempotency keys (24h TTL + size cap)
  * - embedding_cache

@@ -50,7 +50,6 @@ export const NAV_DESCRIPTIONS: Record<string, string> = {
 
   // Experimental
   '/claws': 'Autonomous continuous AI agent runners',
-  '/fleet': 'Coordinate fleets of parallel AI workers',
   '/edge-devices': 'Manage IoT and edge device connections',
   '/coding-agents': 'AI agents that write and run code',
   '/orchestration': 'Coordinate complex multi-agent tasks',

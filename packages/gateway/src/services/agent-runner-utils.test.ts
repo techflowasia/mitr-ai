@@ -1,8 +1,7 @@
 /**
  * Agent Runner Utils Tests
  *
- * Tests for shared utilities used by ClawRunner,
- * SubagentRunner, and FleetWorker.
+ * Tests for shared utilities used by ClawRunner.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';

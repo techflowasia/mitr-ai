@@ -28,7 +28,6 @@ const CRITICAL_TABLES = [
   'goals',
   'workflows',
   'claws',
-  'fleets',
   'agent_souls',
   'channel_messages',
   'triggers',

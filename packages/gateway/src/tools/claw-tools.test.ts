@@ -569,8 +569,6 @@ describe('Claw Tools', () => {
       'claw:update',
       'data:write',
       'crew:broadcast',
-      'subagent:done',
-      'fleet:task',
       'workflow:complete',
       'soul.heartbeat',
       'system.reboot',

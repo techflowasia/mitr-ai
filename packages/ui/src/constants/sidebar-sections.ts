@@ -18,7 +18,6 @@ import {
   Bot,
   Zap,
   Bell,
-  Layers,
   FileCode,
   Wrench,
   Code,
@@ -47,7 +46,6 @@ import {
   agentsApi,
   clawsApi,
   triggersApi,
-  fleetApi,
   artifactsApi,
   toolsApi,
   customToolsApi,
@@ -172,20 +170,6 @@ export const SIDEBAR_DATA_SECTIONS: Record<string, SidebarDataSectionDef> = {
           (res.triggers ?? [])
             .slice(0, 5)
             .map((t) => ({ id: t.id, label: t.name, route: `/triggers` }))
-        ),
-  },
-  fleet: {
-    id: 'fleet',
-    icon: Layers,
-    route: '/fleet',
-    group: 'ai',
-    maxItems: 5,
-    showPlus: true,
-    fetchItems: () =>
-      fleetApi
-        .list()
-        .then((items: { id: string; name: string }[]) =>
-          items.slice(0, 5).map((f) => ({ id: f.id, label: f.name, route: `/fleet` }))
         ),
   },
   artifacts: {

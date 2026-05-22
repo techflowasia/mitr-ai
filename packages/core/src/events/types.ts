@@ -27,14 +27,11 @@ export type EventCategory =
   | 'extension'
   | 'memory'
   | 'mcp'
-  | 'subagent'
-  | 'orchestra'
   | 'audit'
   | 'claw'
   | 'crew'
   | 'soul'
   | 'edge'
-  | 'fleet'
   | 'workflow'
   | 'coding-agent';
 
@@ -126,14 +123,11 @@ export function deriveCategory(type: string): EventCategory {
     'extension',
     'memory',
     'mcp',
-    'subagent',
-    'orchestra',
     'audit',
     'claw',
     'crew',
     'soul',
     'edge',
-    'fleet',
     'workflow',
     'coding-agent',
   ];
