@@ -239,9 +239,57 @@ function HomeTab({
 }) {
   const totalCost =
     (soul.stats?.totalCost ?? 0) + (crew.stats?.totalCost ?? 0) + (claw.stats?.totalCost ?? 0);
+  const totalCycles =
+    (soul.stats?.totalCycles ?? 0) +
+    (crew.stats?.totalCycles ?? 0) +
+    (claw.stats?.totalCycles ?? 0);
+  const totalRunning = (claw.stats?.running ?? 0) + (crew.stats?.totalCrews ?? 0);
+  const healthScores = [soul.health?.score, crew.health?.score, claw.health?.score].filter(
+    (s): s is number => typeof s === 'number'
+  );
+  const avgHealth =
+    healthScores.length > 0
+      ? Math.round(healthScores.reduce((a, b) => a + b, 0) / healthScores.length)
+      : null;
 
   return (
     <div className="space-y-6">
+      {/* KPI strip */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatsCard
+          label="Total Cycles"
+          value={totalCycles.toLocaleString()}
+          icon={Activity}
+          color="text-blue-500"
+        />
+        <StatsCard
+          label="Total Cost"
+          value={`$${totalCost.toFixed(4)}`}
+          icon={DollarSign}
+          color="text-amber-500"
+        />
+        <StatsCard
+          label="Running Now"
+          value={totalRunning.toString()}
+          icon={Zap}
+          color="text-green-500"
+        />
+        <StatsCard
+          label="Avg Health"
+          value={avgHealth !== null ? `${avgHealth}/100` : '—'}
+          icon={Heart}
+          color={
+            avgHealth === null
+              ? 'text-text-muted'
+              : avgHealth >= 75
+                ? 'text-emerald-500'
+                : avgHealth >= 50
+                  ? 'text-yellow-500'
+                  : 'text-red-500'
+          }
+        />
+      </div>
+
       {/* Summary strip */}
       <div className="flex items-center gap-6 px-4 py-3 bg-bg-tertiary/50 dark:bg-dark-bg-tertiary/50 rounded-xl border border-border dark:border-dark-border text-xs">
         {soul.stats && (
@@ -304,7 +352,7 @@ function HomeTab({
       </div>
 
       {/* Detail panels */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {soul.stats && (
           <div className="card-elevated p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
             <div className="flex items-center gap-2 mb-3">
@@ -868,7 +916,7 @@ export function AgentsObservabilityPage() {
             Agent Observability
           </h2>
           <p className="text-sm text-text-muted dark:text-dark-text-muted">
-            {TABS.filter((t) => t.id !== 'home').length} runners · real-time monitoring
+            Soul · Crew · Claw — real-time monitoring
           </p>
         </div>
         <button

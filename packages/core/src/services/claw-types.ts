@@ -6,7 +6,7 @@
  *
  * Execution modes:
  * - cyclic: Repeated execution with scheduling (continuous, interval, event)
- * - single-shot: One execution, auto-stop on completion (like Subagent)
+ * - single-shot: One execution, auto-stop on completion
  *
  * Usage:
  *   const clawService = registry.get(Services.Claw);

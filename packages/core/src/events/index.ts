@@ -84,9 +84,6 @@ export type {
   ExtensionDisabledData,
   McpServerConnectedData,
   McpServerDisconnectedData,
-  SubagentSpawnedData,
-  SubagentProgressData,
-  SubagentCompletedData,
 } from './event-map.js';
 
 // ============================================================================

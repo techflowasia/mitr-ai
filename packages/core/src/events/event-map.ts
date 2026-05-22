@@ -355,74 +355,6 @@ export interface McpServerDisconnectedData {
 }
 
 // ============================================================================
-// Subagent Event Data
-// ============================================================================
-
-export interface SubagentSpawnedData {
-  subagentId: string;
-  parentId: string;
-  parentType: string;
-  userId: string;
-  name: string;
-  task: string;
-}
-
-export interface SubagentProgressData {
-  subagentId: string;
-  parentId: string;
-  name: string;
-  turnsUsed: number;
-  toolCallsUsed: number;
-  lastToolName?: string;
-}
-
-export interface SubagentCompletedData {
-  subagentId: string;
-  parentId: string;
-  userId: string;
-  name: string;
-  state: string;
-  result?: string;
-  error?: string;
-  durationMs: number;
-  turnsUsed: number;
-  toolCallsUsed: number;
-}
-
-// ============================================================================
-// Orchestra Event Data
-// ============================================================================
-
-export interface OrchestraStartedData {
-  executionId: string;
-  parentId: string;
-  userId: string;
-  description: string;
-  strategy: string;
-  taskCount: number;
-}
-
-export interface OrchestraTaskCompleteData {
-  executionId: string;
-  taskId: string;
-  agentName: string;
-  success: boolean;
-  durationMs: number;
-  tasksCompleted: number;
-  tasksTotal: number;
-}
-
-export interface OrchestraCompletedData {
-  executionId: string;
-  parentId: string;
-  userId: string;
-  state: string;
-  totalDurationMs: number;
-  tasksSucceeded: number;
-  tasksFailed: number;
-}
-
-// ============================================================================
 // Trigger Event Data
 // ============================================================================
 
@@ -814,16 +746,6 @@ export interface EventMap {
   'gateway.workspace.deleted': GatewayWorkspaceDeletedData;
   'gateway.system.notification': GatewaySystemNotificationData;
   'gateway.system.status': GatewaySystemStatusData;
-
-  // --- Subagent Events ---
-  'subagent.spawned': SubagentSpawnedData;
-  'subagent.progress': SubagentProgressData;
-  'subagent.completed': SubagentCompletedData;
-
-  // --- Orchestra Events ---
-  'orchestra.started': OrchestraStartedData;
-  'orchestra.task.complete': OrchestraTaskCompleteData;
-  'orchestra.completed': OrchestraCompletedData;
 
   // --- Trigger Events ---
   'trigger.fired': TriggerFiredData;
