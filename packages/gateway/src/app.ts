@@ -59,17 +59,30 @@ const DEFAULT_CONFIG: GatewayConfig = {
   host: '127.0.0.1',
   // Default to localhost only. In production, set the CORS_ORIGINS env var
   // (comma-separated list of allowed origins, e.g. "https://my-domain.com,https://app.my-domain.com")
+  //
+  // CORS-001: We strip wildcard ('*') and any entry that doesn't parse as
+  // a valid http(s) origin. Combined with credentials:true below, allowing
+  // '*' would be a confusing trap — browsers reject the response, but the
+  // operator may think every origin is whitelisted. Same-origin check
+  // (CSRF middleware) already strips '*'; doing it here too keeps both
+  // gates consistent.
   corsOrigins: (() => {
     const uiPort = process.env.UI_PORT || '8199';
-    return [
-      `http://localhost:${uiPort}`,
-      `http://127.0.0.1:${uiPort}`,
-      ...(process.env.CORS_ORIGINS
-        ? process.env.CORS_ORIGINS.split(',')
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : []),
-    ];
+    const fromEnv = process.env.CORS_ORIGINS
+      ? process.env.CORS_ORIGINS.split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .filter((origin) => {
+            if (origin === '*') return false; // never allow wildcard with credentials
+            try {
+              const url = new URL(origin);
+              return url.protocol === 'http:' || url.protocol === 'https:';
+            } catch {
+              return false; // unparseable origin — skip silently
+            }
+          })
+      : [];
+    return [`http://localhost:${uiPort}`, `http://127.0.0.1:${uiPort}`, ...fromEnv];
   })(),
   rateLimit: {
     windowMs: RATE_LIMIT_WINDOW_MS,
