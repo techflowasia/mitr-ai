@@ -44,38 +44,12 @@ import {
   STATIC_ASSET_MAX_AGE,
 } from './config/defaults.js';
 
-// =============================================================================
-// CORS origin sanitization (CORS-001)
-// =============================================================================
-
-/**
- * Parse the CORS_ORIGINS env value and return only entries that look like
- * a valid http(s) origin. Strips wildcard ('*') — combined with the
- * `credentials: true` cors() option below, allowing '*' is a confusing
- * trap (browsers refuse the response, but the operator may think every
- * origin is whitelisted). Also rejects schemes other than http/https,
- * unparseable entries, and empty values.
- *
- * Exported so both DEFAULT_CONFIG and server.ts loadConfig() apply the
- * same gate — previously loadConfig() bypassed the filter, so a
- * CORS_ORIGINS containing '*' would survive into the running app.
- */
-export function sanitizeCorsOriginsFromEnv(raw: string | undefined): string[] {
-  if (!raw) return [];
-  return raw
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .filter((origin) => {
-      if (origin === '*') return false;
-      try {
-        const url = new URL(origin);
-        return url.protocol === 'http:' || url.protocol === 'https:';
-      } catch {
-        return false;
-      }
-    });
-}
+// Re-export so existing callers (server.ts) keep working; the
+// implementation lives in utils/cors-origin.ts to avoid the
+// app.ts ↔ ws/server.ts circular dependency that wsGateway already
+// creates from the other direction.
+export { sanitizeCorsOriginsFromEnv } from './utils/cors-origin.js';
+import { sanitizeCorsOriginsFromEnv as _sanitizeCorsOriginsFromEnv } from './utils/cors-origin.js';
 
 // Resolve UI dist path relative to this file (works in both dev and Docker)
 const __appDirname = dirname(fileURLToPath(import.meta.url));
@@ -100,7 +74,7 @@ const DEFAULT_CONFIG: GatewayConfig = {
     return [
       `http://localhost:${uiPort}`,
       `http://127.0.0.1:${uiPort}`,
-      ...sanitizeCorsOriginsFromEnv(process.env.CORS_ORIGINS),
+      ..._sanitizeCorsOriginsFromEnv(process.env.CORS_ORIGINS),
     ];
   })(),
   rateLimit: {

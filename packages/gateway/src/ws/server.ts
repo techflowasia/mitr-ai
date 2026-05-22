@@ -30,6 +30,7 @@ import {
 } from '../config/defaults.js';
 import { createLoginThrottle } from '../utils/login-throttle.js';
 import { UI_SESSION_COOKIE } from '../utils/ui-session-cookie.js';
+import { sanitizeCorsOriginsFromEnv } from '../utils/cors-origin.js';
 
 // Simple HTML escape to prevent XSS in demo responses
 function escapeHtml(unsafe: string): string {
@@ -1412,21 +1413,19 @@ export function resetAuthRateLimit(): void {
 /**
  * Global WebSocket gateway instance.
  * Reads WS_ALLOWED_ORIGINS or falls back to CORS_ORIGINS env var.
- * Empty list = allow all (self-hosted default).
- * Literal '*' element is stripped with a warning (CORS-005).
+ * Empty list = falls back to DEFAULT_LOCALHOST_WS_ORIGINS (CSWSH defense).
+ *
+ * Shares the same sanitizer as the HTTP CORS layer (CORS-001): strips
+ * literal '*', rejects entries that don't parse as http(s) origins.
+ * Prevents an entry like "https//bad.com" (typo, missing colon) or
+ * "file:///etc/passwd" from silently joining the WS allow-list.
  */
-const _wsAllowedOrigins = (process.env.WS_ALLOWED_ORIGINS ?? process.env.CORS_ORIGINS ?? '')
-  .split(',')
-  .map((s) => s.trim())
-  .filter(Boolean)
-  .filter((origin) => {
-    if (origin === '*') {
-      log.warn(
-        '[WARN] WS: CORS_ORIGINS contains "*" — treating as no cross-origin allowlist (WS connections will use localhost defaults)'
-      );
-      return false;
-    }
-    return true;
-  });
+const _rawWsOrigins = process.env.WS_ALLOWED_ORIGINS ?? process.env.CORS_ORIGINS;
+const _wsAllowedOrigins = sanitizeCorsOriginsFromEnv(_rawWsOrigins);
+if (_rawWsOrigins && _rawWsOrigins.includes('*')) {
+  log.warn(
+    '[WARN] WS: origins env contains "*" — stripped. WS connections will use the configured non-wildcard origins (or localhost defaults).'
+  );
+}
 
 export const wsGateway = new WSGateway({ allowedOrigins: _wsAllowedOrigins });
