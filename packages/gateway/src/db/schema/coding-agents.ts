@@ -139,22 +139,6 @@ CREATE TABLE IF NOT EXISTS orchestration_runs (
   completed_at TIMESTAMP
 );
 
--- ORCHESTRA_EXECUTIONS: Multi-agent plan execution audit
-CREATE TABLE IF NOT EXISTS orchestra_executions (
-  id TEXT PRIMARY KEY,
-  parent_id TEXT NOT NULL,
-  user_id TEXT NOT NULL,
-  description TEXT NOT NULL,
-  strategy TEXT NOT NULL,
-  state TEXT NOT NULL,
-  plan JSONB NOT NULL,
-  task_results JSONB NOT NULL DEFAULT '[]',
-  total_duration_ms INTEGER,
-  error TEXT,
-  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  completed_at TIMESTAMPTZ
-);
-
 -- ARTIFACTS: AI-generated interactive content with data bindings
 CREATE TABLE IF NOT EXISTS artifacts (
   id TEXT PRIMARY KEY,

@@ -2,8 +2,8 @@
  * Autonomous Hub Copilot Prompt
  *
  * Domain-specific system prompt section for the Autonomous Hub page.
- * Injected into ## Page Context when the user is managing autonomous agents (Souls),
- * crews, plans, and background agent orchestration.
+ * Injected into ## Page Context when the user is managing autonomous agents
+ * (Souls), crews, and plans.
  */
 
 export function buildAutonomousCopilotSection(_contextData?: Record<string, unknown>): string {
