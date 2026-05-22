@@ -1,14 +1,13 @@
 /**
- * AgentsObservabilityPage — Tabbed observability dashboard for all 6 agent runners
+ * AgentsObservabilityPage — Tabbed observability dashboard for agent runners
  *
  * Tab structure:
  * - Home: unified overview of all runners
- * - Subagent / Fleet / Orchestra / Soul / Crew / Claw: per-runner drill-down
+ * - Fleet / Orchestra / Soul / Crew / Claw: per-runner drill-down
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Bot,
   Activity,
   CheckCircle2,
   XCircle,
@@ -27,24 +26,12 @@ import {
 import { apiClient } from '../api';
 import { useGateway } from '../hooks/useWebSocket';
 import { useToast } from '../components/ToastProvider';
-import { subagentsApi, fleetApi, orchestrationApi, soulsApi, crewsApi, clawsApi } from '../api';
-import type { SubagentHistoryEntry } from '../api/endpoints/subagents';
+import { fleetApi, orchestrationApi, soulsApi, crewsApi, clawsApi } from '../api';
 import type { HeartbeatLog } from '../api/endpoints/souls';
 import { heartbeatLogsApi } from '../api';
 import { silentCatch } from '../utils/ignore-error';
 
 // ── Shared types ───────────────────────────────────────────────────────────────
-
-interface RunnerStats {
-  total: number;
-  active: number;
-  successRate: number;
-  avgCost: number;
-  avgDuration: number;
-  totalCost: number;
-  errorRate: number;
-  byState: Record<string, number>;
-}
 
 interface RunnerHealth {
   status: string;
@@ -52,12 +39,6 @@ interface RunnerHealth {
   signals: string[];
   recommendations: string[];
 }
-
-interface SubagentStats extends RunnerStats {
-  totalTokens: { input: number; output: number };
-  [key: string]: unknown;
-}
-interface SubagentHealth extends RunnerHealth {}
 
 interface FleetStats {
   totalFleets: number;
@@ -141,11 +122,10 @@ interface ClawHealth extends RunnerHealth {
 
 // ── Tab definitions ───────────────────────────────────────────────────────────
 
-type TabId = 'home' | 'subagent' | 'fleet' | 'orchestra' | 'soul' | 'crew' | 'claw';
+type TabId = 'home' | 'fleet' | 'orchestra' | 'soul' | 'crew' | 'claw';
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'home', label: 'Home', icon: Home },
-  { id: 'subagent', label: 'Subagent', icon: Bot },
   { id: 'fleet', label: 'Fleet', icon: Layers },
   { id: 'orchestra', label: 'Orchestra', icon: Zap },
   { id: 'soul', label: 'Soul', icon: Heart },
@@ -287,7 +267,6 @@ function StatsCard({
 // ── Home tab ──────────────────────────────────────────────────────────────────
 
 function HomeTab({
-  subagent,
   fleet,
   orchestra,
   soul,
@@ -295,7 +274,6 @@ function HomeTab({
   claw,
   onSelectTab,
 }: {
-  subagent: { stats: SubagentStats | null; health: SubagentHealth | null };
   fleet: { stats: FleetStats | null; health: FleetHealth | null };
   orchestra: { stats: OrchestraStats | null; health: OrchestraHealth | null };
   soul: { stats: SoulStats | null; health: SoulHealth | null };
@@ -304,7 +282,6 @@ function HomeTab({
   onSelectTab: (tab: TabId) => void;
 }) {
   const totalCost =
-    (subagent.stats?.totalCost ?? 0) +
     (fleet.stats?.totalCost ?? 0) +
     (orchestra.stats?.totalCost ?? 0) +
     (soul.stats?.totalCost ?? 0) +
@@ -315,15 +292,6 @@ function HomeTab({
     <div className="space-y-6">
       {/* Summary strip */}
       <div className="flex items-center gap-6 px-4 py-3 bg-bg-tertiary/50 dark:bg-dark-bg-tertiary/50 rounded-xl border border-border dark:border-dark-border text-xs">
-        {subagent.stats && (
-          <div className="flex items-center gap-1.5">
-            <Bot className="w-3.5 h-3.5 text-blue-500" />
-            <span className="text-text-secondary font-medium">
-              {subagent.stats.total.toLocaleString()}
-            </span>
-            <span className="text-text-muted">subagent runs</span>
-          </div>
-        )}
         {fleet.stats && (
           <div className="flex items-center gap-1.5">
             <Layers className="w-3.5 h-3.5 text-purple-500" />
@@ -372,14 +340,6 @@ function HomeTab({
       {/* Runner cards grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <RunnerCard
-          title="Subagent"
-          icon={Bot}
-          iconColor="text-blue-500"
-          stats={subagent.stats ?? { total: 0, active: 0, successRate: 0, totalCost: 0 }}
-          health={subagent.health}
-          onClick={() => onSelectTab('subagent')}
-        />
-        <RunnerCard
           title="Fleet Command"
           icon={Layers}
           iconColor="text-purple-500"
@@ -425,42 +385,6 @@ function HomeTab({
 
       {/* Detail panels */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {subagent.stats && (
-          <div className="card-elevated p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
-            <div className="flex items-center gap-2 mb-3">
-              <Bot className="w-4 h-4 text-blue-500" />
-              <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">
-                Subagent
-              </h3>
-            </div>
-            <div className="space-y-1">
-              <StatRow
-                label="Total Runs"
-                value={subagent.stats.total.toLocaleString()}
-                icon={Bot}
-                color="text-blue-500"
-              />
-              <StatRow
-                label="Success Rate"
-                value={`${(subagent.stats.successRate * 100).toFixed(1)}%`}
-                icon={CheckCircle2}
-                color="text-emerald-500"
-              />
-              <StatRow
-                label="Avg Cost"
-                value={`$${subagent.stats.avgCost.toFixed(4)}`}
-                icon={DollarSign}
-                color="text-amber-500"
-              />
-              <StatRow
-                label="Total Cost"
-                value={`$${subagent.stats.totalCost.toFixed(4)}`}
-                icon={DollarSign}
-                color="text-indigo-500"
-              />
-            </div>
-          </div>
-        )}
         {fleet.stats && (
           <div className="card-elevated p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
             <div className="flex items-center gap-2 mb-3">
@@ -627,176 +551,6 @@ function HomeTab({
                 color="text-amber-500"
               />
             </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Subagent tab ───────────────────────────────────────────────────────────────
-
-function SubagentTab({
-  stats,
-  health,
-}: {
-  stats: SubagentStats | null;
-  health: SubagentHealth | null;
-}) {
-  const [history, setHistory] = useState<SubagentHistoryEntry[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    setLoading(true);
-    subagentsApi
-      .getHistory(undefined, 50, 0)
-      .then((d) => setHistory(d.entries))
-      .catch(silentCatch('subagents.history'))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const healthColor =
-    health?.status === 'healthy'
-      ? 'text-green-500'
-      : health?.status === 'watch'
-        ? 'text-yellow-500'
-        : 'text-red-500';
-
-  return (
-    <div className="space-y-6">
-      {/* Health badge */}
-      {health && (
-        <div
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium ${healthColor} bg-opacity-20 w-fit`}
-        >
-          {health.status} (score: {health.score})
-          {health.signals.length > 0 && ` · ${health.signals.join(', ')}`}
-        </div>
-      )}
-
-      {/* Stats cards */}
-      {stats && (
-        <div className="grid grid-cols-4 gap-4">
-          <StatsCard
-            label="Total Runs"
-            value={stats.total.toLocaleString()}
-            icon={Bot}
-            color="text-blue-500"
-          />
-          <StatsCard
-            label="Success Rate"
-            value={`${(stats.successRate * 100).toFixed(1)}%`}
-            icon={CheckCircle2}
-            color="text-emerald-500"
-          />
-          <StatsCard
-            label="Avg Cost"
-            value={`$${stats.avgCost.toFixed(4)}`}
-            icon={DollarSign}
-            color="text-amber-500"
-          />
-          <StatsCard
-            label="Total Cost"
-            value={`$${stats.totalCost.toFixed(4)}`}
-            icon={DollarSign}
-            color="text-indigo-500"
-          />
-          <StatsCard
-            label="Avg Duration"
-            value={`${(stats.avgDuration / 1000).toFixed(1)}s`}
-            icon={Clock}
-            color="text-purple-500"
-          />
-          <StatsCard
-            label="Error Rate"
-            value={`${(stats.errorRate * 100).toFixed(1)}%`}
-            icon={XCircle}
-            color="text-red-500"
-          />
-          <StatsCard
-            label="Input Tokens"
-            value={`${(stats.totalTokens.input / 1000).toFixed(1)}K`}
-            icon={Activity}
-            color="text-cyan-500"
-          />
-          <StatsCard
-            label="Output Tokens"
-            value={`${(stats.totalTokens.output / 1000).toFixed(1)}K`}
-            icon={Activity}
-            color="text-cyan-500"
-          />
-        </div>
-      )}
-
-      {/* Recommendations */}
-      {health && health.recommendations.length > 0 && (
-        <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-          <h3 className="text-sm font-medium text-yellow-500 mb-2">Recommendations</h3>
-          <ul className="space-y-1">
-            {health.recommendations.map((r, i) => (
-              <li key={i} className="text-xs text-yellow-400">
-                → {r}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Recent executions */}
-      <div>
-        <h3 className="text-sm font-medium mb-3">Recent Executions</h3>
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : history.length === 0 ? (
-          <div className="text-center py-8 text-muted text-sm">No subagent executions yet</div>
-        ) : (
-          <div className="space-y-2">
-            {history.map((s) => (
-              <div
-                key={s.id}
-                className="bg-card border border-border dark:border-dark-border rounded-lg p-4"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Bot className="w-4 h-4 text-accent" />
-                    <div>
-                      <div className="text-sm font-medium">{s.name}</div>
-                      <div className="text-xs text-muted">
-                        {s.task?.slice(0, 80)}
-                        {s.task && s.task.length > 80 ? '...' : ''}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full ${
-                        s.state === 'completed'
-                          ? 'bg-green-500/20 text-green-400'
-                          : s.state === 'failed'
-                            ? 'bg-red-500/20 text-red-400'
-                            : s.state === 'pending'
-                              ? 'bg-yellow-500/20 text-yellow-400'
-                              : s.state === 'running'
-                                ? 'bg-blue-500/20 text-blue-400'
-                                : 'bg-gray-500/20 text-gray-400'
-                      }`}
-                    >
-                      {s.state}
-                    </span>
-                    {s.durationMs != null && (
-                      <span className="text-xs text-muted">{s.durationMs}ms</span>
-                    )}
-                  </div>
-                </div>
-                {s.error && (
-                  <div className="mt-2 text-xs text-error bg-error/10 rounded px-2 py-1">
-                    {s.error}
-                  </div>
-                )}
-              </div>
-            ))}
           </div>
         )}
       </div>
@@ -1380,10 +1134,6 @@ export function AgentsObservabilityPage() {
 
   const [activeTab, setActiveTab] = useState<TabId>('home');
 
-  const [subagent, setSubagent] = useState<{
-    stats: SubagentStats | null;
-    health: SubagentHealth | null;
-  }>({ stats: null, health: null });
   const [fleet, setFleet] = useState<{ stats: FleetStats | null; health: FleetHealth | null }>({
     stats: null,
     health: null,
@@ -1410,8 +1160,7 @@ export function AgentsObservabilityPage() {
   const loadAll = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [sa, fl, orc, soulRes, crewRes, clawStatsResult] = await Promise.allSettled([
-        Promise.all([subagentsApi.stats(), subagentsApi.health()]),
+      const [fl, orc, soulRes, crewRes, clawStatsResult] = await Promise.allSettled([
         Promise.all([fleetApi.stats(), fleetApi.health()]),
         Promise.all([orchestrationApi.stats(), orchestrationApi.health()]),
         Promise.all([soulsApi.stats(), soulsApi.health()]),
@@ -1426,7 +1175,6 @@ export function AgentsObservabilityPage() {
         /* not available */
       }
 
-      if (sa.status === 'fulfilled') setSubagent({ stats: sa.value[0], health: sa.value[1] });
       if (fl.status === 'fulfilled') setFleet({ stats: fl.value[0], health: fl.value[1] });
       if (orc.status === 'fulfilled') setOrchestra({ stats: orc.value[0], health: orc.value[1] });
       if (soulRes.status === 'fulfilled')
@@ -1448,8 +1196,6 @@ export function AgentsObservabilityPage() {
 
   useEffect(() => {
     const unsubs = [
-      subscribe('subagent:completed', loadAll),
-      subscribe('subagent:spawned', loadAll),
       subscribe('claw:cycle:complete', loadAll),
       subscribe('orchestration:step:completed', loadAll),
       subscribe('crew:task:completed', loadAll),
@@ -1502,7 +1248,6 @@ export function AgentsObservabilityPage() {
       <div className="flex-1 overflow-auto p-6">
         {activeTab === 'home' && (
           <HomeTab
-            subagent={subagent}
             fleet={fleet}
             orchestra={orchestra}
             soul={soul}
@@ -1510,9 +1255,6 @@ export function AgentsObservabilityPage() {
             claw={claw}
             onSelectTab={setActiveTab}
           />
-        )}
-        {activeTab === 'subagent' && (
-          <SubagentTab stats={subagent.stats} health={subagent.health} />
         )}
         {activeTab === 'fleet' && <FleetTab stats={fleet.stats} health={fleet.health} />}
         {activeTab === 'orchestra' && (

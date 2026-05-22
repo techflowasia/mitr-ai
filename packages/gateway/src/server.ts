@@ -476,10 +476,6 @@ async function main() {
   const { getCodingAgentService } = await import('./services/coding-agent-service.js');
   registry.register(Services.CodingAgent, getCodingAgentService());
 
-  // 21. Subagent Service (ephemeral, task-oriented child agents)
-  const { getSubagentService } = await import('./services/subagent-service.js');
-  registry.register(Services.Subagent, getSubagentService());
-
   // 24. Artifact Service (AI-generated interactive content)
   const { getArtifactService } = await import('./services/artifact-service.js');
   registry.register(Services.Artifact, getArtifactService());
@@ -850,14 +846,6 @@ async function main() {
       resetClawManager();
     } catch (e) {
       log.warn('Claw manager stop error', { error: String(e) });
-    }
-
-    // 8.3. Dispose subagent manager (H-C4: cleanup timer)
-    try {
-      const { tryGetSubagentManager } = await import('./services/subagent-manager.js');
-      tryGetSubagentManager()?.dispose();
-    } catch (e) {
-      log.warn('Subagent manager dispose error', { error: String(e) });
     }
 
     // 8.4. Shutdown browser service (H-C3: cleanup timer + open Playwright pages)

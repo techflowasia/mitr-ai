@@ -43,15 +43,9 @@ export const agentSystemDomain = {
     'agent_crew_members',
     'agent_messages',
     'heartbeat_log',
-    'subagent_history',
     'orchestration_runs',
   ],
 
   /** Services that form the public API of this domain */
-  publicServices: [
-    'agent-registry',
-    'soul-heartbeat-service',
-    'subagent-service',
-    'coding-agent-orchestrator',
-  ],
+  publicServices: ['agent-registry', 'soul-heartbeat-service', 'coding-agent-orchestrator'],
 } as const;

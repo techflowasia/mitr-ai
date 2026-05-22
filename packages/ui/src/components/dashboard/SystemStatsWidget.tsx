@@ -4,15 +4,8 @@
 
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Brain, Users, GitBranch, Heart, Puzzle, Zap, AlertCircle, Plus } from '../icons';
-import {
-  soulsApi,
-  crewsApi,
-  workflowsApi,
-  extensionsApi,
-  heartbeatLogsApi,
-  subagentsApi,
-} from '../../api';
+import { Brain, Users, GitBranch, Heart, Puzzle, AlertCircle, Plus } from '../icons';
+import { soulsApi, crewsApi, workflowsApi, extensionsApi, heartbeatLogsApi } from '../../api';
 import { Skeleton } from '../Skeleton';
 
 interface SystemStats {
@@ -21,7 +14,6 @@ interface SystemStats {
   workflows: number;
   extensions: number;
   heartbeatLogs: number;
-  subagents: number;
 }
 
 export function SystemStatsWidget() {
@@ -31,7 +23,6 @@ export function SystemStatsWidget() {
     workflows: 0,
     extensions: 0,
     heartbeatLogs: 0,
-    subagents: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,12 +31,11 @@ export function SystemStatsWidget() {
     const fetchData = async () => {
       try {
         setError(null);
-        const [souls, crews, extensions, heartbeats, subagents] = await Promise.all([
+        const [souls, crews, extensions, heartbeats] = await Promise.all([
           soulsApi.list().catch(() => ({ items: [], total: 0 })),
           crewsApi.list().catch(() => ({ items: [], total: 0 })),
           extensionsApi.list().catch(() => []),
           heartbeatLogsApi.list(1, 0).catch(() => ({ items: [], total: 0 })),
-          subagentsApi.getHistory(undefined, 1, 0).catch(() => ({ entries: [], total: 0 })),
         ]);
 
         // Get workflow count from recent logs
@@ -64,7 +54,6 @@ export function SystemStatsWidget() {
           workflows: workflowCount,
           extensions: extensions.length,
           heartbeatLogs: heartbeats.total,
-          subagents: subagents.total,
         });
       } catch {
         setError('Failed to load system stats');
@@ -120,14 +109,6 @@ export function SystemStatsWidget() {
       link: '/autonomous?tab=logs',
       color: 'text-red-500',
       bgColor: 'bg-red-500/10',
-    },
-    {
-      label: 'Subagents',
-      value: stats.subagents,
-      icon: Zap,
-      link: '/subagents',
-      color: 'text-cyan-500',
-      bgColor: 'bg-cyan-500/10',
     },
   ];
 

@@ -148,8 +148,6 @@ vi.mock('./index.js', () => ({
   executeNotificationTool: vi.fn(),
   EVENT_TOOLS: [],
   executeEventTool: vi.fn(),
-  SUBAGENT_TOOLS: [],
-  executeSubagentTool: vi.fn(),
   ARTIFACT_TOOLS: [],
   executeArtifactTool: vi.fn(),
   SOUL_COMMUNICATION_TOOLS: [],
@@ -1563,24 +1561,6 @@ describe('agent-tools helpers', () => {
       await captured[0]!({}, {});
       expect(mockTraceToolCallStart).toHaveBeenCalled();
       expect(mockTraceToolCallEnd).toHaveBeenCalled();
-    });
-
-    it('registers and invokes SUBAGENT_TOOLS executor with trace (lines 221-238)', async () => {
-      const { SUBAGENT_TOOLS } = await import('../tools/index.js');
-      const { executeSubagentTool } = await import('../tools/index.js');
-      const td = { name: 'spawn_agent', description: 'Spawn', parameters: {} };
-      (SUBAGENT_TOOLS as (typeof td)[]).push(td);
-      try {
-        vi.mocked(executeSubagentTool).mockResolvedValue({ success: true, result: 'spawned' });
-        const { captured } = captureGatewayExecutors(true);
-        const fn = captured[captured.length - 1]!;
-        const result = (await fn({}, { conversationId: 'conv-1' })) as { content: string };
-        expect(result.content).toContain('spawned');
-        expect(mockTraceToolCallEnd).toHaveBeenCalled();
-      } finally {
-        const i = (SUBAGENT_TOOLS as (typeof td)[]).indexOf(td);
-        if (i > -1) (SUBAGENT_TOOLS as (typeof td)[]).splice(i, 1);
-      }
     });
 
     it('registers and invokes ARTIFACT_TOOLS executor (lines 267-284)', async () => {

@@ -1,7 +1,7 @@
 /**
  * Orphan Session Reconciliation
  *
- * At boot, autonomous systems (Claw, Fleet, Subagent, Plan, Workflow) may have
+ * At boot, autonomous systems (Claw, Fleet, Plan, Workflow) may have
  * sessions that were running when the parent process was killed (OOM, crash,
  * SIGKILL, deploy). These sessions are "orphaned" — the DB reflects a running
  * state but no actual process is executing them.
@@ -111,55 +111,6 @@ export async function reconcileOrphanedFleets(): Promise<ReconciliationResult> {
     }
   } catch (err) {
     const msg = `Fleet reconciliation failed: ${err}`;
-    log.error(msg);
-    result.errors.push(msg);
-  }
-
-  return result;
-}
-
-// ============================================================================
-// Subagent Reconciliation
-// ============================================================================
-
-/**
- * Reconcile orphaned subagent executions.
- * Finds subagent_history rows with state='running' and completed_at IS NULL
- * where spawned_at is older than ORPHAN_THRESHOLD_MS.
- * Marks them as 'aborted' with error message indicating orphan recovery.
- */
-export async function reconcileOrphanedSubagents(): Promise<ReconciliationResult> {
-  const result: ReconciliationResult = {
-    system: 'subagent',
-    orphaned: 0,
-    recovered: 0,
-    errors: [],
-  };
-
-  try {
-    const repo = new (await import('../db/repositories/subagents.js')).SubagentsRepository();
-    const orphaned = await repo.getOrphanedSessions(ORPHAN_THRESHOLD_MS);
-    result.orphaned = orphaned.length;
-
-    for (const session of orphaned) {
-      try {
-        await repo.markAborted(session.id, 'orphan_recovery');
-        result.recovered++;
-        log.warn(`[reconcile] Subagent orphan recovered: ${session.id}`);
-      } catch (err) {
-        const msg = `Failed to reconcile subagent ${session.id}: ${err}`;
-        log.error(msg);
-        result.errors.push(msg);
-      }
-    }
-
-    if (orphaned.length > 0) {
-      log.warn(
-        `[reconcile] Subagent: found ${orphaned.length} orphaned sessions, recovered ${result.recovered}`
-      );
-    }
-  } catch (err) {
-    const msg = `Subagent reconciliation failed: ${err}`;
     log.error(msg);
     result.errors.push(msg);
   }
@@ -286,7 +237,6 @@ export async function reconcileOrphanedSessions(): Promise<ReconciliationResult[
   const results = await Promise.allSettled([
     reconcileOrphanedClaws(),
     reconcileOrphanedFleets(),
-    reconcileOrphanedSubagents(),
     reconcileOrphanedWorkflows(),
     reconcileOrphanedPlans(),
   ]);

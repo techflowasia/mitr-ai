@@ -11,7 +11,6 @@ import { getLog } from './log.js';
 import { getJobsRepository } from '../db/repositories/jobs.js';
 import { getClawsRepository } from '../db/repositories/claws.js';
 import { createWorkflowsRepository } from '../db/repositories/workflows.js';
-import { createSubagentsRepository } from '../db/repositories/subagents.js';
 import { createTriggersRepository } from '../db/repositories/triggers.js';
 import { getHeartbeatLogRepository } from '../db/repositories/heartbeat-log.js';
 import { embeddingCacheRepo } from '../db/repositories/embedding-cache.js';
@@ -35,7 +34,6 @@ const CLEANUP_METHODS: Record<string, () => Promise<number>> = {
   workflow_logs: () => createWorkflowsRepository('default').cleanupOldWorkflowLogs(90),
   trigger_history: () => createTriggersRepository('default').cleanupHistory(30),
   heartbeat_log: () => getHeartbeatLogRepository().cleanupOld(30),
-  subagent_history: () => createSubagentsRepository('default').cleanupOld(90),
   embedding_cache: () => embeddingCacheRepo.cleanupOld(7),
   jobs: () => getJobsRepository().cleanupOld(30),
   job_history: () => getJobsRepository().cleanupHistory(90),
@@ -118,7 +116,6 @@ const RETENTION_DAYS: Record<string, number> = {
   plan_history: 90,
   trigger_history: 30,
   heartbeat_log: 30,
-  subagent_history: 90,
   embedding_cache: 7,
   jobs: 30,
   job_history: 90,

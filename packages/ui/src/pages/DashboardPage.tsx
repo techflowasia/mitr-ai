@@ -39,7 +39,6 @@ import {
   SkillsWidget,
   HeartbeatLogsWidget,
   CrewsWidget,
-  SubagentsWidget,
   FleetWidget,
   ClawsWidget,
 } from '../components/dashboard';
@@ -472,7 +471,6 @@ export function DashboardPage() {
       <SystemStatsWidget />
       <div className="grid gap-4 lg:grid-cols-2">
         <SkillsWidget limit={8} />
-        <SubagentsWidget limit={8} />
       </div>
     </div>
   );

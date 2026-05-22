@@ -267,24 +267,6 @@ export type {
 } from './claw-types.js';
 export { DEFAULT_CLAW_LIMITS, MAX_CLAW_DEPTH } from './claw-types.js';
 
-// Subagent Service
-export type {
-  ISubagentService,
-  SubagentState,
-  SubagentParentType,
-  SubagentLimits,
-  SubagentBudget,
-  SpawnSubagentInput,
-  SubagentSession,
-  SubagentToolCall,
-  SubagentHistoryEntry,
-} from './subagent-service.js';
-export {
-  DEFAULT_SUBAGENT_LIMITS,
-  DEFAULT_SUBAGENT_BUDGET,
-  MAX_SUBAGENT_DEPTH,
-} from './subagent-service.js';
-
 // Artifact Service
 export type {
   IArtifactService,

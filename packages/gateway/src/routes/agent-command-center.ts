@@ -21,7 +21,6 @@ import {
 import { getSoulsRepository } from '../db/repositories/souls.js';
 import { getCrewsRepository } from '../db/repositories/crews.js';
 import { getHeartbeatLogRepository } from '../db/repositories/heartbeat-log.js';
-import { SubagentsRepository } from '../db/repositories/subagents.js';
 import { getFleetRepository } from '../db/repositories/fleet.js';
 import { agentsRepo } from '../db/repositories/agents.js';
 import { getFleetService } from '../services/fleet-service.js';
@@ -307,14 +306,11 @@ agentCommandCenterRoutes.get('/overview', async (c) => {
     const userId = getUserId(c);
     const hbRepo = getHeartbeatLogRepository();
     const crewRepo = getCrewsRepository();
-    const subagentRepo = new SubagentsRepository();
     const fleetRepo = getFleetRepository();
     const soulRepo = getSoulsRepository();
     const clawService = getClawService();
 
     const [
-      subagentStats,
-      subagentHealth,
       fleetStats,
       fleetHealth,
       soulStats,
@@ -326,27 +322,6 @@ agentCommandCenterRoutes.get('/overview', async (c) => {
       clawStats,
       clawHealth,
     ] = await Promise.all([
-      subagentRepo.getStats(userId).catch(() => ({
-        total: 0,
-        successRate: 0,
-        avgCost: 0,
-        avgDuration: 0,
-        totalCost: 0,
-        errorRate: 0,
-        byState: {},
-        totalTokens: { input: 0, output: 0 },
-        active: 0,
-      })),
-      (async () => {
-        const repo = new SubagentsRepository();
-        const orphaned = await repo.getOrphanedSessions(30 * 60 * 1000).catch(() => []);
-        const score = orphaned.length > 0 ? 30 : 70;
-        const status = orphaned.length > 0 ? 'failed' : 'watch';
-        const signals = orphaned.length > 0 ? [`${orphaned.length} orphaned running sessions`] : [];
-        const recommendations =
-          orphaned.length > 0 ? ['Run orphan reconciliation to recover stuck sessions'] : [];
-        return { status, score, signals, recommendations };
-      })(),
       fleetRepo.getStats(userId).catch(() => ({
         totalFleets: 0,
         totalSessions: 0,
@@ -590,26 +565,9 @@ agentCommandCenterRoutes.get('/overview', async (c) => {
     ]);
 
     const totalCost =
-      (subagentStats.totalCost ?? 0) +
-      (fleetStats.totalCost ?? 0) +
-      (soulStats.totalCost ?? 0) +
-      (clawStats.totalCost ?? 0);
+      (fleetStats.totalCost ?? 0) + (soulStats.totalCost ?? 0) + (clawStats.totalCost ?? 0);
 
     return apiResponse(c, {
-      subagent: {
-        stats: {
-          active: 0,
-          total: subagentStats.total,
-          successRate: subagentStats.successRate,
-          avgCost: subagentStats.avgCost,
-          avgDuration: subagentStats.avgDuration,
-          totalCost: subagentStats.totalCost,
-          errorRate: subagentStats.errorRate,
-          byState: subagentStats.byState,
-          totalTokens: subagentStats.totalTokens,
-        },
-        health: subagentHealth,
-      },
       fleet: {
         stats: fleetStats,
         health: fleetHealth,

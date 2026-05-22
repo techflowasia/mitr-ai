@@ -8,6 +8,5 @@ export { WorkflowsWidget } from './WorkflowsWidget';
 export { SkillsWidget } from './SkillsWidget';
 export { HeartbeatLogsWidget } from './HeartbeatLogsWidget';
 export { CrewsWidget } from './CrewsWidget';
-export { SubagentsWidget } from './SubagentsWidget';
 export { FleetWidget } from './FleetWidget';
 export { ClawsWidget } from './ClawsWidget';

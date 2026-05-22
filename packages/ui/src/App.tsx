@@ -181,9 +181,6 @@ const EdgeDevicesPage = lazy(() =>
 );
 const FleetPage = lazy(() => import('./pages/FleetPage').then((m) => ({ default: m.FleetPage })));
 const ClawsPage = lazy(() => import('./pages/ClawsPage').then((m) => ({ default: m.ClawsPage })));
-const SubagentsPage = lazy(() =>
-  import('./pages/SubagentsPage').then((m) => ({ default: m.SubagentsPage }))
-);
 const AgentsObservabilityPage = lazy(() =>
   import('./pages/AgentsObservabilityPage').then((m) => ({ default: m.AgentsObservabilityPage }))
 );
@@ -267,7 +264,6 @@ export function App() {
         <Route path="edge-devices" element={page(<EdgeDevicesPage />)} />
         <Route path="fleet" element={page(<FleetPage />)} />
         <Route path="claws" element={page(<ClawsPage />)} />
-        <Route path="subagents" element={page(<SubagentsPage />)} />
         <Route path="agent-observability" element={page(<AgentsObservabilityPage />)} />
         {/* /customize removed — CustomizePage is now a persistent panel in Layout */}
         {/* Old autonomous routes → redirect to unified hub */}

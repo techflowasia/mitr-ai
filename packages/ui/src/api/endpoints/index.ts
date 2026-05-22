@@ -96,14 +96,6 @@ export type {
   RegisterCustomCliToolInput,
 } from './cli-tools';
 export { workflowsApi } from './workflows';
-export { subagentsApi } from './subagents';
-export type {
-  SubagentState,
-  SubagentSession as SubagentSessionView,
-  SubagentHistoryEntry as SubagentHistoryView,
-  SubagentToolCall as SubagentToolCallView,
-  SpawnSubagentInput,
-} from './subagents';
 export { artifactsApi } from './artifacts';
 export { voiceApi } from './voice';
 export type {
