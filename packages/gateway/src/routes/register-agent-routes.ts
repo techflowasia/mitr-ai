@@ -2,7 +2,7 @@
  * Agent Domain Route Registration
  *
  * Mounts all agent-related routes: core agents, souls, crews,
- * subagents, orchestra, and agent messaging.
+ * claws, heartbeats, audit, and agent messaging.
  */
 
 import type { Hono } from 'hono';

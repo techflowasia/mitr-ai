@@ -1535,7 +1535,7 @@ describe('agent-tools helpers', () => {
   });
 
   // =========================================================================
-  // registerGatewayTools — trace branch (line 210) and SUBAGENT/ORCHESTRA/ARTIFACT
+  // registerGatewayTools — trace branch (line 210) and ARTIFACT executor paths
   // =========================================================================
   describe('registerGatewayTools — uncovered executor paths', () => {
     function captureGatewayExecutors(trace: boolean) {

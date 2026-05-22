@@ -312,7 +312,7 @@ export async function setDefaultModel(model: string): Promise<void> {
  * Returns null values if no defaults are configured.
  *
  * NOTE: This uses the global default provider, NOT the per-process model-routing
- * waterfall. For process-aware routing (chat, pulse, subagent, channel), use
+ * waterfall. For process-aware routing (chat, pulse, channel), use
  * `resolveProviderAndModel()` from `agent-runner-utils.ts` or
  * `resolveForProcess()` from `model-routing.ts` instead.
  *

@@ -14,8 +14,8 @@ describe('OpenAPI routes', () => {
 
   beforeEach(() => {
     app = new Hono();
-    app.get('/api/v1/fleet', (c) => c.json({ ok: true }));
-    app.post('/api/v1/fleet/:fleetId/start', (c) => c.json({ ok: true }));
+    app.get('/api/v1/claws', (c) => c.json({ ok: true }));
+    app.post('/api/v1/claws/:clawId/start', (c) => c.json({ ok: true }));
     app.get('/health', (c) => c.text('ok'));
     registerOpenApiRoutes(app);
   });
@@ -34,10 +34,10 @@ describe('OpenAPI routes', () => {
   it('includes registered API routes and converts path params', async () => {
     const res = await app.request('/openapi.json');
     const spec = (await res.json()) as { paths: Record<string, Record<string, unknown>> };
-    expect(spec.paths['/api/v1/fleet']).toBeDefined();
-    expect(spec.paths['/api/v1/fleet']!.get).toBeDefined();
-    expect(spec.paths['/api/v1/fleet/{fleetId}/start']).toBeDefined();
-    expect(spec.paths['/api/v1/fleet/{fleetId}/start']!.post).toBeDefined();
+    expect(spec.paths['/api/v1/claws']).toBeDefined();
+    expect(spec.paths['/api/v1/claws']!.get).toBeDefined();
+    expect(spec.paths['/api/v1/claws/{clawId}/start']).toBeDefined();
+    expect(spec.paths['/api/v1/claws/{clawId}/start']!.post).toBeDefined();
   });
 
   it('excludes /health from the spec', async () => {

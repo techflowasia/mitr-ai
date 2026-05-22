@@ -3,9 +3,8 @@
  *
  *  - registerGatewayTools  — gateway domain tools (memory, goals, custom-data,
  *                            personal-data, config, triggers, plans, soul-comms,
- *                            crew, habits, claw, etc.). Subagent/orchestra/
- *                            artifact tools need conversationId from context
- *                            and are wired separately.
+ *                            crew, habits, claw, etc.). Artifact tools need
+ *                            conversationId from context and are wired separately.
  *  - registerDynamicTools  — CRUD meta-tools (create/list/etc.), special meta-
  *                            tools (search_tools, use_tool, batch_use_tool,
  *                            inspect_tool_source, get_tool_help), and active
