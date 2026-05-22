@@ -26,6 +26,7 @@ import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/ToastProvider';
 import { useDebouncedValue, useModalClose, useSkipHome } from '../hooks';
 import { apiClient } from '../api/client';
+import { safeHref } from '../utils/safe-url';
 
 type TabId = 'home' | 'browser';
 
@@ -463,9 +464,9 @@ export function DataBrowserPage() {
                               key={col.key}
                               className="px-4 py-3 text-text-primary dark:text-dark-text-primary"
                             >
-                              {col.key === 'url' && record[col.key] ? (
+                              {col.key === 'url' && safeHref(record[col.key]) ? (
                                 <a
-                                  href={record[col.key] as string}
+                                  href={safeHref(record[col.key])}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-primary hover:underline truncate block max-w-xs"

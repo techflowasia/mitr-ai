@@ -1,4 +1,5 @@
 import { CheckCircle2, Download, ExternalLink } from '../../components/icons';
+import { safeHref } from '../../utils/safe-url';
 import type { NpmSearchPackage } from '../../api/endpoints/skills';
 
 interface DiscoverCardProps {
@@ -42,18 +43,22 @@ export function DiscoverCard({
           </div>
         </div>
 
-        {pkg.links?.npm && (
-          <a
-            href={pkg.links.npm}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-1.5 text-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary rounded transition-colors shrink-0"
-            title="View on npm"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
-        )}
+        {(() => {
+          const npmHref = safeHref(pkg.links?.npm);
+          if (!npmHref) return null;
+          return (
+            <a
+              href={npmHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-1.5 text-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary rounded transition-colors shrink-0"
+              title="View on npm"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          );
+        })()}
       </div>
 
       {pkg.description && (

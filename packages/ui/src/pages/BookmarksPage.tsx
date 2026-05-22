@@ -24,6 +24,7 @@ import { EmptyState } from '../components/EmptyState';
 import { useDebouncedValue, useModalClose, useDebouncedCallback } from '../hooks';
 import { useAnimatedList } from '../hooks/useAnimatedList';
 import { bookmarksApi } from '../api';
+import { isSafeUrl as isSafeUrlShared } from '../utils/safe-url';
 import type { BookmarkItem } from '../api';
 import { PageHomeTab } from '../components/PageHomeTab';
 
@@ -394,17 +395,9 @@ function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite }: Bookmark
     }
   };
 
-  /** Only allow http/https URLs — blocks javascript:, data:, and other dangerous protocols */
-  const isSafeUrl = (url: string): boolean => {
-    try {
-      const parsed = new URL(url);
-      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-    } catch {
-      return false;
-    }
-  };
-
-  const safeUrl = isSafeUrl(bookmark.url);
+  // Shared `isSafeUrl` also catches control-char smuggling (`java\tscript:`)
+  // and leading whitespace tricks that this local helper missed.
+  const safeUrl = isSafeUrlShared(bookmark.url);
 
   return (
     <div className="card-elevated card-hover flex flex-col p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg">

@@ -5,9 +5,12 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { WizardShell, type WizardStep } from '../../components/WizardShell';
+import { useWizardKeyboard } from '../../components/wizard';
 import { composioApi } from '../../api';
 import { silentCatch } from '../../utils/ignore-error';
+import { safeHref } from '../../utils/safe-url';
 import type { ComposioApp } from '../../api/endpoints/composio';
 import { Check, AlertTriangle, Link, Search } from '../../components/icons';
 
@@ -25,6 +28,7 @@ const STEPS: WizardStep[] = [
 ];
 
 export function ConnectedAppWizard({ onComplete, onCancel }: Props) {
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [configMessage, setConfigMessage] = useState('');
@@ -153,6 +157,8 @@ export function ConnectedAppWizard({ onComplete, onCancel }: Props) {
     setStep(step + 1);
   };
 
+  useWizardKeyboard({ canGoNext, onNext: handleNext, onCancel, isProcessing });
+
   return (
     <WizardShell
       title="Connect an App"
@@ -166,6 +172,7 @@ export function ConnectedAppWizard({ onComplete, onCancel }: Props) {
       onBack={() => setStep(Math.max(0, step - 1))}
       onCancel={onCancel}
       onComplete={onComplete}
+      onStepClick={setStep}
     >
       {/* Step 0: Check Status */}
       {step === 0 && (
@@ -225,12 +232,12 @@ export function ConnectedAppWizard({ onComplete, onCancel }: Props) {
                   {configMessage ||
                     'Set up your Composio API key in Settings > Config Center to enable connected apps.'}
                 </p>
-                <a
-                  href="/settings/config-center"
+                <button
+                  onClick={() => navigate('/settings/config-center')}
                   className="inline-flex items-center text-xs text-primary hover:underline mt-2"
                 >
                   Open Config Center
-                </a>
+                </button>
               </div>
             </div>
           )}
@@ -335,16 +342,22 @@ export function ConnectedAppWizard({ onComplete, onCancel }: Props) {
                   ? 'A new tab should have opened for authentication. Complete the sign-in there, then click Next to verify.'
                   : 'Connection initiated. Click Next to verify the status.'}
               </p>
-              {connectionResult.redirectUrl && (
-                <a
-                  href={connectionResult.redirectUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline"
-                >
-                  Open sign-in page manually
-                </a>
-              )}
+              {(() => {
+                // OAuth redirect URL is third-party — Composio relays it from
+                // the connected app's provider. Filter `javascript:` etc.
+                const redirectHref = safeHref(connectionResult.redirectUrl);
+                if (!redirectHref) return null;
+                return (
+                  <a
+                    href={redirectHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Open sign-in page manually
+                  </a>
+                );
+              })()}
             </>
           )}
 
@@ -449,12 +462,12 @@ export function ConnectedAppWizard({ onComplete, onCancel }: Props) {
             <strong>{selectedApp?.name}</strong> is now linked. Your AI can use its tools in
             conversations.
           </p>
-          <a
-            href="/settings/connected-apps"
+          <button
+            onClick={() => navigate('/settings/connected-apps')}
             className="inline-flex px-4 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
           >
             View Connected Apps
-          </a>
+          </button>
         </div>
       )}
     </WizardShell>

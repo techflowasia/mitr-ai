@@ -21,6 +21,7 @@ import {
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { useToast } from '../../components/ToastProvider';
 import { extensionsApi } from '../../api/endpoints/extensions';
+import { safeHref } from '../../utils/safe-url';
 import type { ExtensionAuditResult } from '../../api/endpoints/extensions';
 import type { ExtensionInfo } from '../../api/types';
 import { STATUS_COLORS, CATEGORY_COLORS } from './constants';
@@ -389,21 +390,25 @@ export function ExtensionDetailModal({
                       </p>
                     </div>
                   )}
-                  {manifest.docs && (
-                    <div className="p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg">
-                      <span className="text-text-muted dark:text-dark-text-muted">
-                        Documentation
-                      </span>
-                      <a
-                        href={manifest.docs}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline truncate block"
-                      >
-                        View Docs
-                      </a>
-                    </div>
-                  )}
+                  {(() => {
+                    const docsHref = safeHref(manifest.docs);
+                    if (!docsHref) return null;
+                    return (
+                      <div className="p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg">
+                        <span className="text-text-muted dark:text-dark-text-muted">
+                          Documentation
+                        </span>
+                        <a
+                          href={docsHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline truncate block"
+                        >
+                          View Docs
+                        </a>
+                      </div>
+                    );
+                  })()}
                   {manifest.author?.email && (
                     <div className="p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg">
                       <span className="text-text-muted dark:text-dark-text-muted">

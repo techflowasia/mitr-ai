@@ -51,12 +51,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       }
     } catch {
-      // Cookie-backed sessions are HttpOnly, so the server status endpoint is the source of truth.
-      setState((prev) => ({
-        ...prev,
-        isAuthenticated: prev.isAuthenticated,
+      // Cookie-backed sessions are HttpOnly, so the server status endpoint is
+      // the source of truth. Fail closed when we cannot reach it: treat the
+      // app as "password configured, not authenticated" so AuthGuard sends
+      // the user to /login instead of letting the full Layout flash with
+      // optimistic state (cached chat list, sidebar pins, etc) before the
+      // first pageload API call eventually returns 401.
+      setState({
+        isAuthenticated: false,
+        passwordConfigured: true,
         isLoading: false,
-      }));
+      });
     }
   }, []);
 

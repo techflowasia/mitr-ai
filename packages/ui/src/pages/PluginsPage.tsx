@@ -24,6 +24,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/ToastProvider';
 import { pluginsApi, apiClient } from '../api';
+import { safeHref } from '../utils/safe-url';
 import type { PluginInfo, PluginStats } from '../api';
 
 /** Returns true if icon looks like a URL rather than an emoji/text string */
@@ -821,21 +822,25 @@ function PluginDetailModal({ plugin, onClose, onToggle, onPluginUpdated }: Plugi
                       </p>
                     </div>
                   )}
-                  {plugin.docs && (
-                    <div className="p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg">
-                      <span className="text-text-muted dark:text-dark-text-muted">
-                        Documentation
-                      </span>
-                      <a
-                        href={plugin.docs}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline truncate block"
-                      >
-                        View Docs
-                      </a>
-                    </div>
-                  )}
+                  {(() => {
+                    const docsHref = safeHref(plugin.docs);
+                    if (!docsHref) return null;
+                    return (
+                      <div className="p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg">
+                        <span className="text-text-muted dark:text-dark-text-muted">
+                          Documentation
+                        </span>
+                        <a
+                          href={docsHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline truncate block"
+                        >
+                          View Docs
+                        </a>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
