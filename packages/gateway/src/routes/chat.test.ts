@@ -373,7 +373,7 @@ vi.mock('../services/conversation-service.js', () => ({
     })),
 }));
 
-vi.mock('./chat-prompt.js', () => ({
+vi.mock('../services/chat-prompt.js', () => ({
   buildExecutionSystemPrompt: vi.fn(() => '\n\n## Code Execution\nCode execution is DISABLED.'),
   buildToolCatalog: vi.fn(async () => null),
   generateDemoResponse: vi.fn((_msg: string, _p: string, _m: string) => 'This is a demo response.'),
@@ -419,7 +419,7 @@ import {
   resetChatAgentContext,
   clearAllChatAgentCaches,
 } from './agents.js';
-import { tryGetMessageBus } from './chat-prompt.js';
+import { tryGetMessageBus } from '../services/chat-prompt.js';
 import { promptInitializedConversations } from './chat-state.js';
 import { resolveForProcess } from '../services/model-routing.js';
 

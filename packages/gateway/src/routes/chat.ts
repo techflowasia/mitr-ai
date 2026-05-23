@@ -92,7 +92,7 @@ import {
   buildToolCatalog,
   generateDemoResponse,
   tryGetMessageBus,
-} from './chat-prompt.js';
+} from '../services/chat-prompt.js';
 import {
   ConversationService,
   runPostChatProcessing,
