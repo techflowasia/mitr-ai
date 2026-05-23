@@ -80,7 +80,7 @@ import {
   execPermHash,
   boundedSetAdd,
   boundedMapSet,
-} from './chat-state.js';
+} from '../services/chat-state.js';
 import {
   createStreamCallbacks,
   recordStreamUsage,
@@ -123,7 +123,7 @@ function toMcpTraceEvent(event: McpToolEvent): {
 // Backward compatibility re-export
 // =============================================================================
 // chat-history.ts imports promptInitializedConversations from './chat.js'
-export { promptInitializedConversations } from './chat-state.js';
+export { promptInitializedConversations } from '../services/chat-state.js';
 
 // =============================================================================
 // Routes

@@ -387,7 +387,7 @@ vi.mock('../services/chat-streaming.js', () => ({
   wireStreamApproval: vi.fn(),
 }));
 
-vi.mock('./chat-state.js', () => ({
+vi.mock('../services/chat-state.js', () => ({
   promptInitializedConversations: new Set(),
   lastExecPermHash: new Map(),
   execPermHash: vi.fn(() => 'hash-1'),
@@ -420,7 +420,7 @@ import {
   clearAllChatAgentCaches,
 } from './agents.js';
 import { tryGetMessageBus } from '../services/chat-prompt.js';
-import { promptInitializedConversations } from './chat-state.js';
+import { promptInitializedConversations } from '../services/chat-state.js';
 import { resolveForProcess } from '../services/model-routing.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────

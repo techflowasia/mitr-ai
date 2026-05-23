@@ -238,7 +238,7 @@ vi.mock('./agents.js', () => ({
   compactContext: (...args: unknown[]) => mockCompactContext(...args),
 }));
 
-vi.mock('./chat-state.js', () => ({
+vi.mock('../services/chat-state.js', () => ({
   promptInitializedConversations: new Set<string>(),
   lastExecPermHash: new Map<string, string>(),
 }));
