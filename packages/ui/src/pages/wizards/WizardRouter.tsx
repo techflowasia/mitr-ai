@@ -13,6 +13,13 @@ import { WorkflowWizard } from './WorkflowWizard';
 import { GoalWizard } from './GoalWizard';
 import { TriggerWizard } from './TriggerWizard';
 import { ConnectedAppWizard } from './ConnectedAppWizard';
+import { ClawWizard } from './ClawWizard';
+import { SkillInstallWizard } from './SkillInstallWizard';
+import { HabitWizard } from './HabitWizard';
+import { EdgeDeviceWizard } from './EdgeDeviceWizard';
+import { BackupWizard } from './BackupWizard';
+import { ChannelWizard } from './ChannelWizard';
+import { PluginInstallWizard } from './PluginInstallWizard';
 
 export function WizardRouter() {
   const { wizardId } = useParams<{ wizardId: string }>();
@@ -50,6 +57,20 @@ export function WizardRouter() {
       return <TriggerWizard onComplete={handleComplete} onCancel={handleCancel} />;
     case 'connected-app':
       return <ConnectedAppWizard onComplete={handleComplete} onCancel={handleCancel} />;
+    case 'claw':
+      return <ClawWizard onComplete={handleComplete} onCancel={handleCancel} />;
+    case 'skill':
+      return <SkillInstallWizard onComplete={handleComplete} onCancel={handleCancel} />;
+    case 'habit':
+      return <HabitWizard onComplete={handleComplete} onCancel={handleCancel} />;
+    case 'edge-device':
+      return <EdgeDeviceWizard onComplete={handleComplete} onCancel={handleCancel} />;
+    case 'backup':
+      return <BackupWizard onComplete={handleComplete} onCancel={handleCancel} />;
+    case 'channel':
+      return <ChannelWizard onComplete={handleComplete} onCancel={handleCancel} />;
+    case 'plugin':
+      return <PluginInstallWizard onComplete={handleComplete} onCancel={handleCancel} />;
     default:
       return <Navigate to="/wizards" replace />;
   }

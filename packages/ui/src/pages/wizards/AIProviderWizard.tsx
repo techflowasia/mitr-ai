@@ -5,11 +5,19 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { WizardShell, type WizardStep } from '../../components/WizardShell';
+import {
+  WizardPasswordInput,
+  WizardLoadingView,
+  WizardSuccessView,
+  WizardErrorView,
+  useWizardKeyboard,
+} from '../../components/wizard';
 import { providersApi, settingsApi } from '../../api';
 import { silentCatch } from '../../utils/ignore-error';
 import type { ProviderInfo, ProviderConfig } from '../../types';
-import { Check, ExternalLink, AlertTriangle } from '../../components/icons';
+import { Check, ExternalLink, Search } from '../../components/icons';
 
 interface Props {
   onComplete: () => void;
@@ -24,12 +32,13 @@ const STEPS: WizardStep[] = [
   { id: 'done', label: 'Complete' },
 ];
 
-// Popular providers shown first
 const POPULAR = ['anthropic', 'openai', 'google', 'groq', 'openrouter', 'together'];
 
 export function AIProviderWizard({ onComplete, onCancel }: Props) {
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [providers, setProviders] = useState<(ProviderInfo | ProviderConfig)[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -41,12 +50,10 @@ export function AIProviderWizard({ onComplete, onCancel }: Props) {
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [setAsDefault, setSetAsDefault] = useState(true);
 
-  // Load providers on mount
   useEffect(() => {
     providersApi
       .list()
       .then((data) => {
-        // Sort: popular first, then alphabetical
         const sorted = [...data.providers].sort((a, b) => {
           const aIdx = POPULAR.indexOf(a.id);
           const bIdx = POPULAR.indexOf(b.id);
@@ -59,6 +66,14 @@ export function AIProviderWizard({ onComplete, onCancel }: Props) {
       })
       .catch(silentCatch('aiProvider.list'));
   }, []);
+
+  const filteredProviders = useMemo(() => {
+    if (!searchQuery.trim()) return providers;
+    const q = searchQuery.toLowerCase();
+    return providers.filter(
+      (p) => p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q)
+    );
+  }, [providers, searchQuery]);
 
   const selected = useMemo(
     () => providers.find((p) => p.id === selectedProvider),
@@ -82,7 +97,6 @@ export function AIProviderWizard({ onComplete, onCancel }: Props) {
 
   const handleNext = async () => {
     if (step === 1) {
-      // Save key + test connection
       setIsProcessing(true);
       setTestResult(null);
       try {
@@ -107,7 +121,6 @@ export function AIProviderWizard({ onComplete, onCancel }: Props) {
     }
 
     if (step === 3) {
-      // Set defaults
       if (setAsDefault && selectedProvider) {
         setIsProcessing(true);
         try {
@@ -128,6 +141,8 @@ export function AIProviderWizard({ onComplete, onCancel }: Props) {
     setStep(step + 1);
   };
 
+  useWizardKeyboard({ canGoNext, onNext: handleNext, onCancel, isProcessing });
+
   return (
     <WizardShell
       title="AI Provider Setup"
@@ -141,6 +156,7 @@ export function AIProviderWizard({ onComplete, onCancel }: Props) {
       onBack={() => setStep(Math.max(0, step - 1))}
       onCancel={onCancel}
       onComplete={onComplete}
+      onStepClick={setStep}
     >
       {/* Step 0: Choose Provider */}
       {step === 0 && (
@@ -148,11 +164,25 @@ export function AIProviderWizard({ onComplete, onCancel }: Props) {
           <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary mb-1">
             Choose a Provider
           </h2>
-          <p className="text-sm text-text-muted dark:text-dark-text-muted mb-6">
+          <p className="text-sm text-text-muted dark:text-dark-text-muted mb-4">
             Select the AI provider you want to connect. You can add more later.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {providers.map((p) => {
+
+          {providers.length > 6 && (
+            <div className="relative mb-4">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search providers..."
+                className="w-full pl-9 pr-3 py-2 rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1">
+            {filteredProviders.map((p) => {
               const isConfigured = 'isConfigured' in p && p.isConfigured;
               return (
                 <button
@@ -174,12 +204,17 @@ export function AIProviderWizard({ onComplete, onCancel }: Props) {
                       </span>
                     )}
                   </div>
-                  <span className="text-xs text-text-muted dark:text-dark-text-muted mt-1 block">
+                  <span className="text-xs text-text-muted dark:text-dark-text-muted mt-1 block font-mono">
                     {p.apiKeyEnv}
                   </span>
                 </button>
               );
             })}
+            {filteredProviders.length === 0 && (
+              <p className="col-span-full text-center py-8 text-sm text-text-muted">
+                No providers match your search
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -191,97 +226,68 @@ export function AIProviderWizard({ onComplete, onCancel }: Props) {
             Enter API Key
           </h2>
           <p className="text-sm text-text-muted dark:text-dark-text-muted mb-6">
-            Paste your <strong>{selected.name}</strong> API key below.
+            Paste your <strong>{selected.name}</strong> API key below. It is stored encrypted on
+            your machine.
           </p>
 
           <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-2">
             API Key
           </label>
-          <input
-            type="password"
+          <WizardPasswordInput
             value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
+            onChange={setApiKey}
             placeholder={
               'apiKeyPlaceholder' in selected ? (selected.apiKeyPlaceholder ?? 'sk-...') : 'sk-...'
             }
-            className="w-full px-3 py-2.5 rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono"
             autoFocus
+            onEnter={() => canGoNext && handleNext()}
           />
 
-          {selected.docsUrl && (
-            <a
-              href={selected.docsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-3"
-            >
-              Get your API key
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          )}
+          <div className="flex items-center justify-between mt-3">
+            {selected.docsUrl && (
+              <a
+                href={selected.docsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                Get your API key
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+            <span className="text-[11px] text-text-muted">
+              {apiKey.length > 0 && `${apiKey.length} chars`}
+            </span>
+          </div>
         </div>
       )}
 
       {/* Step 2: Test Connection */}
       {step === 2 && (
-        <div className="text-center py-8">
-          {!testResult && (
-            <div className="flex flex-col items-center gap-3">
-              <svg className="w-10 h-10 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                />
-              </svg>
-              <p className="text-text-muted dark:text-dark-text-muted">Testing connection...</p>
-            </div>
-          )}
-
+        <>
+          {!testResult && <WizardLoadingView label="Testing connection..." />}
           {testResult?.ok && (
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
-                <Check className="w-8 h-8 text-success" />
-              </div>
-              <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
-                Connection Successful
-              </h3>
-              <p className="text-sm text-text-muted dark:text-dark-text-muted">
-                Found {testResult.models.length} available model
-                {testResult.models.length !== 1 ? 's' : ''}.
-              </p>
-            </div>
+            <WizardSuccessView
+              title="Connection Successful"
+              subtitle={
+                <>
+                  Found <strong>{testResult.models.length}</strong> available model
+                  {testResult.models.length !== 1 ? 's' : ''}.
+                </>
+              }
+            />
           )}
-
           {testResult && !testResult.ok && (
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-16 h-16 rounded-full bg-error/10 flex items-center justify-center">
-                <AlertTriangle className="w-8 h-8 text-error" />
-              </div>
-              <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
-                Connection Failed
-              </h3>
-              <p className="text-sm text-error max-w-md">{testResult.error}</p>
-              <button
-                onClick={() => {
-                  setStep(1);
-                  setTestResult(null);
-                }}
-                className="mt-2 text-sm text-primary hover:underline"
-              >
-                Go back and try again
-              </button>
-            </div>
+            <WizardErrorView
+              title="Connection Failed"
+              message={testResult.error}
+              onRetry={() => {
+                setStep(1);
+                setTestResult(null);
+              }}
+            />
           )}
-        </div>
+        </>
       )}
 
       {/* Step 3: Set Default */}
@@ -327,6 +333,9 @@ export function AIProviderWizard({ onComplete, onCancel }: Props) {
                   </option>
                 ))}
               </select>
+              <p className="text-[11px] text-text-muted mt-1">
+                You can change this anytime in Settings.
+              </p>
             </div>
           )}
         </div>
@@ -346,12 +355,18 @@ export function AIProviderWizard({ onComplete, onCancel }: Props) {
             {selectedModel ? ` with ${selectedModel} as your default model` : ''}.
           </p>
           <div className="flex justify-center gap-3">
-            <a
-              href="/"
+            <button
+              onClick={() => navigate('/')}
               className="px-4 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
             >
               Go to Chat
-            </a>
+            </button>
+            <button
+              onClick={() => navigate('/settings/providers')}
+              className="px-4 py-2 text-sm rounded-lg border border-border dark:border-dark-border hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+            >
+              Provider Settings
+            </button>
           </div>
         </div>
       )}

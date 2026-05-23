@@ -14,30 +14,59 @@ interface ChatResponse {
   response?: string;
 }
 
-let cachedDefaults: { provider: string; model: string; fetchedAt: number } | null = null;
+let cachedDefaults: {
+  provider: string;
+  model: string;
+  available: boolean;
+  fetchedAt: number;
+} | null = null;
 
 /** Cache TTL — refetch after 5 minutes. */
 const DEFAULTS_TTL_MS = 5 * 60 * 1000;
 
 const FALLBACK_DEFAULTS = { provider: 'openai', model: 'gpt-4o' };
 
-/** Fetch and cache default provider/model from settings. */
-async function getDefaults(): Promise<{ provider: string; model: string }> {
+/** Fetch and cache default provider/model + availability from settings. */
+async function getDefaults(): Promise<{
+  provider: string;
+  model: string;
+  available: boolean;
+}> {
   if (cachedDefaults && Date.now() - cachedDefaults.fetchedAt < DEFAULTS_TTL_MS) {
     return cachedDefaults;
   }
   try {
     const settings = await settingsApi.get();
+    const provider = settings.defaultProvider || '';
+    const model = settings.defaultModel || '';
     cachedDefaults = {
-      provider: settings.defaultProvider || 'openai',
-      model: settings.defaultModel || 'gpt-4o',
+      provider: provider || FALLBACK_DEFAULTS.provider,
+      model: model || FALLBACK_DEFAULTS.model,
+      available: Boolean(provider && model),
       fetchedAt: Date.now(),
     };
     return cachedDefaults;
   } catch {
     // Don't cache failure — retry on next call
-    return FALLBACK_DEFAULTS;
+    return { ...FALLBACK_DEFAULTS, available: false };
   }
+}
+
+/**
+ * Synchronous availability hint based on the last cache snapshot.
+ * Falls back to `undefined` (= unknown) if not yet fetched — callers can
+ * await `isAiAvailable()` for a definitive answer.
+ */
+export function isAiAvailableSync(): boolean | undefined {
+  if (!cachedDefaults) return undefined;
+  if (Date.now() - cachedDefaults.fetchedAt > DEFAULTS_TTL_MS) return undefined;
+  return cachedDefaults.available;
+}
+
+/** True when a default provider + model are configured. */
+export async function isAiAvailable(): Promise<boolean> {
+  const d = await getDefaults();
+  return d.available;
 }
 
 /**

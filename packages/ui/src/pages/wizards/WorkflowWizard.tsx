@@ -5,7 +5,9 @@
  */
 
 import { useState, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { WizardShell, type WizardStep } from '../../components/WizardShell';
+import { useWizardKeyboard } from '../../components/wizard';
 import { workflowsApi } from '../../api';
 import { Check, AlertTriangle, GitBranch, Sparkles } from '../../components/icons';
 import { aiGenerate } from './ai-helper';
@@ -294,6 +296,7 @@ const WORKFLOW_TEMPLATES = [
 type Method = 'template' | 'copilot' | 'manual';
 
 export function WorkflowWizard({ onComplete, onCancel }: Props) {
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -465,6 +468,8 @@ Return ONLY the JSON object, no explanations.`;
     setStep(step + 1);
   };
 
+  useWizardKeyboard({ canGoNext, onNext: handleNext, onCancel, isProcessing });
+
   return (
     <WizardShell
       title="Create Workflow"
@@ -478,6 +483,7 @@ Return ONLY the JSON object, no explanations.`;
       onBack={() => setStep(Math.max(0, step - 1))}
       onCancel={onCancel}
       onComplete={onComplete}
+      onStepClick={setStep}
     >
       {/* Step 0: Name */}
       {step === 0 && (
@@ -774,19 +780,19 @@ Return ONLY the JSON object, no explanations.`;
           </p>
           <div className="flex justify-center gap-3">
             {result?.workflowId && (
-              <a
-                href={`/workflows/${result.workflowId}`}
+              <button
+                onClick={() => navigate(`/workflows/${result.workflowId}`)}
                 className="px-4 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
               >
                 Open in Editor
-              </a>
+              </button>
             )}
-            <a
-              href="/workflows"
+            <button
+              onClick={() => navigate('/workflows')}
               className="px-4 py-2 text-sm rounded-lg border border-border dark:border-dark-border text-text-primary dark:text-dark-text-primary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
             >
               View All Workflows
-            </a>
+            </button>
           </div>
         </div>
       )}

@@ -79,7 +79,7 @@ import {
   evictAgentFromCache,
   MAX_AGENT_CACHE_SIZE,
   MAX_CHAT_AGENT_CACHE_SIZE,
-} from './agent-cache.js';
+} from '../services/agent-cache.js';
 import { getLLMRouter, getConfigCenter } from '@ownpilot/core';
 import {
   AGENT_DEFAULT_MAX_TOKENS,

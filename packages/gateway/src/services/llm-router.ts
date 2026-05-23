@@ -3,7 +3,7 @@
  *
  * Thin facade over the gateway-internal helpers (`resolveProviderAndModel`
  * in agent-runner-utils, `resolveContextWindow` / `resolveMaxOutput` /
- * `computeMemoryMaxTokens` in routes/agent-cache, `calculateExecutionCost`
+ * `computeMemoryMaxTokens` in services/agent-cache, `calculateExecutionCost`
  * in agent-runner-utils). Those helpers stay in their homes because they
  * have other legitimate dependencies (cache, model-routing); this facade
  * binds them to the single `ILLMRouter` capability contract that runtimes
@@ -18,11 +18,7 @@
 import type { ILLMRouter } from '@ownpilot/core';
 import { setLLMRouter } from '@ownpilot/core';
 import { resolveProviderAndModel, calculateExecutionCost } from './agent-runner-utils.js';
-import {
-  resolveContextWindow,
-  resolveMaxOutput,
-  computeMemoryMaxTokens,
-} from '../routes/agent-cache.js';
+import { resolveContextWindow, resolveMaxOutput, computeMemoryMaxTokens } from './agent-cache.js';
 
 /** Gateway-side LLMRouter implementation — thin facade over scattered helpers. */
 export const llmRouter: ILLMRouter = {

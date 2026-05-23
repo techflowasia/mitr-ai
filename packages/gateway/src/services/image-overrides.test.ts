@@ -50,7 +50,7 @@ vi.mock('../routes/settings.js', () => ({
   resolveDefaultProviderAndModel: (...args: unknown[]) => mockResolveProviderAndModel(...args),
 }));
 
-vi.mock('../routes/agent-cache.js', () => ({
+vi.mock('./agent-cache.js', () => ({
   getProviderApiKey: (...args: unknown[]) => mockGetProviderApiKey(...args),
   loadProviderConfig: (...args: unknown[]) => mockLoadProviderConfig(...args),
   NATIVE_PROVIDERS: mockNativeProviders,

@@ -42,7 +42,7 @@ import {
   generateAgentId,
   agentCache,
   getProviderApiKey,
-} from './agent-cache.js';
+} from '../services/agent-cache.js';
 import { getOrCreateAgentInstance } from './agent-service.js';
 
 // =============================================================================
@@ -65,7 +65,7 @@ export {
   getCliCorrelationId,
 } from './agent-service.js';
 export type { ContextBreakdown } from './agent-service.js';
-export { invalidateAgentCache } from './agent-cache.js';
+export { invalidateAgentCache } from '../services/agent-cache.js';
 export { getDefaultModel } from './settings.js';
 
 // =============================================================================

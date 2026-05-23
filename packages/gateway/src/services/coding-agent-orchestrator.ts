@@ -22,7 +22,7 @@ import { getCodingAgentService } from './coding-agent-service.js';
 import { orchestrationRunsRepo } from '../db/repositories/orchestration-runs.js';
 import { codingAgentResultsRepo } from '../db/repositories/coding-agent-results.js';
 import { resolveDefaultProviderAndModel } from '../routes/settings.js';
-import { NATIVE_PROVIDERS, loadProviderConfig, getProviderApiKey } from '../routes/agent-cache.js';
+import { NATIVE_PROVIDERS, loadProviderConfig, getProviderApiKey } from './agent-cache.js';
 import { getLog } from './log.js';
 import { getErrorMessage } from '../routes/helpers.js';
 import { wsGateway } from '../ws/server.js';

@@ -25,7 +25,7 @@ import {
 import type { AIProvider, ToolCall, ToolId } from '@ownpilot/core';
 import { getLog } from './log.js';
 import { resolveForProcess } from './model-routing.js';
-import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from '../routes/agent-cache.js';
+import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from './agent-cache.js';
 import { getLLMRouter, getConfigCenter } from '@ownpilot/core';
 import {
   registerGatewayTools,

@@ -15,7 +15,7 @@ import {
   TOOL_GROUPS,
 } from '@ownpilot/core';
 import { localProvidersRepo } from '../db/repositories/index.js';
-import { getApiKey } from './settings.js';
+import { getApiKey } from '../routes/settings.js';
 import { toHostPath } from '../utils/host-path.js';
 import { getApprovalManager, checkAutonomy, AutonomyLevel } from '../autonomy/index.js';
 import type { ActionCategory } from '../autonomy/index.js';
@@ -28,7 +28,7 @@ import {
   AGENT_DEFAULT_MAX_TURNS,
   AGENT_DEFAULT_MAX_TOOL_CALLS,
 } from '../config/defaults.js';
-import { getLog } from '../services/log.js';
+import { getLog } from './log.js';
 import { safeStringArray } from '../tools/agent-tool-registry.js';
 
 const log = getLog('AgentCache');

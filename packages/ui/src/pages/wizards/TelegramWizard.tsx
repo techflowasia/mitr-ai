@@ -5,9 +5,16 @@
  */
 
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { WizardShell, type WizardStep } from '../../components/WizardShell';
+import {
+  WizardPasswordInput,
+  WizardLoadingView,
+  WizardErrorView,
+  useWizardKeyboard,
+} from '../../components/wizard';
 import { channelsApi } from '../../api';
-import { Check, AlertTriangle, Telegram, ExternalLink } from '../../components/icons';
+import { Check, Telegram, ExternalLink } from '../../components/icons';
 
 interface Props {
   onComplete: () => void;
@@ -25,6 +32,7 @@ const STEPS: WizardStep[] = [
 const TOKEN_PATTERN = /^\d+:[A-Za-z0-9_-]+$/;
 
 export function TelegramWizard({ onComplete, onCancel }: Props) {
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [botToken, setBotToken] = useState('');
   const [allowedUsers, setAllowedUsers] = useState('');
@@ -39,9 +47,9 @@ export function TelegramWizard({ onComplete, onCancel }: Props) {
   const canGoNext = useMemo(() => {
     switch (step) {
       case 0:
-        return true; // Intro
+        return true;
       case 1:
-        return true; // BotFather guide
+        return true;
       case 2:
         return TOKEN_PATTERN.test(botToken.trim());
       case 3:
@@ -53,7 +61,6 @@ export function TelegramWizard({ onComplete, onCancel }: Props) {
 
   const handleNext = async () => {
     if (step === 2) {
-      // Connect to Telegram
       setIsProcessing(true);
       setResult(null);
       try {
@@ -75,9 +82,10 @@ export function TelegramWizard({ onComplete, onCancel }: Props) {
       }
       return;
     }
-
     setStep(step + 1);
   };
+
+  useWizardKeyboard({ canGoNext, onNext: handleNext, onCancel, isProcessing });
 
   return (
     <WizardShell
@@ -95,6 +103,7 @@ export function TelegramWizard({ onComplete, onCancel }: Props) {
       }}
       onCancel={onCancel}
       onComplete={onComplete}
+      onStepClick={setStep}
     >
       {/* Step 0: Introduction */}
       {step === 0 && (
@@ -201,13 +210,12 @@ export function TelegramWizard({ onComplete, onCancel }: Props) {
           <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-2">
             Bot Token
           </label>
-          <input
-            type="text"
+          <WizardPasswordInput
             value={botToken}
-            onChange={(e) => setBotToken(e.target.value)}
+            onChange={setBotToken}
             placeholder="123456789:ABCdefGHI-jklMNO_pqrSTUvwxyz"
-            className="w-full px-3 py-2.5 rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono"
             autoFocus
+            onEnter={() => canGoNext && handleNext()}
           />
           {botToken && !TOKEN_PATTERN.test(botToken.trim()) && (
             <p className="text-xs text-warning mt-1.5">
@@ -215,7 +223,6 @@ export function TelegramWizard({ onComplete, onCancel }: Props) {
             </p>
           )}
 
-          {/* Advanced options */}
           <button
             onClick={() => setShowAdvanced(!showAdvanced)}
             className="mt-4 text-xs text-text-muted dark:text-dark-text-muted hover:text-primary transition-colors"
@@ -257,30 +264,12 @@ export function TelegramWizard({ onComplete, onCancel }: Props) {
 
       {/* Step 3: Connect */}
       {step === 3 && (
-        <div className="text-center py-8">
+        <>
           {!result && (
-            <div className="flex flex-col items-center gap-3">
-              <svg className="w-10 h-10 animate-spin text-sky-500" viewBox="0 0 24 24" fill="none">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                />
-              </svg>
-              <p className="text-text-muted dark:text-dark-text-muted">Connecting to Telegram...</p>
-            </div>
+            <WizardLoadingView label="Connecting to Telegram..." colorClass="text-sky-500" />
           )}
-
           {result?.ok && (
-            <div className="flex flex-col items-center gap-3">
+            <div className="flex flex-col items-center text-center gap-3 py-8">
               <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
                 <Telegram className="w-8 h-8 text-success" />
               </div>
@@ -294,28 +283,17 @@ export function TelegramWizard({ onComplete, onCancel }: Props) {
               )}
             </div>
           )}
-
           {result && !result.ok && (
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-16 h-16 rounded-full bg-error/10 flex items-center justify-center">
-                <AlertTriangle className="w-8 h-8 text-error" />
-              </div>
-              <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
-                Connection Failed
-              </h3>
-              <p className="text-sm text-error max-w-md">{result.error}</p>
-              <button
-                onClick={() => {
-                  setStep(2);
-                  setResult(null);
-                }}
-                className="mt-2 text-sm text-primary hover:underline"
-              >
-                Go back and try again
-              </button>
-            </div>
+            <WizardErrorView
+              title="Connection Failed"
+              message={result.error}
+              onRetry={() => {
+                setStep(2);
+                setResult(null);
+              }}
+            />
           )}
-        </div>
+        </>
       )}
 
       {/* Step 4: Complete */}
@@ -341,17 +319,25 @@ export function TelegramWizard({ onComplete, onCancel }: Props) {
             </p>
           </div>
 
-          {result?.botUsername && (
-            <a
-              href={`https://t.me/${result.botUsername}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 mt-4 px-4 py-2 text-sm rounded-lg bg-sky-500 text-white hover:bg-sky-600 transition-colors"
+          <div className="flex justify-center gap-3 mt-4">
+            {result?.botUsername && (
+              <a
+                href={`https://t.me/${result.botUsername}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg bg-sky-500 text-white hover:bg-sky-600 transition-colors"
+              >
+                <Telegram className="w-4 h-4" />
+                Open in Telegram
+              </a>
+            )}
+            <button
+              onClick={() => navigate('/inbox')}
+              className="inline-flex items-center px-4 py-2 text-sm rounded-lg border border-border dark:border-dark-border hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
             >
-              <Telegram className="w-4 h-4" />
-              Open in Telegram
-            </a>
-          )}
+              Open Inbox
+            </button>
+          </div>
         </div>
       )}
     </WizardShell>

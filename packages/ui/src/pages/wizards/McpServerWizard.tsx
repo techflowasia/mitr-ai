@@ -5,9 +5,11 @@
  */
 
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { WizardShell, type WizardStep } from '../../components/WizardShell';
+import { WizardLoadingView, WizardErrorView, useWizardKeyboard } from '../../components/wizard';
 import { mcpApi, type CreateMcpServerInput } from '../../api';
-import { Check, AlertTriangle, Wrench, Terminal, Globe } from '../../components/icons';
+import { Check, Wrench, Terminal, Globe } from '../../components/icons';
 
 interface Props {
   onComplete: () => void;
@@ -49,7 +51,47 @@ const TRANSPORTS: {
   },
 ];
 
+interface Template {
+  name: string;
+  displayName: string;
+  command: string;
+  args: string;
+  desc: string;
+}
+
+const STDIO_TEMPLATES: Template[] = [
+  {
+    name: 'filesystem',
+    displayName: 'Filesystem',
+    command: 'npx',
+    args: '-y, @modelcontextprotocol/server-filesystem, /tmp',
+    desc: 'Read & write files in a sandbox directory',
+  },
+  {
+    name: 'github',
+    displayName: 'GitHub',
+    command: 'npx',
+    args: '-y, @modelcontextprotocol/server-github',
+    desc: 'Access GitHub repos, issues, PRs (needs GITHUB_TOKEN)',
+  },
+  {
+    name: 'memory',
+    displayName: 'Memory',
+    command: 'npx',
+    args: '-y, @modelcontextprotocol/server-memory',
+    desc: 'Persistent knowledge graph for the AI',
+  },
+  {
+    name: 'puppeteer',
+    displayName: 'Puppeteer',
+    command: 'npx',
+    args: '-y, @modelcontextprotocol/server-puppeteer',
+    desc: 'Browser automation and web scraping',
+  },
+];
+
 export function McpServerWizard({ onComplete, onCancel }: Props) {
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [transport, setTransport] = useState<Transport | null>(null);
   const [name, setName] = useState('');
@@ -62,6 +104,7 @@ export function McpServerWizard({ onComplete, onCancel }: Props) {
     ok: boolean;
     toolCount?: number;
     serverName?: string;
+    serverId?: string;
     error?: string;
   } | null>(null);
 
@@ -83,7 +126,6 @@ export function McpServerWizard({ onComplete, onCancel }: Props) {
 
   const handleNext = async () => {
     if (step === 1) {
-      // Create + connect
       setIsProcessing(true);
       setResult(null);
       try {
@@ -115,6 +157,7 @@ export function McpServerWizard({ onComplete, onCancel }: Props) {
           ok: true,
           toolCount: connectResult.toolCount,
           serverName: server.displayName || server.name,
+          serverId: server.id,
         });
         setStep(2);
       } catch (err) {
@@ -127,6 +170,15 @@ export function McpServerWizard({ onComplete, onCancel }: Props) {
     }
 
     setStep(step + 1);
+  };
+
+  useWizardKeyboard({ canGoNext, onNext: handleNext, onCancel, isProcessing });
+
+  const applyTemplate = (t: Template) => {
+    setName(t.name);
+    setDisplayName(t.displayName);
+    setCommand(t.command);
+    setArgs(t.args);
   };
 
   return (
@@ -145,6 +197,7 @@ export function McpServerWizard({ onComplete, onCancel }: Props) {
       }}
       onCancel={onCancel}
       onComplete={onComplete}
+      onStepClick={setStep}
     >
       {/* Step 0: Choose Transport */}
       {step === 0 && (
@@ -193,14 +246,37 @@ export function McpServerWizard({ onComplete, onCancel }: Props) {
           <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary mb-1">
             Configure Server
           </h2>
-          <p className="text-sm text-text-muted dark:text-dark-text-muted mb-6">
+          <p className="text-sm text-text-muted dark:text-dark-text-muted mb-4">
             {transport === 'stdio'
-              ? 'Enter the command to run your MCP server process.'
+              ? 'Pick a template or enter a custom command.'
               : 'Enter the URL of your MCP server.'}
           </p>
 
+          {transport === 'stdio' && (
+            <div className="mb-4">
+              <p className="text-xs font-medium text-text-muted mb-2">Templates</p>
+              <div className="grid grid-cols-2 gap-2">
+                {STDIO_TEMPLATES.map((t) => (
+                  <button
+                    key={t.name}
+                    onClick={() => applyTemplate(t)}
+                    className={`text-left p-3 rounded-lg border transition-all ${
+                      name === t.name
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border dark:border-dark-border hover:border-primary/40'
+                    }`}
+                  >
+                    <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                      {t.displayName}
+                    </span>
+                    <p className="text-[11px] text-text-muted mt-0.5">{t.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4">
-            {/* Name */}
             <div>
               <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-1">
                 Name <span className="text-error">*</span>
@@ -219,7 +295,6 @@ export function McpServerWizard({ onComplete, onCancel }: Props) {
               </p>
             </div>
 
-            {/* Display Name */}
             <div>
               <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-1">
                 Display Name
@@ -233,7 +308,6 @@ export function McpServerWizard({ onComplete, onCancel }: Props) {
               />
             </div>
 
-            {/* Transport-specific fields */}
             {transport === 'stdio' ? (
               <>
                 <div>
@@ -286,36 +360,15 @@ export function McpServerWizard({ onComplete, onCancel }: Props) {
 
       {/* Step 2: Connect */}
       {step === 2 && (
-        <div className="text-center py-8">
+        <>
           {!result && (
-            <div className="flex flex-col items-center gap-3">
-              <svg
-                className="w-10 h-10 animate-spin text-purple-500"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                />
-              </svg>
-              <p className="text-text-muted dark:text-dark-text-muted">
-                Creating and connecting server...
-              </p>
-            </div>
+            <WizardLoadingView
+              label="Creating and connecting server..."
+              colorClass="text-purple-500"
+            />
           )}
-
           {result?.ok && (
-            <div className="flex flex-col items-center gap-3">
+            <div className="flex flex-col items-center text-center gap-3 py-8">
               <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
                 <Wrench className="w-8 h-8 text-success" />
               </div>
@@ -323,33 +376,22 @@ export function McpServerWizard({ onComplete, onCancel }: Props) {
                 Server Connected!
               </h3>
               <p className="text-sm text-text-muted dark:text-dark-text-muted">
-                {result.serverName} — {result.toolCount} tool{result.toolCount !== 1 ? 's' : ''}{' '}
-                available.
+                {result.serverName} — {result.toolCount} tool
+                {result.toolCount !== 1 ? 's' : ''} available.
               </p>
             </div>
           )}
-
           {result && !result.ok && (
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-16 h-16 rounded-full bg-error/10 flex items-center justify-center">
-                <AlertTriangle className="w-8 h-8 text-error" />
-              </div>
-              <h3 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
-                Connection Failed
-              </h3>
-              <p className="text-sm text-error max-w-md">{result.error}</p>
-              <button
-                onClick={() => {
-                  setStep(1);
-                  setResult(null);
-                }}
-                className="mt-2 text-sm text-primary hover:underline"
-              >
-                Go back and try again
-              </button>
-            </div>
+            <WizardErrorView
+              title="Connection Failed"
+              message={result.error}
+              onRetry={() => {
+                setStep(1);
+                setResult(null);
+              }}
+            />
           )}
-        </div>
+        </>
       )}
 
       {/* Step 3: Complete */}
@@ -365,12 +407,20 @@ export function McpServerWizard({ onComplete, onCancel }: Props) {
             <strong>{result?.serverName}</strong> is connected with {result?.toolCount ?? 0} tools.
             These tools are now available to your AI assistant.
           </p>
-          <a
-            href="/settings/mcp-servers"
-            className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-          >
-            View MCP Servers
-          </a>
+          <div className="flex justify-center gap-3">
+            <button
+              onClick={() => navigate('/settings/mcp-servers')}
+              className="px-4 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
+            >
+              View MCP Servers
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="px-4 py-2 text-sm rounded-lg border border-border dark:border-dark-border hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+            >
+              Go to Chat
+            </button>
+          </div>
         </div>
       )}
     </WizardShell>

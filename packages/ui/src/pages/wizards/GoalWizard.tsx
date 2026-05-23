@@ -5,7 +5,9 @@
  */
 
 import { useState, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { WizardShell, type WizardStep } from '../../components/WizardShell';
+import { useWizardKeyboard } from '../../components/wizard';
 import { goalsApi } from '../../api';
 import { AlertTriangle, Target, Plus, Trash, Sparkles } from '../../components/icons';
 import { aiGenerate, extractJsonArray } from './ai-helper';
@@ -40,6 +42,7 @@ interface GoalStepDraft {
 }
 
 export function GoalWizard({ onComplete, onCancel }: Props) {
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -121,14 +124,17 @@ Return ONLY the JSON array, nothing else.`;
       setIsProcessing(true);
       setResult(null);
       try {
-        const goal = await goalsApi.create({
+        const created = (await goalsApi.create({
           title: title.trim(),
           description: description.trim() || undefined,
           category: category || undefined,
           dueDate: dueDate || undefined,
           priority,
           status: 'active',
-        });
+        })) as unknown as { goal?: { id: string }; id?: string };
+        const goalId = created.goal?.id ?? created.id;
+        if (!goalId) throw new Error('Goal created but no ID returned');
+        const goal = { id: goalId };
 
         // Add steps in a single batch update
         const validSteps = goalSteps.filter((s) => s.title.trim());
@@ -165,6 +171,8 @@ Return ONLY the JSON array, nothing else.`;
     setStep(step + 1);
   };
 
+  useWizardKeyboard({ canGoNext, onNext: handleNext, onCancel, isProcessing });
+
   return (
     <WizardShell
       title="Create a Goal"
@@ -178,6 +186,7 @@ Return ONLY the JSON array, nothing else.`;
       onBack={() => setStep(Math.max(0, step - 1))}
       onCancel={onCancel}
       onComplete={onComplete}
+      onStepClick={setStep}
     >
       {/* Step 0: Define Goal */}
       {step === 0 && (
@@ -441,12 +450,12 @@ Return ONLY the JSON array, nothing else.`;
             {dueDate && ` Target date: ${new Date(dueDate).toLocaleDateString()}.`}
           </p>
           <div className="flex justify-center gap-3">
-            <a
-              href="/goals"
+            <button
+              onClick={() => navigate('/goals')}
               className="px-4 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
             >
               View Goals
-            </a>
+            </button>
           </div>
         </div>
       )}

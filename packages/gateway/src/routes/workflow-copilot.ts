@@ -9,7 +9,11 @@ import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { apiError, getErrorMessage, parseJsonBody } from './helpers.js';
 import { ERROR_CODES } from './error-codes.js';
-import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from './agent-cache.js';
+import {
+  getProviderApiKey,
+  loadProviderConfig,
+  NATIVE_PROVIDERS,
+} from '../services/agent-cache.js';
 import { resolveDefaultProviderAndModel } from './settings.js';
 import { validateBody, workflowCopilotSchema } from '../middleware/validation.js';
 import { createProvider, type ProviderConfig, type Message } from '@ownpilot/core';

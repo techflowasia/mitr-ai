@@ -10,7 +10,7 @@ import type { ToolRegistry, ToolExecutor, ToolExecutionResult } from '@ownpilot/
 import { createProvider, type ProviderConfig, type Message } from '@ownpilot/core';
 import { getConfigCenter } from '@ownpilot/core';
 import { resolveDefaultProviderAndModel } from '../routes/settings.js';
-import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from '../routes/agent-cache.js';
+import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from './agent-cache.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { getLog } from './log.js';
 import { getErrorMessage } from '../routes/helpers.js';

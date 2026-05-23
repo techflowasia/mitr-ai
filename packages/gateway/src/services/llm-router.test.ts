@@ -21,7 +21,7 @@ vi.mock('./agent-runner-utils.js', () => ({
   calculateExecutionCost: mockCost,
 }));
 
-vi.mock('../routes/agent-cache.js', () => ({
+vi.mock('./agent-cache.js', () => ({
   resolveContextWindow: mockCtx,
   resolveMaxOutput: mockMaxOut,
   computeMemoryMaxTokens: mockMemBudget,

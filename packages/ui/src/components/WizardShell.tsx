@@ -29,6 +29,8 @@ interface WizardShellProps {
   onBack: () => void;
   onCancel: () => void;
   onComplete?: () => void;
+  /** Jump directly to a completed step. If omitted, step dots are non-clickable. */
+  onStepClick?: (stepIndex: number) => void;
   children: ReactNode;
 }
 
@@ -48,30 +50,38 @@ export function WizardShell({
   onBack,
   onCancel,
   onComplete,
+  onStepClick,
   children,
 }: WizardShellProps) {
+  const totalSteps = steps.length;
+  const progressPct = totalSteps > 1 ? Math.round((currentStep / (totalSteps - 1)) * 100) : 0;
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col">
       {/* Header */}
       <div className="border-b border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary px-6 py-4">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+        <div className="max-w-2xl mx-auto flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary truncate">
               {title}
             </h1>
             {description && (
-              <p className="text-sm text-text-muted dark:text-dark-text-muted mt-0.5">
+              <p className="text-sm text-text-muted dark:text-dark-text-muted mt-0.5 truncate">
                 {description}
               </p>
             )}
           </div>
-          <button
-            onClick={onCancel}
-            className="p-2 rounded-lg text-text-muted dark:text-dark-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
-            title="Cancel"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <span className="text-xs text-text-muted hidden sm:inline">
+              Step {currentStep + 1} of {totalSteps} · {progressPct}%
+            </span>
+            <button
+              onClick={onCancel}
+              className="p-2 rounded-lg text-text-muted dark:text-dark-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+              title="Cancel (Esc)"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -79,41 +89,50 @@ export function WizardShell({
       <div className="border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary px-6 py-3">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between">
-            {steps.map((step, idx) => (
-              <div key={step.id} className="flex items-center flex-1 last:flex-none">
-                {/* Step dot */}
-                <div className="flex flex-col items-center">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
-                      idx < currentStep
-                        ? 'bg-success text-white'
-                        : idx === currentStep
-                          ? 'bg-primary text-white'
-                          : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted'
-                    }`}
-                  >
-                    {idx < currentStep ? <Check className="w-4 h-4" /> : idx + 1}
+            {steps.map((step, idx) => {
+              const isCompleted = idx < currentStep;
+              const isCurrent = idx === currentStep;
+              const canClick = isCompleted && !!onStepClick && !isProcessing;
+              return (
+                <div key={step.id} className="flex items-center flex-1 last:flex-none">
+                  {/* Step dot */}
+                  <div className="flex flex-col items-center">
+                    <button
+                      type="button"
+                      onClick={canClick ? () => onStepClick!(idx) : undefined}
+                      disabled={!canClick}
+                      title={canClick ? `Back to ${step.label}` : undefined}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
+                        isCompleted
+                          ? `bg-success text-white ${canClick ? 'cursor-pointer hover:ring-2 hover:ring-success/30' : 'cursor-default'}`
+                          : isCurrent
+                            ? 'bg-primary text-white ring-2 ring-primary/30 cursor-default'
+                            : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted cursor-default'
+                      }`}
+                    >
+                      {isCompleted ? <Check className="w-4 h-4" /> : idx + 1}
+                    </button>
+                    <span
+                      className={`text-[10px] mt-1 whitespace-nowrap ${
+                        isCurrent
+                          ? 'text-primary font-medium'
+                          : 'text-text-muted dark:text-dark-text-muted'
+                      }`}
+                    >
+                      {step.label}
+                    </span>
                   </div>
-                  <span
-                    className={`text-[10px] mt-1 whitespace-nowrap ${
-                      idx === currentStep
-                        ? 'text-primary font-medium'
-                        : 'text-text-muted dark:text-dark-text-muted'
-                    }`}
-                  >
-                    {step.label}
-                  </span>
+                  {/* Connector line */}
+                  {idx < steps.length - 1 && (
+                    <div
+                      className={`flex-1 h-0.5 mx-2 mb-4 transition-colors ${
+                        isCompleted ? 'bg-success' : 'bg-border dark:bg-dark-border'
+                      }`}
+                    />
+                  )}
                 </div>
-                {/* Connector line */}
-                {idx < steps.length - 1 && (
-                  <div
-                    className={`flex-1 h-0.5 mx-2 mb-4 ${
-                      idx < currentStep ? 'bg-success' : 'bg-border dark:bg-dark-border'
-                    }`}
-                  />
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

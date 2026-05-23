@@ -7,13 +7,19 @@
 import { BaseRepository } from './base.js';
 import { MS_PER_DAY, MAX_DAYS_LOOKBACK } from '../../config/defaults.js';
 
-function safeParseArray(raw: string | null | undefined): number[] {
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return [];
+function safeParseArray(raw: unknown): number[] {
+  if (raw == null) return [];
+  // pg-node decodes JSONB to a JS value automatically — accept that case.
+  if (Array.isArray(raw)) return raw.filter((n) => typeof n === 'number');
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.filter((n) => typeof n === 'number') : [];
+    } catch {
+      return [];
+    }
   }
+  return [];
 }
 
 // =============================================================================

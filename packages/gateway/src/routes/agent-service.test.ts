@@ -205,7 +205,7 @@ const mockResolveToolGroups = vi.fn(() => []);
 const mockEvictAgentFromCache = vi.fn();
 const mockCreateApprovalCallback = vi.fn(() => vi.fn());
 
-vi.mock('./agent-cache.js', () => ({
+vi.mock('../services/agent-cache.js', () => ({
   NATIVE_PROVIDERS: new Set([
     'openai',
     'anthropic',

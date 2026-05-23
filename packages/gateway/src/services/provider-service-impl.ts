@@ -110,7 +110,7 @@ export class ProviderService implements IProviderService {
 
     // Sync check: environment variable only.
     // NOTE: API keys set via Config Center UI are not checked here because
-    // getApiKey() is async. Use getProviderApiKey() from routes/agent-cache.ts
+    // getApiKey() is async. Use getProviderApiKey() from services/agent-cache.ts
     // for a complete async check that covers both env vars and DB.
     const envKey = process.env[`${provider.toUpperCase().replace(/-/g, '_')}_API_KEY`];
     return !!envKey;

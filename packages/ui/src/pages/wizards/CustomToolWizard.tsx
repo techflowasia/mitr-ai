@@ -5,7 +5,9 @@
  */
 
 import { useState, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { WizardShell, type WizardStep } from '../../components/WizardShell';
+import { useWizardKeyboard } from '../../components/wizard';
 import { customToolsApi } from '../../api';
 import { silentCatch } from '../../utils/ignore-error';
 import { AlertTriangle, Code, Sparkles } from '../../components/icons';
@@ -51,6 +53,7 @@ return { output: result };
 `;
 
 export function CustomToolWizard({ onComplete, onCancel }: Props) {
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [toolName, setToolName] = useState('');
   const [toolDescription, setToolDescription] = useState('');
@@ -203,6 +206,8 @@ Return ONLY the JavaScript code, no explanations, no markdown fences.`;
     setStep(step + 1);
   };
 
+  useWizardKeyboard({ canGoNext, onNext: handleNext, onCancel, isProcessing });
+
   return (
     <WizardShell
       title="Create Custom Tool"
@@ -216,6 +221,7 @@ Return ONLY the JavaScript code, no explanations, no markdown fences.`;
       onBack={() => setStep(Math.max(0, step - 1))}
       onCancel={onCancel}
       onComplete={onComplete}
+      onStepClick={setStep}
     >
       {/* Step 0: Metadata */}
       {step === 0 && (
@@ -453,12 +459,12 @@ Return ONLY the JavaScript code, no explanations, no markdown fences.`;
               <p className="text-sm text-text-muted dark:text-dark-text-muted mb-6 max-w-md mx-auto">
                 <strong>{toolName}</strong> is now available for your AI agents to use.
               </p>
-              <a
-                href="/custom-tools"
+              <button
+                onClick={() => navigate('/custom-tools')}
                 className="inline-flex px-4 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
               >
                 View Custom Tools
-              </a>
+              </button>
             </>
           ) : (
             <>

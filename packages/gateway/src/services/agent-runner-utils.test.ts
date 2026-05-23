@@ -97,7 +97,7 @@ vi.mock('./model-routing.js', () => ({
   resolveForProcess: mockResolveForProcess,
 }));
 
-vi.mock('../routes/agent-cache.js', () => ({
+vi.mock('./agent-cache.js', () => ({
   getProviderApiKey: mockGetProviderApiKey,
   loadProviderConfig: mockLoadProviderConfig,
   NATIVE_PROVIDERS: mockNativeProviders,

@@ -5,7 +5,9 @@
  */
 
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { WizardShell, type WizardStep } from '../../components/WizardShell';
+import { useWizardKeyboard } from '../../components/wizard';
 import { agentsApi, providersApi, toolsApi } from '../../api';
 import { silentCatch } from '../../utils/ignore-error';
 import type { ProviderInfo, ProviderConfig, Tool } from '../../types';
@@ -58,6 +60,7 @@ const PERSONA_TEMPLATES: Array<{ name: string; prompt: string; description: stri
 ];
 
 export function AgentCreatorWizard({ onComplete, onCancel }: Props) {
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -199,6 +202,8 @@ Return ONLY the system prompt text, no explanations or markdown.`;
     });
   };
 
+  useWizardKeyboard({ canGoNext, onNext: handleNext, onCancel, isProcessing });
+
   return (
     <WizardShell
       title="Create AI Agent"
@@ -212,6 +217,7 @@ Return ONLY the system prompt text, no explanations or markdown.`;
       onBack={() => setStep(Math.max(0, step - 1))}
       onCancel={onCancel}
       onComplete={onComplete}
+      onStepClick={setStep}
     >
       {/* Step 0: Name & Description */}
       {step === 0 && (
@@ -510,12 +516,12 @@ Return ONLY the system prompt text, no explanations or markdown.`;
                 <strong>{name}</strong> is ready. Use it in Chat by selecting it from the agent
                 picker.
               </p>
-              <a
-                href="/agents"
+              <button
+                onClick={() => navigate('/agents')}
                 className="inline-flex px-4 py-2 text-sm rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
               >
                 View Agents
-              </a>
+              </button>
             </>
           ) : (
             <>

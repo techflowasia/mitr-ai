@@ -45,7 +45,7 @@ vi.mock('../db/repositories/index.js', () => ({
   localProvidersRepo: mockLocalProvidersRepo,
 }));
 
-vi.mock('./settings.js', () => ({
+vi.mock('../routes/settings.js', () => ({
   getApiKey: (...args: unknown[]) => mockGetApiKey(...args),
 }));
 
@@ -71,7 +71,7 @@ vi.mock('../config/defaults.js', async (importOriginal) => {
   };
 });
 
-vi.mock('./agent-tools.js', () => ({
+vi.mock('../tools/agent-tool-registry.js', () => ({
   safeStringArray: (value: unknown) => {
     if (!Array.isArray(value)) return undefined;
     return value.filter((v): v is string => typeof v === 'string');
