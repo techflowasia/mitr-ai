@@ -5,7 +5,7 @@
  */
 
 import { Hono } from 'hono';
-import { getServiceRegistry, Services } from '@ownpilot/core';
+import { getExtensionService } from '@ownpilot/core';
 import { type ExtensionService } from '../../services/extension-service.js';
 import {
   getUserId,
@@ -19,7 +19,7 @@ import {
 export const scannerRoutes = new Hono();
 
 /** Get ExtensionService from registry (cast needed for ExtensionError-specific methods). */
-const getExtService = () => getServiceRegistry().get(Services.Extension) as ExtensionService;
+const getExtService = () => getExtensionService() as unknown as ExtensionService;
 
 /**
  * POST /scan - Scan directory for packages

@@ -8,7 +8,7 @@
 
 import { Hono } from 'hono';
 import { createHmac } from 'node:crypto';
-import { getServiceRegistry, Services } from '@ownpilot/core';
+import { getWorkflowService } from '@ownpilot/core';
 import { getLog } from '../services/log.js';
 import { safeKeyCompare, apiError, apiResponse, ERROR_CODES, getErrorMessage } from './helpers.js';
 import { TriggersRepository, type WebhookConfig } from '../db/repositories/triggers.js';
@@ -352,7 +352,7 @@ webhookRoutes.post('/trigger/:triggerId', async (c) => {
   if (trigger.action?.type === 'workflow' && trigger.action.payload?.workflowId) {
     const workflowId = trigger.action.payload.workflowId as string;
     try {
-      const service = getServiceRegistry().get(Services.Workflow);
+      const service = getWorkflowService();
       // Fire-and-forget: execute in background, don't block the webhook response
       // [SECURITY] trigger.userId is set at trigger creation time by the owning user.
       // HMAC signature above guarantees the caller knows the trigger secret, which only
@@ -453,7 +453,7 @@ webhookRoutes.post('/workflow/:path', async (c) => {
 
   // Execute the workflow with webhook data as input
   try {
-    const service = getServiceRegistry().get(Services.Workflow);
+    const service = getWorkflowService();
     // [SECURITY] HMAC above proves the caller knows the workflow's webhookSecret, which
     // only the workflow owner should have — so workflow.userId is implicitly authorized.
     const userId = workflow.userId ?? 'default';

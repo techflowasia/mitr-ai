@@ -22,7 +22,7 @@ import {
 import { pagination } from '../middleware/pagination.js';
 import type { ColumnDefinition } from '../db/repositories/custom-data.js';
 import { CustomDataServiceError } from '../services/custom-data-service.js';
-import { getServiceRegistry, Services } from '@ownpilot/core';
+import { getDatabaseService } from '@ownpilot/core';
 import { wsGateway } from '../ws/server.js';
 
 export const customDataRoutes = new Hono();
@@ -35,7 +35,7 @@ export const customDataRoutes = new Hono();
  * GET /custom-data/tables - List all custom tables
  */
 customDataRoutes.get('/tables', async (c) => {
-  const service = getServiceRegistry().get(Services.Database);
+  const service = getDatabaseService();
   const tables = await service.listTablesWithStats();
 
   return apiResponse(c, tables);
@@ -46,7 +46,7 @@ customDataRoutes.get('/tables', async (c) => {
  */
 customDataRoutes.get('/tables/by-plugin/:pluginId', async (c) => {
   const pluginId = c.req.param('pluginId');
-  const service = getServiceRegistry().get(Services.Database);
+  const service = getDatabaseService();
   const tables = await service.listTablesWithStats({ pluginId });
 
   return apiResponse(c, tables);
@@ -66,7 +66,7 @@ customDataRoutes.post('/tables', async (c) => {
   };
 
   try {
-    const service = getServiceRegistry().get(Services.Database);
+    const service = getDatabaseService();
     const table = await service.createTable(
       body.name,
       body.displayName,
@@ -98,7 +98,7 @@ customDataRoutes.post('/tables', async (c) => {
  */
 customDataRoutes.get('/tables/:table', async (c) => {
   const tableId = c.req.param('table');
-  const service = getServiceRegistry().get(Services.Database);
+  const service = getDatabaseService();
 
   const table = await service.getTable(tableId);
   if (!table) {
@@ -126,7 +126,7 @@ customDataRoutes.put('/tables/:table', async (c) => {
     columns?: ColumnDefinition[];
   };
 
-  const service = getServiceRegistry().get(Services.Database);
+  const service = getDatabaseService();
   const updated = await service.updateTable(tableId, body);
 
   if (!updated) {
@@ -144,7 +144,7 @@ customDataRoutes.put('/tables/:table', async (c) => {
  */
 customDataRoutes.delete('/tables/:table', async (c) => {
   const tableId = c.req.param('table');
-  const service = getServiceRegistry().get(Services.Database);
+  const service = getDatabaseService();
 
   try {
     const deleted = await service.deleteTable(tableId);
@@ -193,7 +193,7 @@ customDataRoutes.get(
     }
 
     try {
-      const service = getServiceRegistry().get(Services.Database);
+      const service = getDatabaseService();
       const { records, total } = await service.listRecords(tableId, { limit, offset, filter });
 
       return apiResponse(c, {
@@ -231,7 +231,7 @@ customDataRoutes.post('/tables/:table/records', async (c) => {
   }
 
   try {
-    const service = getServiceRegistry().get(Services.Database);
+    const service = getDatabaseService();
     const record = await service.addRecord(tableId, body.data);
 
     wsGateway.broadcast('data:changed', {
@@ -267,7 +267,7 @@ customDataRoutes.get('/tables/:table/search', async (c) => {
   }
 
   try {
-    const service = getServiceRegistry().get(Services.Database);
+    const service = getDatabaseService();
     const records = await service.searchRecords(tableId, query, { limit });
 
     return apiResponse(c, records);
@@ -288,7 +288,7 @@ customDataRoutes.get('/tables/:table/search', async (c) => {
  */
 customDataRoutes.get('/records/:id', async (c) => {
   const recordId = c.req.param('id');
-  const service = getServiceRegistry().get(Services.Database);
+  const service = getDatabaseService();
 
   const record = await service.getRecord(recordId);
   if (!record) {
@@ -316,7 +316,7 @@ customDataRoutes.put('/records/:id', async (c) => {
   }
 
   try {
-    const service = getServiceRegistry().get(Services.Database);
+    const service = getDatabaseService();
     const updated = await service.updateRecord(recordId, body.data);
 
     if (!updated) {
@@ -344,7 +344,7 @@ customDataRoutes.put('/records/:id', async (c) => {
  */
 customDataRoutes.delete('/records/:id', async (c) => {
   const recordId = c.req.param('id');
-  const service = getServiceRegistry().get(Services.Database);
+  const service = getDatabaseService();
 
   const deleted = await service.deleteRecord(recordId);
   if (!deleted) {
@@ -369,7 +369,7 @@ export async function executeCustomDataTool(
   toolId: string,
   params: Record<string, unknown>
 ): Promise<ToolExecutionResult> {
-  const service = getServiceRegistry().get(Services.Database);
+  const service = getDatabaseService();
 
   try {
     switch (toolId) {

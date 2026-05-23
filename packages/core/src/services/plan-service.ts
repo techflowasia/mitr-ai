@@ -250,3 +250,53 @@ export interface IPlanService {
   // Stats
   getStats(userId: string): Promise<PlanStats>;
 }
+
+// ============================================================================
+// Singleton access — same pattern as MemoryService / GoalService / etc.
+// ============================================================================
+
+import { hasServiceRegistry, getServiceRegistry } from './registry.js';
+import { ServiceToken } from './registry.js';
+
+export const PlanToken = new ServiceToken<IPlanService>('plan');
+
+let _planService: IPlanService | null = null;
+
+export function setPlanService(service: IPlanService): void {
+  _planService = service;
+  if (hasServiceRegistry()) {
+    try {
+      const registry = getServiceRegistry();
+      if (!registry.has(PlanToken)) {
+        registry.register(PlanToken, service);
+      }
+    } catch {
+      // Registry not ready
+    }
+  }
+}
+
+export function getPlanService(): IPlanService {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(PlanToken);
+    } catch {
+      // Fall through
+    }
+  }
+  if (!_planService) {
+    throw new Error('PlanService not initialized. Call setPlanService() during gateway startup.');
+  }
+  return _planService;
+}
+
+export function hasPlanService(): boolean {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().has(PlanToken);
+    } catch {
+      // Fall through
+    }
+  }
+  return _planService !== null;
+}

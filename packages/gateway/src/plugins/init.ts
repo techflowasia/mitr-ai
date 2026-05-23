@@ -11,8 +11,7 @@ import {
   getDefaultPluginRegistry,
   createPlugin,
   buildCorePlugin,
-  getServiceRegistry,
-  Services,
+  getDatabaseService,
   type PluginManifest,
   type PluginCapability,
   type PluginPermission,
@@ -192,7 +191,7 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
         },
       },
       async (params) => {
-        const repo = getServiceRegistry().get(Services.Database);
+        const repo = getDatabaseService();
         const feedUrl = String(params.url);
 
         // SSRF validation (SSRF-002)
@@ -270,7 +269,7 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
         parameters: { type: 'object', properties: {} },
       },
       async () => {
-        const repo = getServiceRegistry().get(Services.Database);
+        const repo = getDatabaseService();
         const { records } = await repo.listRecords('plugin_rss_feeds', { limit: 100 });
         return {
           content: {
@@ -304,7 +303,7 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
         },
       },
       async (params) => {
-        const repo = getServiceRegistry().get(Services.Database);
+        const repo = getDatabaseService();
         const limit = (params.limit as number) || 20;
         const filter: Record<string, unknown> = {};
         if (params.feed_id) filter.feed_id = params.feed_id;
@@ -342,7 +341,7 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
         },
       },
       async (params) => {
-        const repo = getServiceRegistry().get(Services.Database);
+        const repo = getDatabaseService();
         const feedId = String(params.feed_id);
         // Delete items for this feed
         const { records: items } = await repo.listRecords('plugin_rss_items', {
@@ -375,7 +374,7 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
         },
       },
       async (params) => {
-        const repo = getServiceRegistry().get(Services.Database);
+        const repo = getDatabaseService();
         const feedId = String(params.feed_id);
         const feed = await repo.getRecord(feedId);
         if (!feed || !feed.data.url) {
@@ -737,7 +736,7 @@ export async function initializePlugins(): Promise<void> {
 
       // 3. Auto-create declared database tables (protected, owned by plugin)
       if (manifest.databaseTables?.length) {
-        const customDataRepo = getServiceRegistry().get(Services.Database);
+        const customDataRepo = getDatabaseService();
         for (const table of manifest.databaseTables) {
           try {
             await customDataRepo.ensurePluginTable(

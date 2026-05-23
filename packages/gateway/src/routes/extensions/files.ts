@@ -19,7 +19,7 @@ import {
 import { join, dirname, basename } from 'node:path';
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { getServiceRegistry, Services } from '@ownpilot/core';
+import { getExtensionService } from '@ownpilot/core';
 import type { ExtensionService } from '../../services/extension-service.js';
 import {
   getUserId,
@@ -38,7 +38,7 @@ const writeFileSchema = z.object({
 
 export const fileRoutes = new Hono();
 
-const getExtService = () => getServiceRegistry().get(Services.Extension) as ExtensionService;
+const getExtService = () => getExtensionService() as unknown as ExtensionService;
 
 /** Resolve the skill directory from a package's sourcePath */
 function getSkillDir(sourcePath: string | undefined): string | null {

@@ -292,8 +292,13 @@ async function main() {
   const { getEmbeddingService } = await import('./services/embedding-service.js');
   registry.register(Services.Embedding, getEmbeddingService());
 
-  // 7. Database Service
-  registry.register(Services.Database, getCustomDataService());
+  // 7. Database Service — also installed on the core capability singleton
+  {
+    const database = getCustomDataService();
+    registry.register(Services.Database, database);
+    const { setDatabaseService } = await import('@ownpilot/core');
+    setDatabaseService(database);
+  }
 
   // 7. Resource Service (wraps ResourceRegistry)
   registry.register(Services.Resource, createResourceServiceImpl());
@@ -317,8 +322,10 @@ async function main() {
     // Clean up orphan triggers from uninstalled extensions
     await extService.cleanupOrphanTriggers('default');
 
-    // 8. Extension Service
+    // 8. Extension Service — also installed on the core capability singleton
     registry.register(Services.Extension, extService);
+    const { setExtensionService } = await import('@ownpilot/core');
+    setExtensionService(extService);
   } catch (error) {
     log.warn('Extensions initialization failed', { error: String(error) });
   }
@@ -371,8 +378,10 @@ async function main() {
     const { mcpClientService } = await import('./services/mcp-client-service.js');
     await mcpClientService.autoConnect();
 
-    // 9. MCP Client Service
+    // 9. MCP Client Service — also installed on the core capability singleton
     registry.register(Services.McpClient, mcpClientService);
+    const { setMcpClientService } = await import('@ownpilot/core');
+    setMcpClientService(mcpClientService);
   } catch (err) {
     log.warn('MCP auto-connect had errors', { error: String(err) });
   }
@@ -408,8 +417,13 @@ async function main() {
     log.warn('Could not check owner/pairing state', { error: String(err) });
   }
 
-  // 9. Plugin Service (wraps PluginRegistry)
-  registry.register(Services.Plugin, await createPluginService());
+  // 9. Plugin Service (wraps PluginRegistry) — also installed on the core capability singleton
+  {
+    const plugin = await createPluginService();
+    registry.register(Services.Plugin, plugin);
+    const { setPluginService } = await import('@ownpilot/core');
+    setPluginService(plugin);
+  }
 
   // 10. Memory Service — also installed on the core capability singleton so
   // runtimes can consume it through `ctx.memory.*` (RuntimeContext bundle)
@@ -440,8 +454,13 @@ async function main() {
     setTriggerService(trigger);
   }
 
-  // 13. Plan Service
-  registry.register(Services.Plan, getPlanService());
+  // 13. Plan Service — also installed on the core capability singleton
+  {
+    const plan = getPlanService();
+    registry.register(Services.Plan, plan);
+    const { setPlanService } = await import('@ownpilot/core');
+    setPlanService(plan);
+  }
 
   // 14. Tool Service (wraps ToolRegistry)
   registry.register(Services.Tool, createToolService());
@@ -462,9 +481,14 @@ async function main() {
   // 17. Workspace Service (wraps WorkspaceManager)
   registry.register(Services.Workspace, createWorkspaceServiceImpl());
 
-  // 18. Workflow Service
-  const { getWorkflowService } = await import('./services/workflow-service.js');
-  registry.register(Services.Workflow, getWorkflowService());
+  // 18. Workflow Service — also installed on the core capability singleton
+  {
+    const { getWorkflowService } = await import('./services/workflow-service.js');
+    const workflow = getWorkflowService();
+    registry.register(Services.Workflow, workflow);
+    const { setWorkflowService } = await import('@ownpilot/core');
+    setWorkflowService(workflow);
+  }
 
   // 18.1. Workflow Node Job Worker (gap 24.1 Phase 2 — persistent job queue for nodes)
   log.info('Starting Workflow Node Job Worker...');

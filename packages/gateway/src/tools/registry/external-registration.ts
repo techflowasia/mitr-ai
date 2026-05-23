@@ -12,8 +12,8 @@
 
 import type { ToolRegistry } from '@ownpilot/core';
 import {
-  getServiceRegistry,
-  Services,
+  getPluginService,
+  getExtensionService,
   qualifyToolName,
   getBaseName,
   type ToolDefinition,
@@ -37,7 +37,7 @@ const log = getLog('AgentTools');
  * @returns The plugin tool definitions (needed for tool-list assembly).
  */
 export function registerPluginTools(tools: ToolRegistry, trace: boolean): ToolDefinition[] {
-  const pluginService = getServiceRegistry().get(Services.Plugin);
+  const pluginService = getPluginService();
   const pluginTools = pluginService.getAllTools();
   const pluginToolDefs: ToolDefinition[] = [];
 
@@ -110,7 +110,7 @@ export function registerExtensionTools(
 ): ToolDefinition[] {
   let service: ExtensionService;
   try {
-    service = getServiceRegistry().get(Services.Extension) as ExtensionService;
+    service = getExtensionService() as unknown as ExtensionService;
   } catch {
     log.debug('Extension service not initialized, skipping tool registration');
     return [];

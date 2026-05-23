@@ -28,11 +28,11 @@ import {
 } from '../db/repositories/index.js';
 import { type CustomTableSchema } from '../db/repositories/custom-data.js';
 import {
-  getServiceRegistry,
-  Services,
   getMemoryService,
   getGoalService,
   getTriggerService,
+  getDatabaseService,
+  getPlanService,
   type IDatabaseService,
   type ServiceMemoryEntry,
 } from '@ownpilot/core';
@@ -100,15 +100,14 @@ export class DashboardService {
   async aggregateDailyData(): Promise<DailyBriefingData> {
     const tasksRepo = new TasksRepository(this.userId);
     const calendarRepo = new CalendarRepository(this.userId);
-    const registry = getServiceRegistry();
     const goalService = getGoalService();
     const triggerService = getTriggerService();
     const memoryService = getMemoryService();
     const habitsRepo = new HabitsRepository(this.userId);
     const costsRepo = new CostsRepository();
     const notesRepo = new NotesRepository(this.userId);
-    const customDataService = registry.get(Services.Database);
-    const planService = registry.get(Services.Plan);
+    const customDataService = getDatabaseService();
+    const planService = getPlanService();
 
     const today = new Date().toISOString().split('T')[0] ?? '';
 

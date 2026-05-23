@@ -38,6 +38,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     getServiceRegistry: vi.fn(() => ({
       get: vi.fn(() => mockExtService),
     })),
+    getExtensionService: vi.fn(() => mockExtService),
   };
 });
 

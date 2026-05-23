@@ -40,6 +40,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
         return services[token.name];
       }),
     })),
+    getTriggerService: vi.fn(() => mockTriggerService),
   };
 });
 

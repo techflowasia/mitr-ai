@@ -40,7 +40,13 @@ import { registerImageOverrides } from './image-overrides.js';
 import { registerEmailOverrides } from './email-overrides.js';
 import { registerAudioOverrides } from './audio-overrides.js';
 import { registerExpenseOverrides } from './expense-overrides.js';
-import { hasServiceRegistry, getServiceRegistry, Services, getConfigCenter } from '@ownpilot/core';
+import {
+  hasServiceRegistry,
+  getServiceRegistry,
+  Services,
+  getConfigCenter,
+  getPluginService,
+} from '@ownpilot/core';
 import type { IAuditService } from '@ownpilot/core';
 import { checkToolPermission } from './tool-permission-service.js';
 import type { ToolExecContext } from './permission-utils.js';
@@ -150,7 +156,7 @@ function initPluginToolsIntoRegistry(registry: ToolRegistry): void {
   if (!hasServiceRegistry()) return;
 
   try {
-    const pluginService = getServiceRegistry().get(Services.Plugin);
+    const pluginService = getPluginService();
     const eventSystem = getServiceRegistry().get(Services.Event);
 
     // Register tools from all currently enabled plugins
@@ -677,7 +683,7 @@ async function executeToolInternal(
 
   // Fallback: check plugin service (covers the sync race window)
   try {
-    const pluginService = getServiceRegistry().get(Services.Plugin);
+    const pluginService = getPluginService();
     const pluginTool = pluginService.getTool(toolName);
     if (pluginTool != null) {
       try {
@@ -717,7 +723,7 @@ export async function hasTool(toolName: string): Promise<boolean> {
 
   // Fallback: check plugin service
   try {
-    const pluginService = getServiceRegistry().get(Services.Plugin);
+    const pluginService = getPluginService();
     return pluginService.getTool(toolName) != null;
   } catch {
     return false;

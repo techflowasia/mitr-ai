@@ -61,6 +61,8 @@ vi.mock('@ownpilot/core', async () => {
       }),
       tryGet: vi.fn(() => undefined),
     })),
+    getPluginService: vi.fn(() => mockPluginService),
+    getExtensionService: vi.fn(() => mockExtensionService),
     createPluginId: vi.fn((id: string) => id),
     qualifyToolName: vi.fn((name: string, ns: string, extId: string) => `${ns}.${extId}.${name}`),
     // tool-executor now reads ConfigCenter through the capability accessor
@@ -200,7 +202,12 @@ import {
   createSkillToolProvider,
 } from './tool-providers/index.js';
 import { checkToolPermission } from './tool-permission-service.js';
-import { getServiceRegistry, hasServiceRegistry } from '@ownpilot/core';
+import {
+  getServiceRegistry,
+  hasServiceRegistry,
+  getPluginService,
+  getExtensionService,
+} from '@ownpilot/core';
 import { registerImageOverrides } from './image-overrides.js';
 import { registerEmailOverrides } from './email-overrides.js';
 import { registerAudioOverrides } from './audio-overrides.js';
@@ -235,6 +242,8 @@ describe('Tool Executor', () => {
       }),
       tryGet: vi.fn(() => undefined),
     } as unknown as ReturnType<typeof getServiceRegistry>);
+    vi.mocked(getPluginService).mockReturnValue(mockPluginService as never);
+    vi.mocked(getExtensionService).mockReturnValue(mockExtensionService as never);
   });
 
   // ========================================================================
@@ -640,7 +649,7 @@ describe('Tool Executor', () => {
     it('handles plugin service lookup errors during execution', async () => {
       mockToolRegistry.has.mockReturnValue(false);
 
-      const { getServiceRegistry } = await import('@ownpilot/core');
+      const { getServiceRegistry, getPluginService } = await import('@ownpilot/core');
       vi.mocked(getServiceRegistry).mockReturnValue({
         get: vi.fn((token: { name: string }) => {
           if (token.name === 'plugin') {
@@ -650,6 +659,9 @@ describe('Tool Executor', () => {
         }),
         tryGet: vi.fn(() => undefined),
       } as unknown as ReturnType<typeof getServiceRegistry>);
+      vi.mocked(getPluginService).mockImplementation(() => {
+        throw new Error('Plugin service unavailable');
+      });
 
       const result = await executeTool('plugin_lookup_tool', {});
 

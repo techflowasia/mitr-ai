@@ -76,6 +76,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     ...actual,
     getEventSystem: () => ({ emit: mockESEmit }),
     getServiceRegistry: () => ({ get: () => mockTrigSvc }),
+    getTriggerService: () => mockTrigSvc,
     Services: { Trigger: 'Trigger' },
   };
 });

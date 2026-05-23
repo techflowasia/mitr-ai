@@ -52,6 +52,12 @@ vi.mock('@ownpilot/core', async (importOriginal) => ({
   }),
   registerAllTools: mockRegisterAllTools,
   getServiceRegistry: mockGetServiceRegistry,
+  getExtensionService: vi.fn(() => ({
+    getToolDefinitions: vi.fn(() => [
+      { name: 'search', extensionId: 'smart-search', format: 'ownpilot' },
+      { name: 'review', extensionId: 'code-review', format: 'agentskills' },
+    ]),
+  })),
   qualifyToolName: mockQualifyToolName,
   calculateCost: mockCalculateCost,
   getErrorMessage: (e: unknown) => (e instanceof Error ? e.message : String(e)),

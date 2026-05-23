@@ -8,7 +8,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { streamSSE } from 'hono/streaming';
-import { getServiceRegistry, Services } from '@ownpilot/core';
 import {
   getUserId,
   apiResponse,
@@ -628,7 +627,7 @@ workflowRoutes.post('/:id/execute', async (c) => {
   const workflow = await repo.get(id);
   if (!workflow) return notFoundError(c, 'Workflow', id);
 
-  const service = getServiceRegistry().get(Services.Workflow);
+  const service = getWorkflowService();
   if (service.isRunning(id)) {
     return apiError(
       c,
@@ -672,7 +671,7 @@ workflowRoutes.post('/:id/cancel', async (c) => {
   const workflow = await repo.get(id);
   if (!workflow) return notFoundError(c, 'Workflow', id);
 
-  const service = getServiceRegistry().get(Services.Workflow);
+  const service = getWorkflowService();
   const cancelled = service.cancelExecution(id);
 
   if (!cancelled) {
@@ -935,7 +934,7 @@ workflowRoutes.post('/:id/run', async (c) => {
     }
   }
 
-  const service = getServiceRegistry().get(Services.Workflow);
+  const service = getWorkflowService();
   if (service.isRunning(id)) {
     return apiError(
       c,
@@ -1059,7 +1058,7 @@ workflowRoutes.post('/logs/:logId/replay', async (c) => {
   const workflow = await repo.get(log.workflowId);
   if (!workflow) return notFoundError(c, 'Workflow', log.workflowId);
 
-  const service = getServiceRegistry().get(Services.Workflow);
+  const service = getWorkflowService();
   if (service.isRunning(workflow.id)) {
     return apiError(
       c,

@@ -355,6 +355,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     createPlugin: vi.fn(() => new FakePluginBuilder()),
     buildCorePlugin: mockBuildCorePlugin,
     getServiceRegistry: mockGetServiceRegistry,
+    getDatabaseService: vi.fn(() => mockDatabaseRepo),
     Services: { Database: 'Database' },
   };
 });

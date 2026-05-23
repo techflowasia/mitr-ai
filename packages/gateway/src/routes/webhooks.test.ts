@@ -22,6 +22,7 @@ const {
   mockTriggersRepo,
   MockTriggersRepository,
   mockGetServiceRegistry,
+  mockGetWorkflowService,
   mockLog,
 } = vi.hoisted(() => {
   const mockLog = {
@@ -46,6 +47,7 @@ const {
   const mockGetServiceRegistry = vi.fn(() => ({
     get: vi.fn(() => mockWorkflowService),
   }));
+  const mockGetWorkflowService = vi.fn(() => mockWorkflowService);
 
   return {
     mockGetWebhookHandler,
@@ -53,6 +55,7 @@ const {
     mockTriggersRepo,
     MockTriggersRepository,
     mockGetServiceRegistry,
+    mockGetWorkflowService,
     mockLog,
   };
 });
@@ -78,6 +81,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   return {
     ...original,
     getServiceRegistry: mockGetServiceRegistry,
+    getWorkflowService: mockGetWorkflowService,
   };
 });
 
@@ -693,6 +697,7 @@ describe('Webhook Routes', () => {
       mockGetServiceRegistry.mockReturnValue({
         get: vi.fn(() => mockWorkflowService),
       });
+      mockGetWorkflowService.mockReturnValue(mockWorkflowService);
 
       const body = '{}';
 
@@ -723,6 +728,7 @@ describe('Webhook Routes', () => {
       mockGetServiceRegistry.mockReturnValue({
         get: vi.fn(() => mockWorkflowService),
       });
+      mockGetWorkflowService.mockReturnValue(mockWorkflowService);
 
       const body = '{}';
 
@@ -749,6 +755,7 @@ describe('Webhook Routes', () => {
       mockGetServiceRegistry.mockReturnValue({
         get: vi.fn(() => mockWorkflowService),
       });
+      mockGetWorkflowService.mockReturnValue(mockWorkflowService);
 
       const body = '{}';
 
@@ -772,6 +779,9 @@ describe('Webhook Routes', () => {
       mockTriggersRepo.getByIdGlobal.mockResolvedValue(trigger);
       mockGetServiceRegistry.mockImplementation(() => {
         throw new Error('Registry unavailable');
+      });
+      mockGetWorkflowService.mockImplementation(() => {
+        throw new Error('Workflow service unavailable');
       });
 
       const body = '{}';

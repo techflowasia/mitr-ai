@@ -6,7 +6,7 @@
  */
 
 import { Hono, type Context } from 'hono';
-import { getServiceRegistry, Services } from '@ownpilot/core';
+import { getExtensionService } from '@ownpilot/core';
 import { type ExtensionService, ExtensionError } from '../../services/extension-service.js';
 import {
   getUserId,
@@ -25,7 +25,7 @@ import { getClientIp } from '../../utils/client-ip.js';
 export const crudRoutes = new Hono();
 
 /** Get ExtensionService from registry (cast needed for ExtensionError-specific methods). */
-const getExtService = () => getServiceRegistry().get(Services.Extension) as ExtensionService;
+const getExtService = () => getExtensionService() as unknown as ExtensionService;
 
 async function uninstallExtension(c: Context) {
   const userId = getUserId(c);

@@ -8,7 +8,7 @@ import { writeFileSync, mkdirSync, existsSync, rmSync, readdirSync } from 'node:
 import { dirname, extname, join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { Hono, type Context } from 'hono';
-import { getServiceRegistry, Services } from '@ownpilot/core';
+import { getExtensionService } from '@ownpilot/core';
 import { type ExtensionService, ExtensionError } from '../../services/extension-service.js';
 import {
   getUserId,
@@ -74,7 +74,7 @@ function checkInstallThrottle(c: Context): Response | null {
 }
 
 /** Get ExtensionService from registry (cast needed for ExtensionError-specific methods). */
-const getExtService = () => getServiceRegistry().get(Services.Extension) as ExtensionService;
+const getExtService = () => getExtensionService() as unknown as ExtensionService;
 
 /** Allowed file extensions for upload */
 const ALLOWED_UPLOAD_EXTENSIONS = new Set(['.md', '.json', '.zip', '.skill']);

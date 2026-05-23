@@ -106,6 +106,8 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     getMemoryService: vi.fn(() => mockMemoryService),
     getGoalService: vi.fn(() => mockGoalService),
     getTriggerService: vi.fn(() => mockTriggerService),
+    getDatabaseService: vi.fn(() => mockDatabaseService),
+    getPlanService: vi.fn(() => mockPlanService),
   };
 });
 

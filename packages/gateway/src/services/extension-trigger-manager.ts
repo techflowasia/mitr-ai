@@ -10,7 +10,7 @@
  * from extension lifecycle management.
  */
 
-import { getServiceRegistry, Services } from '@ownpilot/core';
+import { getTriggerService } from '@ownpilot/core';
 import type { ExtensionManifest } from './extension-types.js';
 import { extensionsRepo } from '../db/repositories/extensions.js';
 import { getLog } from './log.js';
@@ -29,7 +29,7 @@ export async function activateExtensionTriggers(
 
   let triggerService;
   try {
-    triggerService = getServiceRegistry().get(Services.Trigger);
+    triggerService = getTriggerService();
   } catch {
     log.debug(`Trigger service not yet available, skipping trigger activation for ${manifest.id}`);
     return;
@@ -76,7 +76,7 @@ export async function deactivateExtensionTriggers(
 ): Promise<void> {
   let triggerService;
   try {
-    triggerService = getServiceRegistry().get(Services.Trigger);
+    triggerService = getTriggerService();
   } catch {
     return; // Trigger service not yet available
   }
@@ -103,7 +103,7 @@ export async function cleanupOrphanTriggers(userId = 'default'): Promise<number>
   try {
     let triggerService;
     try {
-      triggerService = getServiceRegistry().get(Services.Trigger);
+      triggerService = getTriggerService();
     } catch {
       return 0; // Trigger service not yet available
     }

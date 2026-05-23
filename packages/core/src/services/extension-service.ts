@@ -94,3 +94,55 @@ export interface IExtensionService {
     keywords?: string[];
   }>;
 }
+
+// ============================================================================
+// Singleton access — same pattern as MemoryService / GoalService / etc.
+// ============================================================================
+
+import { hasServiceRegistry, getServiceRegistry } from './registry.js';
+import { ServiceToken } from './registry.js';
+
+export const ExtensionToken = new ServiceToken<IExtensionService>('extension');
+
+let _extensionService: IExtensionService | null = null;
+
+export function setExtensionService(service: IExtensionService): void {
+  _extensionService = service;
+  if (hasServiceRegistry()) {
+    try {
+      const registry = getServiceRegistry();
+      if (!registry.has(ExtensionToken)) {
+        registry.register(ExtensionToken, service);
+      }
+    } catch {
+      // Registry not ready
+    }
+  }
+}
+
+export function getExtensionService(): IExtensionService {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(ExtensionToken);
+    } catch {
+      // Fall through
+    }
+  }
+  if (!_extensionService) {
+    throw new Error(
+      'ExtensionService not initialized. Call setExtensionService() during gateway startup.'
+    );
+  }
+  return _extensionService;
+}
+
+export function hasExtensionService(): boolean {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().has(ExtensionToken);
+    } catch {
+      // Fall through
+    }
+  }
+  return _extensionService !== null;
+}

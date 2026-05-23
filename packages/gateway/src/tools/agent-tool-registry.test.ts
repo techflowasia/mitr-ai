@@ -17,6 +17,10 @@ const mockGetServiceRegistry = vi.fn().mockReturnValue({
     getEnabled: vi.fn().mockReturnValue([]),
   })),
 });
+// Delegates to the registry mock so per-test `mockGetServiceRegistry.mockReturnValue(...)`
+// also drives `getPluginService()` / `getExtensionService()` results.
+const mockGetPluginService = vi.fn(() => mockGetServiceRegistry().get({ name: 'plugin' }));
+const mockGetExtensionService = vi.fn(() => mockGetServiceRegistry().get({ name: 'extension' }));
 
 vi.mock('@ownpilot/core', () => ({
   ToolRegistry: vi.fn(),
@@ -90,6 +94,8 @@ vi.mock('@ownpilot/core', () => ({
   getBaseName: mockGetBaseName,
   getGroupForTool: vi.fn().mockReturnValue(undefined),
   getServiceRegistry: mockGetServiceRegistry,
+  getPluginService: mockGetPluginService,
+  getExtensionService: mockGetExtensionService,
   Services: { Plugin: { name: 'plugin' }, Extension: { name: 'extension' } },
 }));
 

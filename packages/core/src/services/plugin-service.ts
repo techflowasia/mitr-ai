@@ -98,3 +98,55 @@ export interface IPluginService {
    */
   getCount(): number;
 }
+
+// ============================================================================
+// Singleton access — same pattern as MemoryService / GoalService / etc.
+// ============================================================================
+
+import { hasServiceRegistry, getServiceRegistry } from './registry.js';
+import { ServiceToken } from './registry.js';
+
+export const PluginToken = new ServiceToken<IPluginService>('plugin');
+
+let _pluginService: IPluginService | null = null;
+
+export function setPluginService(service: IPluginService): void {
+  _pluginService = service;
+  if (hasServiceRegistry()) {
+    try {
+      const registry = getServiceRegistry();
+      if (!registry.has(PluginToken)) {
+        registry.register(PluginToken, service);
+      }
+    } catch {
+      // Registry not ready
+    }
+  }
+}
+
+export function getPluginService(): IPluginService {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(PluginToken);
+    } catch {
+      // Fall through
+    }
+  }
+  if (!_pluginService) {
+    throw new Error(
+      'PluginService not initialized. Call setPluginService() during gateway startup.'
+    );
+  }
+  return _pluginService;
+}
+
+export function hasPluginService(): boolean {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().has(PluginToken);
+    } catch {
+      // Fall through
+    }
+  }
+  return _pluginService !== null;
+}

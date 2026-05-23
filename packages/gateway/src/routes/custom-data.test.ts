@@ -51,6 +51,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
         return services[token.name];
       }),
     })),
+    getDatabaseService: vi.fn(() => mockCustomDataService),
   };
 });
 

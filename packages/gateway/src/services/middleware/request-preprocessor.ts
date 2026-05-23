@@ -20,8 +20,8 @@
 
 import type { MessageMiddleware, IMcpClientService } from '@ownpilot/core';
 import {
-  getServiceRegistry,
-  Services,
+  getExtensionService,
+  getMcpClientService,
   type IExtensionService,
   TOOL_SEARCH_TAGS,
 } from '@ownpilot/core';
@@ -370,9 +370,7 @@ async function buildCustomDataIndex(): Promise<CustomTableEntry[]> {
  */
 function buildMcpIndex(): McpServerEntry[] {
   try {
-    const mcpService = getServiceRegistry().get(Services.McpClient) as
-      | IMcpClientService
-      | undefined;
+    const mcpService = getMcpClientService() as IMcpClientService | undefined;
     if (!mcpService) return [];
 
     const status = mcpService.getStatus();
@@ -485,7 +483,7 @@ async function getIndexAsync(): Promise<KeywordIndex | null> {
     // Build extension index
     let extensions: ExtensionKeywords[] = [];
     try {
-      const extService = getServiceRegistry().get(Services.Extension) as
+      const extService = getExtensionService() as
         | (IExtensionService & { getEnabledMetadata?: () => unknown })
         | undefined;
       if (extService?.getEnabledMetadata) {

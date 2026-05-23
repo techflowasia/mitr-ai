@@ -13,6 +13,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => ({
   getServiceRegistry: vi.fn(() => ({
     get: vi.fn(() => mockTriggerService),
   })),
+  getTriggerService: vi.fn(() => mockTriggerService),
   Services: { Trigger: 'trigger' },
 }));
 

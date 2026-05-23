@@ -88,3 +88,55 @@ export interface IWorkflowService {
    */
   isRunning(workflowId: string): boolean;
 }
+
+// ============================================================================
+// Singleton access — same pattern as MemoryService / GoalService / etc.
+// ============================================================================
+
+import { hasServiceRegistry, getServiceRegistry } from './registry.js';
+import { ServiceToken } from './registry.js';
+
+export const WorkflowToken = new ServiceToken<IWorkflowService>('workflow');
+
+let _workflowService: IWorkflowService | null = null;
+
+export function setWorkflowService(service: IWorkflowService): void {
+  _workflowService = service;
+  if (hasServiceRegistry()) {
+    try {
+      const registry = getServiceRegistry();
+      if (!registry.has(WorkflowToken)) {
+        registry.register(WorkflowToken, service);
+      }
+    } catch {
+      // Registry not ready
+    }
+  }
+}
+
+export function getWorkflowService(): IWorkflowService {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(WorkflowToken);
+    } catch {
+      // Fall through
+    }
+  }
+  if (!_workflowService) {
+    throw new Error(
+      'WorkflowService not initialized. Call setWorkflowService() during gateway startup.'
+    );
+  }
+  return _workflowService;
+}
+
+export function hasWorkflowService(): boolean {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().has(WorkflowToken);
+    } catch {
+      // Fall through
+    }
+  }
+  return _workflowService !== null;
+}

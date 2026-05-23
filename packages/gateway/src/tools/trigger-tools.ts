@@ -4,7 +4,7 @@
  * AI agent tools for creating, managing, and firing triggers.
  */
 
-import { type ToolDefinition, getServiceRegistry, Services, getErrorMessage } from '@ownpilot/core';
+import { type ToolDefinition, getTriggerService, getErrorMessage } from '@ownpilot/core';
 import { getTriggerEngine } from '../triggers/index.js';
 
 // =============================================================================
@@ -196,7 +196,7 @@ export async function executeTriggerTool(
   args: Record<string, unknown>,
   userId = 'default'
 ): Promise<{ success: boolean; result?: unknown; error?: string }> {
-  const service = getServiceRegistry().get(Services.Trigger);
+  const service = getTriggerService();
 
   switch (toolName) {
     case 'create_trigger': {

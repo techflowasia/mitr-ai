@@ -7,7 +7,7 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { join, basename, dirname } from 'node:path';
 import { Hono } from 'hono';
-import { getServiceRegistry, Services } from '@ownpilot/core';
+import { getExtensionService } from '@ownpilot/core';
 import type { ExtensionService } from '../../services/extension-service.js';
 import { getUserId, apiError, ERROR_CODES, notFoundError, getErrorMessage } from '../helpers.js';
 import { getLog } from '../../services/log.js';
@@ -17,7 +17,7 @@ const log = getLog('ExtensionPackaging');
 
 export const packagingRoutes = new Hono();
 
-const getExtService = () => getServiceRegistry().get(Services.Extension) as ExtensionService;
+const getExtService = () => getExtensionService() as unknown as ExtensionService;
 
 /**
  * GET /:id/package — Download .skill ZIP

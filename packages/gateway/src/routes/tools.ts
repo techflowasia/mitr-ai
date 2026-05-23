@@ -13,8 +13,7 @@ import {
   CUSTOM_DATA_TOOLS,
   PERSONAL_DATA_TOOLS,
   TOOL_GROUPS,
-  getServiceRegistry,
-  Services,
+  getPluginService,
   getConfigCenter,
   type ToolDefinition,
 } from '@ownpilot/core';
@@ -144,7 +143,7 @@ async function getAllTools(): Promise<
   // Fallback: also check plugin service for tools not yet in shared registry
   // (e.g. if plugins initialized after registry was created)
   try {
-    const pluginService = getServiceRegistry().get(Services.Plugin);
+    const pluginService = getPluginService();
     // Build seen sets for both qualified names and base names to prevent duplicates
     const seenQualified = new Set(allTools.map((t) => t.name));
     const seenBase = new Set(
@@ -309,7 +308,7 @@ toolsRoutes.get('/:name/source', async (c) => {
   } else {
     // Check plugin service for plugin-provided tools
     try {
-      const pluginService = getServiceRegistry().get(Services.Plugin);
+      const pluginService = getPluginService();
       const pluginTool = pluginService.getTool(name);
       if (pluginTool) {
         fallbackToString = () => pluginTool.executor.toString();

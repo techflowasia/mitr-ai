@@ -20,7 +20,7 @@ import {
   PLAN_STEP_TIMEOUT_MS,
 } from '../config/defaults.js';
 import { executeTool, hasTool } from '../services/tool-executor.js';
-import { getServiceRegistry, Services, type IPlanService } from '@ownpilot/core';
+import { getPlanService, type IPlanService } from '@ownpilot/core';
 import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
 import { downgradePromptToBlocked } from '../services/permission-utils.js';
 import { getErrorMessage } from '../routes/helpers.js';
@@ -111,7 +111,7 @@ export class PlanExecutor extends EventEmitter {
       autonomyLevel: config.autonomyLevel ?? 1,
       enableWaveExecution: config.enableWaveExecution ?? false,
     };
-    this.planService = getServiceRegistry().get(Services.Plan);
+    this.planService = getPlanService();
     this.registerDefaultHandlers();
   }
 

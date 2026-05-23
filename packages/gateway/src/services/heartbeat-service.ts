@@ -5,7 +5,7 @@
  * Each heartbeat owns one backing trigger (schedule type, chat action).
  */
 
-import { getEventSystem, getServiceRegistry, Services } from '@ownpilot/core';
+import { getEventSystem, getTriggerService } from '@ownpilot/core';
 import {
   createHeartbeatsRepository,
   type Heartbeat,
@@ -70,7 +70,7 @@ export class HeartbeatService {
     const name = input.name || normalized;
 
     // Create backing trigger
-    const triggerService = getServiceRegistry().get(Services.Trigger);
+    const triggerService = getTriggerService();
     const trigger = await triggerService.createTrigger(userId, {
       name: `[Heartbeat] ${name}`,
       description: `Auto-managed by heartbeat: ${input.scheduleText}`,
@@ -155,7 +155,7 @@ export class HeartbeatService {
 
     // Sync backing trigger
     if (existing.triggerId) {
-      const triggerService = getServiceRegistry().get(Services.Trigger);
+      const triggerService = getTriggerService();
       const triggerUpdates: Record<string, unknown> = {};
 
       if (newCron !== existing.cron) {
@@ -207,7 +207,7 @@ export class HeartbeatService {
 
     // Delete backing trigger
     if (existing.triggerId) {
-      const triggerService = getServiceRegistry().get(Services.Trigger);
+      const triggerService = getTriggerService();
       await triggerService.deleteTrigger(userId, existing.triggerId);
     }
 

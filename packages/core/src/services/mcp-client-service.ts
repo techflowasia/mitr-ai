@@ -91,3 +91,55 @@ export interface IMcpClientService {
    */
   refreshToolRegistration?(serverName: string): Promise<void>;
 }
+
+// ============================================================================
+// Singleton access — same pattern as MemoryService / GoalService / etc.
+// ============================================================================
+
+import { hasServiceRegistry, getServiceRegistry } from './registry.js';
+import { ServiceToken } from './registry.js';
+
+export const McpClientToken = new ServiceToken<IMcpClientService>('mcp-client');
+
+let _mcpClientService: IMcpClientService | null = null;
+
+export function setMcpClientService(service: IMcpClientService): void {
+  _mcpClientService = service;
+  if (hasServiceRegistry()) {
+    try {
+      const registry = getServiceRegistry();
+      if (!registry.has(McpClientToken)) {
+        registry.register(McpClientToken, service);
+      }
+    } catch {
+      // Registry not ready
+    }
+  }
+}
+
+export function getMcpClientService(): IMcpClientService {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(McpClientToken);
+    } catch {
+      // Fall through
+    }
+  }
+  if (!_mcpClientService) {
+    throw new Error(
+      'McpClientService not initialized. Call setMcpClientService() during gateway startup.'
+    );
+  }
+  return _mcpClientService;
+}
+
+export function hasMcpClientService(): boolean {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().has(McpClientToken);
+    } catch {
+      // Fall through
+    }
+  }
+  return _mcpClientService !== null;
+}

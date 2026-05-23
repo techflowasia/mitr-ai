@@ -66,6 +66,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
         throw new Error(`Unexpected token: ${token.key}`);
       },
     }),
+    getMcpClientService: () => mockMcpClientService,
     Services: { McpClient: { key: 'mcp-client' } },
   };
 });

@@ -10,9 +10,10 @@ import { errorHandler } from '../../middleware/error-handler.js';
 // Mocks
 // ---------------------------------------------------------------------------
 
-const { mockScanDirectory, mockGetServiceRegistry } = vi.hoisted(() => ({
+const { mockScanDirectory, mockGetServiceRegistry, mockGetExtensionService } = vi.hoisted(() => ({
   mockScanDirectory: vi.fn(),
   mockGetServiceRegistry: vi.fn(),
+  mockGetExtensionService: vi.fn(),
 }));
 
 vi.mock('@ownpilot/core', async (importOriginal) => {
@@ -20,6 +21,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   return {
     ...actual,
     getServiceRegistry: mockGetServiceRegistry,
+    getExtensionService: mockGetExtensionService,
   };
 });
 
@@ -51,11 +53,11 @@ describe('Extensions Scanner Routes', () => {
     vi.clearAllMocks();
     app = createApp();
 
+    const fakeExtService = { scanDirectory: mockScanDirectory };
     mockGetServiceRegistry.mockReturnValue({
-      get: vi.fn(() => ({
-        scanDirectory: mockScanDirectory,
-      })),
+      get: vi.fn(() => fakeExtService),
     });
+    mockGetExtensionService.mockReturnValue(fakeExtService);
   });
 
   describe('POST /extensions/scan', () => {
@@ -100,9 +102,9 @@ describe('Extensions Scanner Routes', () => {
       expect(json.error.message).toContain('Permission denied');
     });
 
-    it('returns 500 when service registry throws', async () => {
-      mockGetServiceRegistry.mockImplementationOnce(() => {
-        throw new Error('Registry not initialized');
+    it('returns 500 when extension service accessor throws', async () => {
+      mockGetExtensionService.mockImplementationOnce(() => {
+        throw new Error('ExtensionService not initialized');
       });
 
       const res = await app.request('/extensions/scan', { method: 'POST' });

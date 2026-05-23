@@ -11,7 +11,7 @@ import {
   type CreateStepInput,
 } from '../db/repositories/plans.js';
 import { getPlanExecutor } from '../plans/index.js';
-import { getServiceRegistry, Services } from '@ownpilot/core';
+import { getPlanService, Services } from '@ownpilot/core';
 import {
   getUserId,
   apiResponse,
@@ -52,7 +52,7 @@ plansRoutes.get('/', pagination(), async (c) => {
   const triggerId = c.req.query('triggerId');
   const { limit, offset } = c.get('pagination')!;
 
-  const service = getServiceRegistry().get(Services.Plan);
+  const service = getPlanService();
   const [total, plans] = await Promise.all([
     service.countPlans(userId, { status, goalId, triggerId }),
     service.listPlans(userId, { status, goalId, triggerId, limit, offset }),
@@ -76,7 +76,7 @@ plansRoutes.post('/', async (c) => {
   const { validateBody, createPlanSchema } = await import('../middleware/validation.js');
   const body = validateBody(createPlanSchema, rawBody) as unknown as CreatePlanInput;
 
-  const service = getServiceRegistry().get(Services.Plan);
+  const service = getPlanService();
   const plan = await service.createPlan(userId, body);
 
   wsGateway.broadcast('data:changed', { entity: 'plan', action: 'created', id: plan.id });
@@ -96,7 +96,7 @@ plansRoutes.post('/', async (c) => {
  */
 plansRoutes.get('/stats', async (c) => {
   const userId = getUserId(c);
-  const service = getServiceRegistry().get(Services.Plan);
+  const service = getPlanService();
   const stats = await service.getStats(userId);
 
   return apiResponse(c, stats);
@@ -107,7 +107,7 @@ plansRoutes.get('/stats', async (c) => {
  */
 plansRoutes.get('/active', async (c) => {
   const userId = getUserId(c);
-  const service = getServiceRegistry().get(Services.Plan);
+  const service = getPlanService();
   const plans = await service.getActive(userId);
 
   return apiResponse(c, {
@@ -121,7 +121,7 @@ plansRoutes.get('/active', async (c) => {
  */
 plansRoutes.get('/pending', async (c) => {
   const userId = getUserId(c);
-  const service = getServiceRegistry().get(Services.Plan);
+  const service = getPlanService();
   const plans = await service.getPending(userId);
 
   return apiResponse(c, {
@@ -137,7 +137,7 @@ plansRoutes.get('/:id', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
 
-  const service = getServiceRegistry().get(Services.Plan);
+  const service = getPlanService();
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
@@ -165,7 +165,7 @@ plansRoutes.patch('/:id', async (c) => {
   const { validateBody, updatePlanSchema } = await import('../middleware/validation.js');
   const body = validateBody(updatePlanSchema, rawBody) as unknown as UpdatePlanInput;
 
-  const service = getServiceRegistry().get(Services.Plan);
+  const service = getPlanService();
   const updated = await service.updatePlan(userId, id, body);
 
   if (!updated) {
@@ -203,7 +203,7 @@ plansRoutes.post('/:id/execute', async (c) => {
   const waveExecution = c.req.query('waveExecution') === 'true';
   const maxConcurrent = getIntParam(c, 'maxConcurrent', 5, 1, 20);
 
-  const service = getServiceRegistry().get(Services.Plan);
+  const service = getPlanService();
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
@@ -261,7 +261,7 @@ plansRoutes.post('/:id/pause', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
 
-  const service = getServiceRegistry().get(Services.Plan);
+  const service = getPlanService();
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
@@ -291,7 +291,7 @@ plansRoutes.post('/:id/resume', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
 
-  const service = getServiceRegistry().get(Services.Plan);
+  const service = getPlanService();
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
@@ -336,7 +336,7 @@ plansRoutes.post('/:id/abort', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
 
-  const service = getServiceRegistry().get(Services.Plan);
+  const service = getPlanService();
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
@@ -367,7 +367,7 @@ plansRoutes.post('/:id/checkpoint', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json<{ data?: unknown }>().catch((): { data?: unknown } => ({}));
 
-  const service = getServiceRegistry().get(Services.Plan);
+  const service = getPlanService();
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
@@ -408,7 +408,7 @@ plansRoutes.post('/:id/start', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
 
-  const service = getServiceRegistry().get(Services.Plan);
+  const service = getPlanService();
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
@@ -465,7 +465,7 @@ plansRoutes.post('/:id/rollback', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
 
-  const service = getServiceRegistry().get(Services.Plan);
+  const service = getPlanService();
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
@@ -534,7 +534,7 @@ plansRoutes.get('/:id/steps', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
 
-  const service = getServiceRegistry().get(Services.Plan);
+  const service = getPlanService();
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {
@@ -561,7 +561,7 @@ plansRoutes.post('/:id/steps', async (c) => {
   const body = validateBody(createPlanStepSchema, rawBody) as unknown as CreateStepInput;
 
   try {
-    const service = getServiceRegistry().get(Services.Plan);
+    const service = getPlanService();
     const step = await service.addStep(userId, id, body);
 
     wsGateway.broadcast('data:changed', { entity: 'plan', action: 'updated', id });
@@ -587,7 +587,7 @@ plansRoutes.get('/:id/steps/:stepId', async (c) => {
   const userId = getUserId(c);
   const stepId = c.req.param('stepId');
 
-  const service = getServiceRegistry().get(Services.Plan);
+  const service = getPlanService();
   const step = await service.getStep(userId, stepId);
 
   if (!step) {
@@ -609,7 +609,7 @@ plansRoutes.patch('/:id/steps/:stepId', async (c) => {
   const { validateBody, updatePlanStepSchema } = await import('../middleware/validation.js');
   const body = validateBody(updatePlanStepSchema, rawBody);
 
-  const service = getServiceRegistry().get(Services.Plan);
+  const service = getPlanService();
   const updated = await service.updateStep(userId, stepId, body);
 
   if (!updated) {
@@ -633,7 +633,7 @@ plansRoutes.get('/:id/history', async (c) => {
   const id = c.req.param('id');
   const limit = getIntParam(c, 'limit', 50, 1, 200);
 
-  const service = getServiceRegistry().get(Services.Plan);
+  const service = getPlanService();
   const plan = await service.getPlan(userId, id);
 
   if (!plan) {

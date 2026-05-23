@@ -83,6 +83,7 @@ vi.mock('@ownpilot/core', () => ({
       throw new Error(`Unexpected token: ${token.key}`);
     },
   }),
+  getExtensionService: () => mockService,
   Services: { Extension: { key: 'extension' } },
   // AUDIT-003 added emit() calls in install routes.
   getEventSystem: vi.fn(() => ({ emit: vi.fn() })),

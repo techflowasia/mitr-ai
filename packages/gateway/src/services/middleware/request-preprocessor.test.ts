@@ -13,8 +13,16 @@ import {
 // Mocks for middleware / private function coverage
 // ============================================================================
 
-const { mockGetServiceRegistry, mockCustomDataRepoInst, mockToolRegistryInst } = vi.hoisted(() => ({
+const {
+  mockGetServiceRegistry,
+  mockGetExtensionService,
+  mockGetMcpClientService,
+  mockCustomDataRepoInst,
+  mockToolRegistryInst,
+} = vi.hoisted(() => ({
   mockGetServiceRegistry: vi.fn(),
+  mockGetExtensionService: vi.fn(),
+  mockGetMcpClientService: vi.fn(),
   mockCustomDataRepoInst: {
     listTables: vi.fn<
       [],
@@ -46,6 +54,8 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   return {
     ...actual,
     getServiceRegistry: mockGetServiceRegistry,
+    getExtensionService: mockGetExtensionService,
+    getMcpClientService: mockGetMcpClientService,
   };
 });
 
@@ -533,6 +543,8 @@ describe('createRequestPreprocessorMiddleware', () => {
     mockToolRegistryInst.getAllTools.mockReturnValue([]);
     mockCustomDataRepoInst.listTables.mockResolvedValue([]);
     mockGetServiceRegistry.mockReturnValue({ get: vi.fn(() => undefined) });
+    mockGetExtensionService.mockReturnValue(undefined as never);
+    mockGetMcpClientService.mockReturnValue(undefined as never);
 
     mockMcpService = {
       getStatus: vi.fn(() => new Map()),
@@ -668,6 +680,7 @@ describe('createRequestPreprocessorMiddleware', () => {
         return undefined;
       }),
     });
+    mockGetExtensionService.mockReturnValue(mockExtService as never);
 
     const middleware = createRequestPreprocessorMiddleware();
     const ctx = makeCtx();
@@ -881,6 +894,7 @@ describe('createRequestPreprocessorMiddleware', () => {
         return undefined;
       }),
     });
+    mockGetMcpClientService.mockReturnValue(mockMcpService as never);
 
     const middleware = createRequestPreprocessorMiddleware();
     const ctx = makeCtx();
@@ -908,6 +922,7 @@ describe('createRequestPreprocessorMiddleware', () => {
         return undefined;
       }),
     });
+    mockGetMcpClientService.mockReturnValue(mockMcpService as never);
 
     const middleware = createRequestPreprocessorMiddleware();
     const ctx = makeCtx();
@@ -965,6 +980,7 @@ describe('createRequestPreprocessorMiddleware', () => {
         return undefined;
       }),
     });
+    mockGetMcpClientService.mockReturnValue(mockMcpService as never);
 
     const middleware = createRequestPreprocessorMiddleware();
     const ctx = makeCtx();
@@ -984,6 +1000,9 @@ describe('createRequestPreprocessorMiddleware', () => {
     // buildMcpIndex has its own try/catch — exception is swallowed, returns []
     mockGetServiceRegistry.mockImplementation(() => {
       throw new Error('service registry unavailable');
+    });
+    mockGetMcpClientService.mockImplementation(() => {
+      throw new Error('mcp service unavailable');
     });
 
     const middleware = createRequestPreprocessorMiddleware();
@@ -1011,6 +1030,7 @@ describe('createRequestPreprocessorMiddleware', () => {
         return undefined;
       }),
     });
+    mockGetMcpClientService.mockReturnValue(mockMcpService as never);
 
     const middleware = createRequestPreprocessorMiddleware();
     const ctx = makeCtx();
@@ -1069,6 +1089,7 @@ describe('createRequestPreprocessorMiddleware', () => {
         return undefined;
       }),
     });
+    mockGetMcpClientService.mockReturnValue(mockMcpService as never);
 
     const middleware = createRequestPreprocessorMiddleware();
     const ctx = makeCtx();

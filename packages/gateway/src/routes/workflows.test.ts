@@ -47,6 +47,7 @@ const mockService = {
   executeWorkflow: vi.fn(),
   cancelExecution: vi.fn(),
   isRunning: vi.fn().mockReturnValue(false),
+  resumeFromApproval: vi.fn().mockResolvedValue(undefined),
 };
 
 vi.mock('../db/repositories/workflows.js', () => ({
@@ -57,13 +58,9 @@ vi.mock('../db/repositories/workflow-approvals.js', () => ({
   createWorkflowApprovalsRepository: () => mockApprovalsRepo,
 }));
 
-const mockWorkflowService = {
-  resumeFromApproval: vi.fn().mockResolvedValue(undefined),
-};
-
 vi.mock('../services/workflow-service.js', () => ({
   topologicalSort: vi.fn(), // default: no throw = valid DAG
-  getWorkflowService: () => mockWorkflowService,
+  getWorkflowService: () => mockService,
 }));
 
 vi.mock('../services/workflow/dag-utils.js', () => ({
@@ -78,6 +75,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => ({
       throw new Error(`Unexpected token: ${token.name}`);
     },
   }),
+  getWorkflowService: () => mockService,
 }));
 
 vi.mock('../ws/server.js', () => ({

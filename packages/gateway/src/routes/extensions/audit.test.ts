@@ -36,6 +36,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   return {
     ...actual,
     getServiceRegistry: vi.fn(() => ({ get: vi.fn(() => mockExtService) })),
+    getExtensionService: vi.fn(() => mockExtService),
     createProvider: vi.fn(() => mockProvider),
     getProviderConfig: vi.fn(() => null),
   };
@@ -75,7 +76,7 @@ vi.mock('../../services/log.js', () => ({
 const { auditRoutes } = await import('./audit.js');
 
 // Grab the mocked modules so tests can override per-call
-const { getServiceRegistry, createProvider } = await import('@ownpilot/core');
+const { getServiceRegistry, createProvider, getExtensionService } = await import('@ownpilot/core');
 const { resolveDefaultProviderAndModel, getApiKey } = await import('../settings.js');
 const { localProvidersRepo } = await import('../../db/repositories/index.js');
 const { parseLlmAuditResponse } = await import('../../services/skill-security-audit.js');
@@ -140,6 +141,7 @@ describe('Extension Audit Routes', () => {
 
     // Restore defaults after each clear
     vi.mocked(getServiceRegistry).mockReturnValue({ get: vi.fn(() => mockExtService) } as never);
+    vi.mocked(getExtensionService).mockReturnValue(mockExtService as never);
     vi.mocked(createProvider).mockReturnValue(mockProvider as never);
     mockExtService.getById.mockReturnValue(makeExtRecord());
     mockProvider.complete.mockResolvedValue({

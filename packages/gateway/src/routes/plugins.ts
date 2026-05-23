@@ -5,13 +5,11 @@
 
 import { Hono } from 'hono';
 import {
-  getServiceRegistry,
-  Services,
+  getPluginService,
   type Plugin,
   type PluginCapability,
   type PluginPermission,
   type PluginStatus,
-  type IPluginService,
 } from '@ownpilot/core';
 import type { ConfigFieldDefinition } from '@ownpilot/core';
 import {
@@ -34,10 +32,6 @@ import { getClientIp } from '../utils/client-ip.js';
 const log = getLog('Plugins');
 
 export const pluginsRoutes = new Hono();
-
-function getPluginService(): IPluginService {
-  return getServiceRegistry().get(Services.Plugin);
-}
 
 function hasConfiguredEntry(
   entries: Array<{ isActive?: boolean; data?: Record<string, unknown> }>

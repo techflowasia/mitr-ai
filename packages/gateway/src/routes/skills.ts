@@ -8,7 +8,7 @@
 import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import { getUserId, apiResponse, apiError, ERROR_CODES, getIntParam } from './helpers.js';
-import { getErrorMessage, getServiceRegistry, Services } from '@ownpilot/core';
+import { getErrorMessage, getExtensionService } from '@ownpilot/core';
 import { getNpmInstaller } from '../services/skill-npm-installer.js';
 import {
   getAllPermissions,
@@ -42,7 +42,7 @@ async function uninstallSkill(c: Context) {
     );
   }
 
-  const service = getServiceRegistry().get(Services.Extension) as unknown as {
+  const service = getExtensionService() as unknown as {
     uninstall: (id: string, userId: string) => Promise<boolean>;
   };
 
@@ -105,7 +105,7 @@ skillsRoutes.post('/install-npm', async (c) => {
     const { packageName } = body;
 
     const installer = getNpmInstaller();
-    const service = getServiceRegistry().get(Services.Extension) as {
+    const service = getExtensionService() as unknown as {
       install: (path: string, userId: string) => Promise<{ id: string }>;
     };
 

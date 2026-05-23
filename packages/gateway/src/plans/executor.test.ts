@@ -42,6 +42,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
         return services[token.name];
       }),
     })),
+    getPlanService: vi.fn(() => mockPlanService),
   };
 });
 

@@ -16,8 +16,7 @@ import {
   registerAllTools,
   getErrorMessage,
   qualifyToolName,
-  getServiceRegistry,
-  Services,
+  getExtensionService,
   calculateCost,
   type IProvider,
   createProvider,
@@ -249,7 +248,7 @@ export function resolveToolFilter(
 
   if (skills && skills.length > 0) {
     try {
-      const extService = getServiceRegistry().get(Services.Extension) as ExtensionService;
+      const extService = getExtensionService() as unknown as ExtensionService;
       const allowedSkillIds = new Set(skills);
       for (const def of extService.getToolDefinitions()) {
         if (allowedSkillIds.has(def.extensionId)) {

@@ -26,6 +26,7 @@ vi.mock('@ownpilot/core', () => ({
   getServiceRegistry: () => ({
     get: () => mockTriggerService,
   }),
+  getTriggerService: () => mockTriggerService,
   Services: { Trigger: 'trigger' },
 }));
 

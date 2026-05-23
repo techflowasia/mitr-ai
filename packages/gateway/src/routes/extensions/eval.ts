@@ -10,8 +10,7 @@ import { Hono } from 'hono';
 import {
   createProvider,
   getProviderConfig as coreGetProviderConfig,
-  getServiceRegistry,
-  Services,
+  getExtensionService,
   type AIProvider,
 } from '@ownpilot/core';
 import type { ExtensionService } from '../../services/extension-service.js';
@@ -46,7 +45,7 @@ const NATIVE_PROVIDERS = new Set([
   'perplexity',
 ]);
 
-const getExtService = () => getServiceRegistry().get(Services.Extension) as ExtensionService;
+const getExtService = () => getExtensionService() as unknown as ExtensionService;
 
 // ---------------------------------------------------------------------------
 // Shared: create a provider instance

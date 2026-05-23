@@ -103,6 +103,7 @@ vi.mock('@ownpilot/core', () => ({
       throw new Error(`Unexpected token: ${token.key}`);
     },
   }),
+  getExtensionService: () => mockService,
   Services: { Extension: { key: 'extension' } },
   getLog: vi.fn(() => ({
     info: vi.fn(),

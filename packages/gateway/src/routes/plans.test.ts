@@ -62,6 +62,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   return {
     ...original,
     getServiceRegistry: vi.fn(() => createMockServiceRegistry({ plan: mockPlanService })),
+    getPlanService: vi.fn(() => mockPlanService),
   };
 });
 

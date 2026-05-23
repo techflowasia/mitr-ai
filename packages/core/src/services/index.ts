@@ -90,6 +90,12 @@ export type {
 
 // Plugin Service
 export type { IPluginService, PluginInfo, PluginToolEntry } from './plugin-service.js';
+export {
+  getPluginService,
+  setPluginService,
+  hasPluginService,
+  PluginToken,
+} from './plugin-service.js';
 
 // Memory Service
 export type {
@@ -115,6 +121,12 @@ export type {
   TableSchema,
   DataRecord,
   TableStats as DatabaseTableStats,
+} from './database-service.js';
+export {
+  getDatabaseService,
+  setDatabaseService,
+  hasDatabaseService,
+  DatabaseToken,
 } from './database-service.js';
 
 // Workspace Service
@@ -188,6 +200,7 @@ export type {
   CreateStepInput as CreatePlanStepInput,
   UpdateStepInput as UpdatePlanStepInput,
 } from './plan-service.js';
+export { getPlanService, setPlanService, hasPlanService, PlanToken } from './plan-service.js';
 
 // Resource Service
 export type {
@@ -206,6 +219,12 @@ export type {
   WorkflowLogStatus,
   WorkflowProgressEvent,
 } from './workflow-service.js';
+export {
+  getWorkflowService,
+  setWorkflowService,
+  hasWorkflowService,
+  WorkflowToken,
+} from './workflow-service.js';
 
 // MCP Client Service
 export type {
@@ -214,9 +233,21 @@ export type {
   McpServerConfig,
   McpServerStatus,
 } from './mcp-client-service.js';
+export {
+  getMcpClientService,
+  setMcpClientService,
+  hasMcpClientService,
+  McpClientToken,
+} from './mcp-client-service.js';
 
 // Extension Service
 export type { IExtensionService, ExtensionInfo, ExtensionScanResult } from './extension-service.js';
+export {
+  getExtensionService,
+  setExtensionService,
+  hasExtensionService,
+  ExtensionToken,
+} from './extension-service.js';
 
 // Embedding Service
 export type { IEmbeddingService, EmbeddingResult } from './embedding-service.js';

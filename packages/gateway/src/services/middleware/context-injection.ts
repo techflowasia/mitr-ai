@@ -15,8 +15,7 @@
 
 import type { MessageMiddleware } from '@ownpilot/core';
 import {
-  getServiceRegistry,
-  Services,
+  getExtensionService,
   type IExtensionService,
   debugLog,
   getTimeContext,
@@ -270,7 +269,7 @@ export function createContextInjectionMiddleware(): MessageMiddleware {
  */
 function buildExtensionSections(ctx: { get<T>(key: string): T | undefined }): string {
   try {
-    const extService = getServiceRegistry().get(Services.Extension) as IExtensionService & {
+    const extService = getExtensionService() as IExtensionService & {
       getSystemPromptSectionsForIds?(ids: string[]): string[];
     };
     if (!extService) return '';
@@ -306,7 +305,7 @@ async function buildSoulSkillsSection(agentId: string): Promise<string> {
       return '';
     }
 
-    const extService = getServiceRegistry().get(Services.Extension) as IExtensionService & {
+    const extService = getExtensionService() as IExtensionService & {
       getExtensionById?(id: string):
         | {
             name: string;

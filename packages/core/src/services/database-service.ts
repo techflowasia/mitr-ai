@@ -185,3 +185,55 @@ export interface IDatabaseService {
    */
   getTableStats(tableNameOrId: string): Promise<TableStats | null>;
 }
+
+// ============================================================================
+// Singleton access — same pattern as MemoryService / GoalService / etc.
+// ============================================================================
+
+import { hasServiceRegistry, getServiceRegistry } from './registry.js';
+import { ServiceToken } from './registry.js';
+
+export const DatabaseToken = new ServiceToken<IDatabaseService>('database');
+
+let _databaseService: IDatabaseService | null = null;
+
+export function setDatabaseService(service: IDatabaseService): void {
+  _databaseService = service;
+  if (hasServiceRegistry()) {
+    try {
+      const registry = getServiceRegistry();
+      if (!registry.has(DatabaseToken)) {
+        registry.register(DatabaseToken, service);
+      }
+    } catch {
+      // Registry not ready
+    }
+  }
+}
+
+export function getDatabaseService(): IDatabaseService {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(DatabaseToken);
+    } catch {
+      // Fall through
+    }
+  }
+  if (!_databaseService) {
+    throw new Error(
+      'DatabaseService not initialized. Call setDatabaseService() during gateway startup.'
+    );
+  }
+  return _databaseService;
+}
+
+export function hasDatabaseService(): boolean {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().has(DatabaseToken);
+    } catch {
+      // Fall through
+    }
+  }
+  return _databaseService !== null;
+}
