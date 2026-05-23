@@ -9,12 +9,14 @@
  * - single-shot: One execution, auto-stop on completion
  *
  * Usage:
- *   const clawService = registry.get(Services.Claw);
+ *   import { getClawService } from '@ownpilot/core';
+ *   const clawService = getClawService();
  *   const config = await clawService.createClaw({ ... });
  *   await clawService.startClaw(config.id, userId);
  */
 
 import type { AutonomousAgentResult } from './agent-execution-result.js';
+import { ServiceToken } from './registry.js';
 
 // ============================================================================
 // Enums & Constants
@@ -310,4 +312,55 @@ export interface IClawService {
   // ---- Service Lifecycle ----
   start(): Promise<void>;
   stop(): Promise<void>;
+}
+
+// ============================================================================
+// Singleton access — matches the LLMRouter / PermissionGate / MemoryService
+// pattern. Gateway registers an implementation via setClawService() at
+// startup; production callers and tests use the accessor.
+// ============================================================================
+
+import { hasServiceRegistry, getServiceRegistry } from './registry.js';
+
+export const ClawToken = new ServiceToken<IClawService>('claw');
+
+let _clawService: IClawService | null = null;
+
+export function setClawService(service: IClawService): void {
+  _clawService = service;
+  if (hasServiceRegistry()) {
+    try {
+      const registry = getServiceRegistry();
+      if (!registry.has(ClawToken)) {
+        registry.register(ClawToken, service);
+      }
+    } catch {
+      // Registry not ready
+    }
+  }
+}
+
+export function getClawService(): IClawService {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(ClawToken);
+    } catch {
+      // Fall through
+    }
+  }
+  if (!_clawService) {
+    throw new Error('ClawService not initialized. Call setClawService() during gateway startup.');
+  }
+  return _clawService;
+}
+
+export function hasClawService(): boolean {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().has(ClawToken);
+    } catch {
+      // Fall through
+    }
+  }
+  return _clawService !== null;
 }

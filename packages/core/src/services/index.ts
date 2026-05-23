@@ -386,7 +386,14 @@ export type {
   ClawCycleResult,
   ClawHistoryEntry,
 } from './claw-types.js';
-export { DEFAULT_CLAW_LIMITS, MAX_CLAW_DEPTH } from './claw-types.js';
+export {
+  DEFAULT_CLAW_LIMITS,
+  MAX_CLAW_DEPTH,
+  getClawService,
+  setClawService,
+  hasClawService,
+  ClawToken,
+} from './claw-types.js';
 
 // Artifact Service
 export type {

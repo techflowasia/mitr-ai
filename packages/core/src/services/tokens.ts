@@ -38,6 +38,7 @@ import type { IHeartbeatService } from './heartbeat-service.js';
 import type { IPulseService } from './pulse-service.js';
 import type { ICodingAgentService } from './coding-agent-service.js';
 import type { ICliToolService } from './cli-tool-service.js';
+import type { IClawService } from './claw-types.js';
 
 import type { IArtifactService } from './artifact-service.js';
 import type { IEdgeService } from './edge-service.js';
@@ -126,6 +127,9 @@ export const Services = {
 
   /** CLI tool discovery, execution, and management */
   CliTool: new ServiceToken<ICliToolService>('cli-tool'),
+
+  /** Unified autonomous agent runtime (Claw) */
+  Claw: new ServiceToken<IClawService>('claw'),
 
   /** Artifacts (AI-generated interactive content with data bindings) */
   Artifact: new ServiceToken<IArtifactService>('artifact'),

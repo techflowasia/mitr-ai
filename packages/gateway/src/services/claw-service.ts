@@ -288,11 +288,18 @@ export class ClawServiceImpl implements IClawService {
 // Singleton
 // ============================================================================
 
+import { setClawService as setCoreClawService } from '@ownpilot/core';
+
 let _service: ClawServiceImpl | null = null;
 
 export function getClawService(): ClawServiceImpl {
   if (!_service) {
     _service = new ClawServiceImpl();
+    // Mirror into the core capability accessor so callers using
+    // `import { getClawService } from '@ownpilot/core'` resolve the same
+    // instance. Keeps the gateway-local accessor working for impl-typed
+    // callers (it returns ClawServiceImpl, not just IClawService).
+    setCoreClawService(_service);
   }
   return _service;
 }
