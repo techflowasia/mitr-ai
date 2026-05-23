@@ -110,3 +110,55 @@ export interface IWorkspaceService {
    */
   getCount(): number;
 }
+
+// ============================================================================
+// Singleton access — same pattern as MemoryService / GoalService / etc.
+// ============================================================================
+
+import { hasServiceRegistry, getServiceRegistry } from './registry.js';
+import { ServiceToken } from './registry.js';
+
+export const WorkspaceToken = new ServiceToken<IWorkspaceService>('workspace');
+
+let _workspaceService: IWorkspaceService | null = null;
+
+export function setWorkspaceService(service: IWorkspaceService): void {
+  _workspaceService = service;
+  if (hasServiceRegistry()) {
+    try {
+      const registry = getServiceRegistry();
+      if (!registry.has(WorkspaceToken)) {
+        registry.register(WorkspaceToken, service);
+      }
+    } catch {
+      // Registry not ready
+    }
+  }
+}
+
+export function getWorkspaceService(): IWorkspaceService {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(WorkspaceToken);
+    } catch {
+      // Fall through
+    }
+  }
+  if (!_workspaceService) {
+    throw new Error(
+      'WorkspaceService not initialized. Call setWorkspaceService() during gateway startup.'
+    );
+  }
+  return _workspaceService;
+}
+
+export function hasWorkspaceService(): boolean {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().has(WorkspaceToken);
+    } catch {
+      // Fall through
+    }
+  }
+  return _workspaceService !== null;
+}

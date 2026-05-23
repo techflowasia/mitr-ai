@@ -8,7 +8,7 @@
  * executeTool() function which applies ToolPermissionService checks.
  *
  * Usage:
- *   const tools = registry.get(Services.Tool);
+ *   const tools = getToolService();
  *   const defs = tools.getDefinitions();
  *   await tools.execute('get_current_time', {});
  */

@@ -42,10 +42,12 @@ import { registerAudioOverrides } from './audio-overrides.js';
 import { registerExpenseOverrides } from './expense-overrides.js';
 import {
   hasServiceRegistry,
-  getServiceRegistry,
-  Services,
   getConfigCenter,
   getPluginService,
+  getExtensionService,
+  getEventSystem,
+  getAuditService,
+  hasAuditService,
 } from '@ownpilot/core';
 import type { IAuditService } from '@ownpilot/core';
 import { checkToolPermission } from './tool-permission-service.js';
@@ -157,7 +159,7 @@ function initPluginToolsIntoRegistry(registry: ToolRegistry): void {
 
   try {
     const pluginService = getPluginService();
-    const eventSystem = getServiceRegistry().get(Services.Event);
+    const eventSystem = getEventSystem();
 
     // Register tools from all currently enabled plugins
     // Skip core-category plugins — their tools are registered synchronously
@@ -365,9 +367,8 @@ function syncExtensionToolsIntoRegistry(registry: ToolRegistry): void {
   if (!hasServiceRegistry()) return;
 
   try {
-    const service = getServiceRegistry().get(
-      Services.Extension
-    ) as import('./extension-service.js').ExtensionService;
+    const service =
+      getExtensionService() as unknown as import('./extension-service.js').ExtensionService;
     const dynamicRegistry = getCustomToolDynamicRegistry();
     const extToolDefs = service.getToolDefinitions();
 
@@ -386,7 +387,7 @@ function syncExtensionToolsIntoRegistry(registry: ToolRegistry): void {
 
     // Listen for extension enable/disable/install events to keep in sync
     try {
-      const eventSystem = getServiceRegistry().get(Services.Event);
+      const eventSystem = getEventSystem();
 
       const unregisterExtensionTools = (extensionId?: string) => {
         if (!extensionId) return 0;
@@ -461,7 +462,7 @@ function setupSandboxCallToolHandler(registry: ToolRegistry): void {
       logPermissionDenied(extensionId, toolName, 'network');
       if (hasServiceRegistry()) {
         try {
-          const audit = getServiceRegistry().tryGet<IAuditService>(Services.Audit);
+          const audit: IAuditService | null = hasAuditService() ? getAuditService() : null;
           audit?.logAudit({
             userId: ownerUserId,
             action: 'extension.callTool',
@@ -492,7 +493,7 @@ function setupSandboxCallToolHandler(registry: ToolRegistry): void {
       // Emit audit event for denied call
       if (hasServiceRegistry()) {
         try {
-          const audit = getServiceRegistry().tryGet<IAuditService>(Services.Audit);
+          const audit: IAuditService | null = hasAuditService() ? getAuditService() : null;
           audit?.logAudit({
             userId: ownerUserId,
             action: 'extension.callTool',
@@ -525,7 +526,7 @@ function setupSandboxCallToolHandler(registry: ToolRegistry): void {
     // Emit audit event for all calls (both allowed and denied above)
     if (hasServiceRegistry()) {
       try {
-        const audit = getServiceRegistry().tryGet<IAuditService>(Services.Audit);
+        const audit: IAuditService | null = hasAuditService() ? getAuditService() : null;
         audit?.logAudit({
           userId: ownerUserId,
           action: 'extension.callTool',
@@ -622,7 +623,7 @@ export async function executeTool(
   // Fire-and-forget audit log
   if (hasServiceRegistry()) {
     try {
-      const audit = getServiceRegistry().tryGet<IAuditService>(Services.Audit);
+      const audit: IAuditService | null = hasAuditService() ? getAuditService() : null;
       audit?.logAudit({
         userId,
         action: 'tool_execute',

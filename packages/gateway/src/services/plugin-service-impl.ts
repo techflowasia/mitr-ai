@@ -5,7 +5,7 @@
  * This is an adapter — the existing plugin registration code continues to work.
  *
  * Usage:
- *   const plugins = registry.get(Services.Plugin);
+ *   const plugins = getPluginService();
  *   const all = plugins.list();
  *   const tool = plugins.getTool('my_tool');
  */

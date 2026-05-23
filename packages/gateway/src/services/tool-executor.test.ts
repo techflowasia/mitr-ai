@@ -34,9 +34,35 @@ const mockPluginService = {
   get: vi.fn(),
 };
 
-const mockEventSystem = {
-  onAny: vi.fn().mockReturnValue(() => {}),
-};
+// hoisted because ws/events.ts calls getEventSystem() at module load, before
+// the test file body initializes consts below the vi.mock call. The mock
+// must cover both the tool-executor surface (onAny) and the ws/events.ts
+// surface (scoped + hooks) since both modules import @ownpilot/core's
+// getEventSystem accessor.
+const { mockEventSystem } = vi.hoisted(() => {
+  const noopUnsub = () => {};
+  const scopedBus = {
+    on: vi.fn(() => noopUnsub),
+    onAll: vi.fn(() => noopUnsub),
+    emit: vi.fn(),
+    off: vi.fn(),
+  };
+  const hookBus = {
+    tapAny: vi.fn(() => noopUnsub),
+    tap: vi.fn(() => noopUnsub),
+    run: vi.fn(),
+  };
+  return {
+    mockEventSystem: {
+      onAny: vi.fn(() => noopUnsub),
+      scoped: vi.fn(() => scopedBus),
+      hooks: hookBus,
+      emit: vi.fn(),
+      on: vi.fn(() => noopUnsub),
+      off: vi.fn(),
+    },
+  };
+});
 
 const mockExtensionService = {
   getToolDefinitions: vi.fn(() => [] as unknown[]),
@@ -63,6 +89,9 @@ vi.mock('@ownpilot/core', async () => {
     })),
     getPluginService: vi.fn(() => mockPluginService),
     getExtensionService: vi.fn(() => mockExtensionService),
+    getEventSystem: vi.fn(() => mockEventSystem),
+    getAuditService: vi.fn(() => undefined),
+    hasAuditService: vi.fn(() => false),
     createPluginId: vi.fn((id: string) => id),
     qualifyToolName: vi.fn((name: string, ns: string, extId: string) => `${ns}.${extId}.${name}`),
     // tool-executor now reads ConfigCenter through the capability accessor

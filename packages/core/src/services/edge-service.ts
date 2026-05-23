@@ -61,3 +61,53 @@ export type {
   EdgeDeviceQuery,
   EdgeCommandInput,
 } from '../edge/types.js';
+
+// ============================================================================
+// Singleton access — same pattern as MemoryService / GoalService / etc.
+// ============================================================================
+
+import { hasServiceRegistry, getServiceRegistry } from './registry.js';
+import { ServiceToken } from './registry.js';
+
+export const EdgeToken = new ServiceToken<IEdgeService>('edge');
+
+let _edgeService: IEdgeService | null = null;
+
+export function setEdgeService(service: IEdgeService): void {
+  _edgeService = service;
+  if (hasServiceRegistry()) {
+    try {
+      const registry = getServiceRegistry();
+      if (!registry.has(EdgeToken)) {
+        registry.register(EdgeToken, service);
+      }
+    } catch {
+      // Registry not ready
+    }
+  }
+}
+
+export function getEdgeService(): IEdgeService {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(EdgeToken);
+    } catch {
+      // Fall through
+    }
+  }
+  if (!_edgeService) {
+    throw new Error('EdgeService not initialized. Call setEdgeService() during gateway startup.');
+  }
+  return _edgeService;
+}
+
+export function hasEdgeService(): boolean {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().has(EdgeToken);
+    } catch {
+      // Fall through
+    }
+  }
+  return _edgeService !== null;
+}

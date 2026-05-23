@@ -383,3 +383,55 @@ export interface OrchestrationRun {
   /** Total duration ms (all steps) */
   totalDurationMs?: number;
 }
+
+// ============================================================================
+// Singleton access — same pattern as MemoryService / GoalService / etc.
+// ============================================================================
+
+import { hasServiceRegistry, getServiceRegistry } from './registry.js';
+import { ServiceToken } from './registry.js';
+
+export const CodingAgentToken = new ServiceToken<ICodingAgentService>('coding-agent');
+
+let _codingAgentService: ICodingAgentService | null = null;
+
+export function setCodingAgentService(service: ICodingAgentService): void {
+  _codingAgentService = service;
+  if (hasServiceRegistry()) {
+    try {
+      const registry = getServiceRegistry();
+      if (!registry.has(CodingAgentToken)) {
+        registry.register(CodingAgentToken, service);
+      }
+    } catch {
+      // Registry not ready
+    }
+  }
+}
+
+export function getCodingAgentService(): ICodingAgentService {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(CodingAgentToken);
+    } catch {
+      // Fall through
+    }
+  }
+  if (!_codingAgentService) {
+    throw new Error(
+      'CodingAgentService not initialized. Call setCodingAgentService() during gateway startup.'
+    );
+  }
+  return _codingAgentService;
+}
+
+export function hasCodingAgentService(): boolean {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().has(CodingAgentToken);
+    } catch {
+      // Fall through
+    }
+  }
+  return _codingAgentService !== null;
+}

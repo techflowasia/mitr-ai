@@ -79,3 +79,55 @@ export interface IProviderService {
    */
   hasApiKey(provider: string): boolean;
 }
+
+// ============================================================================
+// Singleton access — same pattern as MemoryService / GoalService / etc.
+// ============================================================================
+
+import { hasServiceRegistry, getServiceRegistry } from './registry.js';
+import { ServiceToken } from './registry.js';
+
+export const ProviderToken = new ServiceToken<IProviderService>('provider');
+
+let _providerService: IProviderService | null = null;
+
+export function setProviderService(service: IProviderService): void {
+  _providerService = service;
+  if (hasServiceRegistry()) {
+    try {
+      const registry = getServiceRegistry();
+      if (!registry.has(ProviderToken)) {
+        registry.register(ProviderToken, service);
+      }
+    } catch {
+      // Registry not ready
+    }
+  }
+}
+
+export function getProviderService(): IProviderService {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(ProviderToken);
+    } catch {
+      // Fall through
+    }
+  }
+  if (!_providerService) {
+    throw new Error(
+      'ProviderService not initialized. Call setProviderService() during gateway startup.'
+    );
+  }
+  return _providerService;
+}
+
+export function hasProviderService(): boolean {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().has(ProviderToken);
+    } catch {
+      // Fall through
+    }
+  }
+  return _providerService !== null;
+}

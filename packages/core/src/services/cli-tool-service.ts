@@ -122,3 +122,55 @@ export interface ICliToolService {
   /** Clear discovery cache and re-scan */
   refreshDiscovery(): Promise<void>;
 }
+
+// ============================================================================
+// Singleton access — same pattern as MemoryService / GoalService / etc.
+// ============================================================================
+
+import { hasServiceRegistry, getServiceRegistry } from './registry.js';
+import { ServiceToken } from './registry.js';
+
+export const CliToolToken = new ServiceToken<ICliToolService>('cli-tool');
+
+let _cliToolService: ICliToolService | null = null;
+
+export function setCliToolService(service: ICliToolService): void {
+  _cliToolService = service;
+  if (hasServiceRegistry()) {
+    try {
+      const registry = getServiceRegistry();
+      if (!registry.has(CliToolToken)) {
+        registry.register(CliToolToken, service);
+      }
+    } catch {
+      // Registry not ready
+    }
+  }
+}
+
+export function getCliToolService(): ICliToolService {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(CliToolToken);
+    } catch {
+      // Fall through
+    }
+  }
+  if (!_cliToolService) {
+    throw new Error(
+      'CliToolService not initialized. Call setCliToolService() during gateway startup.'
+    );
+  }
+  return _cliToolService;
+}
+
+export function hasCliToolService(): boolean {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().has(CliToolToken);
+    } catch {
+      // Fall through
+    }
+  }
+  return _cliToolService !== null;
+}

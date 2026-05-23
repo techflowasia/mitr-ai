@@ -80,3 +80,55 @@ export interface IResourceService {
   /** Get the number of registered resource types. */
   getCount(): number;
 }
+
+// ============================================================================
+// Singleton access — same pattern as MemoryService / GoalService / etc.
+// ============================================================================
+
+import { hasServiceRegistry, getServiceRegistry } from './registry.js';
+import { ServiceToken } from './registry.js';
+
+export const ResourceToken = new ServiceToken<IResourceService>('resource');
+
+let _resourceService: IResourceService | null = null;
+
+export function setResourceService(service: IResourceService): void {
+  _resourceService = service;
+  if (hasServiceRegistry()) {
+    try {
+      const registry = getServiceRegistry();
+      if (!registry.has(ResourceToken)) {
+        registry.register(ResourceToken, service);
+      }
+    } catch {
+      // Registry not ready
+    }
+  }
+}
+
+export function getResourceService(): IResourceService {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(ResourceToken);
+    } catch {
+      // Fall through
+    }
+  }
+  if (!_resourceService) {
+    throw new Error(
+      'ResourceService not initialized. Call setResourceService() during gateway startup.'
+    );
+  }
+  return _resourceService;
+}
+
+export function hasResourceService(): boolean {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().has(ResourceToken);
+    } catch {
+      // Fall through
+    }
+  }
+  return _resourceService !== null;
+}

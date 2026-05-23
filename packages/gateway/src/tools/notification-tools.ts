@@ -9,8 +9,7 @@ import {
   type ToolDefinition,
   getEventSystem,
   getErrorMessage,
-  getServiceRegistry,
-  Services,
+  getChannelService,
 } from '@ownpilot/core';
 import { getLog } from '../services/log.js';
 
@@ -57,8 +56,7 @@ export const NOTIFICATION_TOOLS: ToolDefinition[] = [sendUserNotificationDef];
  */
 export async function sendTelegramMessage(userId: string, text: string): Promise<boolean> {
   try {
-    const registry = getServiceRegistry();
-    const channelService = registry.get(Services.Channel);
+    const channelService = getChannelService();
 
     const { createChannelUsersRepository } = await import('../db/repositories/channel-users.js');
     const channelUsersRepo = createChannelUsersRepository();

@@ -111,3 +111,55 @@ export interface IArtifactService {
   refreshBindings(userId: string, id: string): Promise<Artifact | null>;
   getVersions(userId: string, artifactId: string): Promise<ArtifactVersion[]>;
 }
+
+// ============================================================================
+// Singleton access — same pattern as MemoryService / GoalService / etc.
+// ============================================================================
+
+import { hasServiceRegistry, getServiceRegistry } from './registry.js';
+import { ServiceToken } from './registry.js';
+
+export const ArtifactToken = new ServiceToken<IArtifactService>('artifact');
+
+let _artifactService: IArtifactService | null = null;
+
+export function setArtifactService(service: IArtifactService): void {
+  _artifactService = service;
+  if (hasServiceRegistry()) {
+    try {
+      const registry = getServiceRegistry();
+      if (!registry.has(ArtifactToken)) {
+        registry.register(ArtifactToken, service);
+      }
+    } catch {
+      // Registry not ready
+    }
+  }
+}
+
+export function getArtifactService(): IArtifactService {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(ArtifactToken);
+    } catch {
+      // Fall through
+    }
+  }
+  if (!_artifactService) {
+    throw new Error(
+      'ArtifactService not initialized. Call setArtifactService() during gateway startup.'
+    );
+  }
+  return _artifactService;
+}
+
+export function hasArtifactService(): boolean {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().has(ArtifactToken);
+    } catch {
+      // Fall through
+    }
+  }
+  return _artifactService !== null;
+}

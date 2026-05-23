@@ -5,7 +5,7 @@
  * Direct pass-through adapter.
  *
  * Usage:
- *   const resources = registry.get(Services.Resource);
+ *   const resources = getResourceService();
  *   const goals = resources.get('goal');
  */
 

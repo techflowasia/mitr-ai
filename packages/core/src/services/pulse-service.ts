@@ -99,3 +99,53 @@ export interface IPulseService {
   /** Get aggregate pulse statistics */
   getStats(userId: string): Promise<PulseStats>;
 }
+
+// ============================================================================
+// Singleton access — same pattern as MemoryService / GoalService / etc.
+// ============================================================================
+
+import { hasServiceRegistry, getServiceRegistry } from './registry.js';
+import { ServiceToken } from './registry.js';
+
+export const PulseToken = new ServiceToken<IPulseService>('pulse');
+
+let _pulseService: IPulseService | null = null;
+
+export function setPulseService(service: IPulseService): void {
+  _pulseService = service;
+  if (hasServiceRegistry()) {
+    try {
+      const registry = getServiceRegistry();
+      if (!registry.has(PulseToken)) {
+        registry.register(PulseToken, service);
+      }
+    } catch {
+      // Registry not ready
+    }
+  }
+}
+
+export function getPulseService(): IPulseService {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(PulseToken);
+    } catch {
+      // Fall through
+    }
+  }
+  if (!_pulseService) {
+    throw new Error('PulseService not initialized. Call setPulseService() during gateway startup.');
+  }
+  return _pulseService;
+}
+
+export function hasPulseService(): boolean {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().has(PulseToken);
+    } catch {
+      // Fall through
+    }
+  }
+  return _pulseService !== null;
+}

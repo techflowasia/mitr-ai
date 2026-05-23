@@ -31,6 +31,12 @@ export type {
   CreateSessionInput,
   SessionSource,
 } from './session-service.js';
+export {
+  getSessionService,
+  setSessionService,
+  hasSessionService,
+  SessionToken,
+} from './session-service.js';
 export type {
   NormalizedMessage,
   NormalizedAttachment,
@@ -46,6 +52,12 @@ export type {
   ProviderInfo,
   ModelInfo,
   ResolvedProvider,
+} from './provider-service.js';
+export {
+  getProviderService,
+  setProviderService,
+  hasProviderService,
+  ProviderToken,
 } from './provider-service.js';
 export type {
   ILLMRouter,
@@ -137,6 +149,12 @@ export type {
   CreateWorkspaceInput,
   WorkspaceAgentInput,
 } from './workspace-service.js';
+export {
+  getWorkspaceService,
+  setWorkspaceService,
+  hasWorkspaceService,
+  WorkspaceToken,
+} from './workspace-service.js';
 
 // Goal Service
 export type {
@@ -211,6 +229,12 @@ export type {
   ResourceTypeDefinition,
   ResourceSummaryEntry,
 } from './resource-service.js';
+export {
+  getResourceService,
+  setResourceService,
+  hasResourceService,
+  ResourceToken,
+} from './resource-service.js';
 
 // Workflow Service
 export type {
@@ -281,6 +305,7 @@ export type {
   PulseStats,
   AutonomyLogEntry,
 } from './pulse-service.js';
+export { getPulseService, setPulseService, hasPulseService, PulseToken } from './pulse-service.js';
 
 // Coding Agent Service
 export type {
@@ -311,6 +336,12 @@ export {
   getCustomProviderName,
   DEFAULT_CODING_AGENT_PERMISSIONS,
 } from './coding-agent-service.js';
+export {
+  getCodingAgentService,
+  setCodingAgentService,
+  hasCodingAgentService,
+  CodingAgentToken,
+} from './coding-agent-service.js';
 
 // CLI Tool Service
 export type {
@@ -322,6 +353,12 @@ export type {
   CliToolPolicy,
   CliToolCategory,
   CliInstallMethod,
+} from './cli-tool-service.js';
+export {
+  getCliToolService,
+  setCliToolService,
+  hasCliToolService,
+  CliToolToken,
 } from './cli-tool-service.js';
 
 // Autonomous Agent Result (shared base for all autonomous agent runners)
@@ -362,6 +399,12 @@ export type {
   UpdateArtifactInput,
   ArtifactQuery,
 } from './artifact-service.js';
+export {
+  getArtifactService,
+  setArtifactService,
+  hasArtifactService,
+  ArtifactToken,
+} from './artifact-service.js';
 
 // Edge Service
 export type { IEdgeService } from './edge-service.js';
@@ -374,6 +417,7 @@ export type {
   EdgeDeviceQuery,
   EdgeCommandInput,
 } from './edge-service.js';
+export { getEdgeService, setEdgeService, hasEdgeService, EdgeToken } from './edge-service.js';
 
 // Config Center
 export * from './config-center.js';

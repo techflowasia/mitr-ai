@@ -5,7 +5,7 @@
  * Maps gateway Workspace to core WorkspaceInfo DTO.
  *
  * Usage:
- *   const workspaces = registry.get(Services.Workspace);
+ *   const workspaces = getWorkspaceService();
  *   const ws = workspaces.create({ name: 'My Workspace' });
  *   workspaces.associateChannel(ws.id, 'channel-1');
  */

@@ -9,6 +9,8 @@ const mockCreateProvider = vi.fn();
 const mockInjectMemoryIntoPrompt = vi.fn(async (prompt: string) => ({ systemPrompt: prompt }));
 const mockHasServiceRegistry = vi.fn(() => false);
 const mockGetServiceRegistry = vi.fn();
+const mockHasProviderService = vi.fn(() => false);
+const mockGetProviderService = vi.fn();
 const mockBuildSoulPrompt = vi.fn(() => '');
 const mockGetByAgentId = vi.fn(async () => null as unknown);
 const mockCountUnread = vi.fn(async () => 0 as unknown);
@@ -35,6 +37,8 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     ...actual,
     hasServiceRegistry: (...args: unknown[]) => mockHasServiceRegistry(...args),
     getServiceRegistry: (...args: unknown[]) => mockGetServiceRegistry(...args),
+    hasProviderService: (...args: unknown[]) => mockHasProviderService(...args),
+    getProviderService: (...args: unknown[]) => mockGetProviderService(...args),
     Services: { Provider: 'provider' },
     createAgent: (...args: unknown[]) => mockCreateAgent(...args),
     ToolRegistry: MockToolRegistry,
@@ -385,6 +389,7 @@ beforeEach(() => {
     systemPrompt: prompt,
   }));
   mockHasServiceRegistry.mockReturnValue(false);
+  mockHasProviderService.mockReturnValue(false);
   mockGetConfiguredProviderIds.mockResolvedValue(new Set<string>());
   mockGetByAgentId.mockResolvedValue(null);
   mockCountUnread.mockResolvedValue(0);
@@ -1592,7 +1597,7 @@ describe('getOrCreateAgentInstance', () => {
     expect(mockEvictAgentFromCache).toHaveBeenCalled();
   });
 
-  it('uses ServiceRegistry provider service when available', async () => {
+  it('uses ProviderService capability accessor when available', async () => {
     const { agent } = makeMockAgent();
     const record = makeAgentRecord();
     mockLruGet.mockReturnValueOnce(undefined);
@@ -1601,10 +1606,8 @@ describe('getOrCreateAgentInstance', () => {
     const mockProviderSvc = {
       resolve: vi.fn(async () => ({ provider: 'anthropic', model: 'claude-3' })),
     };
-    mockHasServiceRegistry.mockReturnValue(true);
-    mockGetServiceRegistry.mockReturnValue({
-      tryGet: vi.fn(() => mockProviderSvc),
-    });
+    mockHasProviderService.mockReturnValue(true);
+    mockGetProviderService.mockReturnValue(mockProviderSvc);
 
     await mod.getOrCreateAgentInstance(record);
     expect(mockProviderSvc.resolve).toHaveBeenCalled();
@@ -1616,6 +1619,7 @@ describe('getOrCreateAgentInstance', () => {
     mockLruGet.mockReturnValueOnce(undefined);
     mockCreateAgent.mockReturnValue(agent);
     mockHasServiceRegistry.mockReturnValue(false);
+    mockHasProviderService.mockReturnValue(false);
 
     await mod.getOrCreateAgentInstance(record);
     expect(mockResolveProviderAndModel).toHaveBeenCalled();

@@ -7,9 +7,8 @@
  */
 
 import {
-  hasServiceRegistry,
-  getServiceRegistry,
-  Services,
+  hasProviderService,
+  getProviderService,
   createAgent,
   type Agent,
   type AgentConfig,
@@ -122,7 +121,7 @@ export function getCliCorrelationId(agent: Agent): string | undefined {
  */
 async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   // Resolve "default" provider/model to actual values via IProviderService
-  const providerSvc = hasServiceRegistry() ? getServiceRegistry().tryGet(Services.Provider) : null;
+  const providerSvc = hasProviderService() ? getProviderService() : null;
 
   const { provider: resolvedProvider, model: resolvedModel } = providerSvc
     ? await providerSvc.resolve({ provider: record.provider, model: record.model })

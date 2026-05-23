@@ -130,3 +130,55 @@ export interface ISessionService {
    */
   getStats(): Record<SessionSource, number>;
 }
+
+// ============================================================================
+// Singleton access — same pattern as MemoryService / GoalService / etc.
+// ============================================================================
+
+import { hasServiceRegistry, getServiceRegistry } from './registry.js';
+import { ServiceToken } from './registry.js';
+
+export const SessionToken = new ServiceToken<ISessionService>('session');
+
+let _sessionService: ISessionService | null = null;
+
+export function setSessionService(service: ISessionService): void {
+  _sessionService = service;
+  if (hasServiceRegistry()) {
+    try {
+      const registry = getServiceRegistry();
+      if (!registry.has(SessionToken)) {
+        registry.register(SessionToken, service);
+      }
+    } catch {
+      // Registry not ready
+    }
+  }
+}
+
+export function getSessionService(): ISessionService {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(SessionToken);
+    } catch {
+      // Fall through
+    }
+  }
+  if (!_sessionService) {
+    throw new Error(
+      'SessionService not initialized. Call setSessionService() during gateway startup.'
+    );
+  }
+  return _sessionService;
+}
+
+export function hasSessionService(): boolean {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().has(SessionToken);
+    } catch {
+      // Fall through
+    }
+  }
+  return _sessionService !== null;
+}

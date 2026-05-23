@@ -23,6 +23,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
         return {};
       },
     }),
+    getChannelService: () => mockChannelService,
     Services: { Channel: { name: 'channel' } },
   };
 });

@@ -173,8 +173,13 @@ async function main() {
   // 2. Event system (register existing singleton)
   registry.register(Services.Event, getEventSystem());
 
-  // 3. Session service (unified session management)
-  registry.register(Services.Session, createSessionService());
+  // 3. Session service (unified session management) — also installed on the core capability singleton
+  {
+    const session = createSessionService();
+    registry.register(Services.Session, session);
+    const { setSessionService } = await import('@ownpilot/core');
+    setSessionService(session);
+  }
 
   // 4. Message bus (unified message processing pipeline)
   const messageBus = createMessageBus();
@@ -305,8 +310,13 @@ async function main() {
     setDatabaseService(database);
   }
 
-  // 7. Resource Service (wraps ResourceRegistry)
-  registry.register(Services.Resource, createResourceServiceImpl());
+  // 7. Resource Service (wraps ResourceRegistry) — also installed on the core capability singleton
+  {
+    const resource = createResourceServiceImpl();
+    registry.register(Services.Resource, resource);
+    const { setResourceService } = await import('@ownpilot/core');
+    setResourceService(resource);
+  }
 
   // Initialize Extensions repository + scan for new extensions
   log.info('Initializing Extensions...');
@@ -475,8 +485,13 @@ async function main() {
     setToolService(tool);
   }
 
-  // 15. Provider Service
-  registry.register(Services.Provider, createProviderService());
+  // 15. Provider Service — also installed on the core capability singleton
+  {
+    const provider = createProviderService();
+    registry.register(Services.Provider, provider);
+    const { setProviderService } = await import('@ownpilot/core');
+    setProviderService(provider);
+  }
 
   // 16. Audit Service — also installed on the core capability singleton so
   // runtimes can consume it through `ctx.audit.*` (RuntimeContext bundle)
@@ -488,8 +503,13 @@ async function main() {
     setAuditService(audit);
   }
 
-  // 17. Workspace Service (wraps WorkspaceManager)
-  registry.register(Services.Workspace, createWorkspaceServiceImpl());
+  // 17. Workspace Service (wraps WorkspaceManager) — also installed on the core capability singleton
+  {
+    const workspace = createWorkspaceServiceImpl();
+    registry.register(Services.Workspace, workspace);
+    const { setWorkspaceService } = await import('@ownpilot/core');
+    setWorkspaceService(workspace);
+  }
 
   // 18. Workflow Service — also installed on the core capability singleton
   {
@@ -553,13 +573,23 @@ async function main() {
   const { getPulseMetricsService } = await import('./services/pulse-metrics-service.js');
   getPulseMetricsService().start();
 
-  // 20. Coding Agent Service (external AI coding CLI orchestration)
-  const { getCodingAgentService } = await import('./services/coding-agent-service.js');
-  registry.register(Services.CodingAgent, getCodingAgentService());
+  // 20. Coding Agent Service (external AI coding CLI orchestration) — also installed on the core capability singleton
+  {
+    const { getCodingAgentService } = await import('./services/coding-agent-service.js');
+    const codingAgent = getCodingAgentService();
+    registry.register(Services.CodingAgent, codingAgent);
+    const { setCodingAgentService } = await import('@ownpilot/core');
+    setCodingAgentService(codingAgent);
+  }
 
-  // 24. Artifact Service (AI-generated interactive content)
-  const { getArtifactService } = await import('./services/artifact-service.js');
-  registry.register(Services.Artifact, getArtifactService());
+  // 24. Artifact Service (AI-generated interactive content) — also installed on the core capability singleton
+  {
+    const { getArtifactService } = await import('./services/artifact-service.js');
+    const artifact = getArtifactService();
+    registry.register(Services.Artifact, artifact);
+    const { setArtifactService } = await import('@ownpilot/core');
+    setArtifactService(artifact);
+  }
 
   // Start trigger engine (proactive automation)
   log.info('Starting Trigger Engine...');
@@ -659,7 +689,10 @@ async function main() {
     const { getAutonomyEngine, createPulseServiceAdapter } = await import('./autonomy/engine.js');
     const pulseEngine = getAutonomyEngine({ userId: 'default' });
 
-    registry.register(Services.Pulse, createPulseServiceAdapter(pulseEngine));
+    const pulse = createPulseServiceAdapter(pulseEngine);
+    registry.register(Services.Pulse, pulse);
+    const { setPulseService } = await import('@ownpilot/core');
+    setPulseService(pulse);
     pulseEngine.start();
     log.info('Autonomy Engine started.');
   } catch (error) {
@@ -882,8 +915,11 @@ async function main() {
 
     // 7. Dispose session service (cleanup intervals)
     try {
-      const sessionSvc = registry.tryGet(Services.Session);
-      if (sessionSvc && 'dispose' in sessionSvc) (sessionSvc as { dispose(): void }).dispose();
+      const { hasSessionService, getSessionService } = await import('@ownpilot/core');
+      if (hasSessionService()) {
+        const sessionSvc = getSessionService() as unknown as { dispose?: () => void };
+        if (sessionSvc.dispose) sessionSvc.dispose();
+      }
     } catch (e) {
       log.warn('Session service dispose error', { error: String(e) });
     }
