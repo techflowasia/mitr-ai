@@ -8,7 +8,7 @@ const {
   promptInitializedConversations,
   lastExecPermHash,
   execPermHash,
-} = await import('./chat-state.js');
+} = await import('./state.js');
 
 describe('chat-state', () => {
   beforeEach(() => {

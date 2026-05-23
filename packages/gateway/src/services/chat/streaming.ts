@@ -7,7 +7,7 @@
  */
 
 import type { streamSSE } from 'hono/streaming';
-import type { StreamChunkResponse, SessionInfo } from '../types/index.js';
+import type { StreamChunkResponse, SessionInfo } from '../../types/index.js';
 import type {
   AIProvider,
   StreamCallbacks,
@@ -17,21 +17,21 @@ import type {
   NormalizedMessage,
   IMessageBus,
 } from '@ownpilot/core';
-import { checkToolCallApproval } from '../assistant/index.js';
-import { getSessionInfo } from './agent-service.js';
-import { usageTracker } from './usage-tracking.js';
+import { checkToolCallApproval } from '../../assistant/index.js';
+import { getSessionInfo } from '../agent-service.js';
+import { usageTracker } from '../usage-tracking.js';
 import {
   extractSuggestions,
   extractMemoriesFromResponse,
   normalizeChatWidgets,
-} from '../utils/index.js';
-import { generateApprovalId, createApprovalRequest } from './execution-approval.js';
-import type { getAgent } from './agent-service.js';
+} from '../../utils/index.js';
+import { generateApprovalId, createApprovalRequest } from '../execution-approval.js';
+import type { getAgent } from '../agent-service.js';
 import {
   ConversationService,
   runPostChatProcessing,
   toAttachmentMeta,
-} from './conversation-service.js';
+} from '../conversation-service.js';
 /**
  * Extract display-friendly tool name and args from a ToolCall.
  * For use_tool calls, unwraps the inner tool_name and arguments.
@@ -107,8 +107,8 @@ export function wireStreamApproval(
 // StreamingConfig and StreamState moved to services/streaming-types.ts so
 // conversation-service and persistence can consume them without reaching
 // back into the routes/ layer. Re-exported here for legacy route callers.
-export type { StreamingConfig, StreamState } from '../services/streaming-types.js';
-import type { StreamingConfig, StreamState } from '../services/streaming-types.js';
+export type { StreamingConfig, StreamState } from '../streaming-types.js';
+import type { StreamingConfig, StreamState } from '../streaming-types.js';
 
 // Matches both <think>...</think> and <thinking>...</thinking> blocks (completed)
 const THINK_TAG_REGEX = /<(?:think|thinking)>[\s\S]*?<\/(?:think|thinking)>\s*/g;

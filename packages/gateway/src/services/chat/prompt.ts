@@ -15,7 +15,7 @@ import {
   type ExecutionPermissions,
   type IMessageBus,
 } from '@ownpilot/core';
-import { AI_META_TOOL_NAMES } from '../config/defaults.js';
+import { AI_META_TOOL_NAMES } from '../../config/defaults.js';
 
 export const PERM_LABELS: Record<string, string> = {
   blocked: 'Blocked',

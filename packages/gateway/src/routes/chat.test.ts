@@ -373,21 +373,21 @@ vi.mock('../services/conversation-service.js', () => ({
     })),
 }));
 
-vi.mock('../services/chat-prompt.js', () => ({
+vi.mock('../services/chat/prompt.js', () => ({
   buildExecutionSystemPrompt: vi.fn(() => '\n\n## Code Execution\nCode execution is DISABLED.'),
   buildToolCatalog: vi.fn(async () => null),
   generateDemoResponse: vi.fn((_msg: string, _p: string, _m: string) => 'This is a demo response.'),
   tryGetMessageBus: vi.fn(() => null),
 }));
 
-vi.mock('../services/chat-streaming.js', () => ({
+vi.mock('../services/chat/streaming.js', () => ({
   createStreamCallbacks: vi.fn(),
   recordStreamUsage: vi.fn(),
   processStreamingViaBus: vi.fn(),
   wireStreamApproval: vi.fn(),
 }));
 
-vi.mock('../services/chat-state.js', () => ({
+vi.mock('../services/chat/state.js', () => ({
   promptInitializedConversations: new Set(),
   lastExecPermHash: new Map(),
   execPermHash: vi.fn(() => 'hash-1'),
@@ -419,8 +419,8 @@ import {
   resetChatAgentContext,
   clearAllChatAgentCaches,
 } from './agents.js';
-import { tryGetMessageBus } from '../services/chat-prompt.js';
-import { promptInitializedConversations } from '../services/chat-state.js';
+import { tryGetMessageBus } from '../services/chat/prompt.js';
+import { promptInitializedConversations } from '../services/chat/state.js';
 import { resolveForProcess } from '../services/model-routing.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────

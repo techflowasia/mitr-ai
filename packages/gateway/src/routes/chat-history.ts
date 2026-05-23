@@ -26,7 +26,7 @@ import {
   getContextBreakdown,
   compactContext,
 } from './agents.js';
-import { promptInitializedConversations } from '../services/chat-state.js';
+import { promptInitializedConversations } from '../services/chat/state.js';
 import { clearInjectionCache } from '../services/middleware/context-injection.js';
 import { getDefaultProvider } from './settings.js';
 import { ChatRepository, LogsRepository } from '../db/repositories/index.js';

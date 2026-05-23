@@ -53,7 +53,7 @@ vi.mock('@ownpilot/core', () => ({
     name.includes('.') ? name.substring(name.lastIndexOf('.') + 1) : name,
 }));
 
-vi.mock('../config/defaults.js', () => ({
+vi.mock('../../config/defaults.js', () => ({
   AI_META_TOOL_NAMES: ['search_tools', 'get_tool_help', 'use_tool', 'batch_use_tool'],
 }));
 
@@ -66,7 +66,7 @@ const {
   PERM_LABELS,
   MODE_LABELS,
   EXEC_CATEGORIES,
-} = await import('./chat-prompt.js');
+} = await import('./prompt.js');
 
 // ---------------------------------------------------------------------------
 // Helpers

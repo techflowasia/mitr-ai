@@ -1,12 +1,11 @@
 /**
  * Streaming types — shared data shapes used by SSE chat streaming.
  *
- * Extracted from `routes/chat-streaming.ts` so non-route consumers
- * (conversation-service, conversation persistence) can describe stream
- * state without reaching back into the routes/ layer.
+ * Kept at services/ root rather than services/chat/ so consumers outside
+ * the chat path (conversation-service, persistence) can describe stream
+ * state without depending on the chat subtree.
  *
- * `routes/chat-streaming.ts` re-exports these so existing route-internal
- * callers keep working unchanged.
+ * `services/chat/streaming.ts` re-exports these for chat-internal callers.
  */
 
 import type { streamSSE } from 'hono/streaming';

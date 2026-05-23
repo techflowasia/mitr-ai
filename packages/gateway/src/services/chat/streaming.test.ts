@@ -18,30 +18,30 @@ const mockRunPostChatProcessing = vi.fn();
 // vi.mock — modules the SUT imports
 // ---------------------------------------------------------------------------
 
-vi.mock('../assistant/index.js', () => ({
+vi.mock('../../assistant/index.js', () => ({
   checkToolCallApproval: (...args: unknown[]) => mockCheckToolCallApproval(...args),
 }));
 
-vi.mock('./agent-service.js', () => ({
+vi.mock('../agent-service.js', () => ({
   getSessionInfo: (...args: unknown[]) => mockGetSessionInfo(...args),
 }));
 
-vi.mock('./usage-tracking.js', () => ({
+vi.mock('../usage-tracking.js', () => ({
   usageTracker: { record: (...args: unknown[]) => mockUsageRecord(...args) },
 }));
 
-vi.mock('../utils/index.js', () => ({
+vi.mock('../../utils/index.js', () => ({
   extractSuggestions: (...args: unknown[]) => mockExtractSuggestions(...args),
   extractMemoriesFromResponse: (...args: unknown[]) => mockExtractMemoriesFromResponse(...args),
   normalizeChatWidgets: (content: string) => content,
 }));
 
-vi.mock('./execution-approval.js', () => ({
+vi.mock('../execution-approval.js', () => ({
   generateApprovalId: () => mockGenerateApprovalId(),
   createApprovalRequest: (...args: unknown[]) => mockCreateApprovalRequest(...args),
 }));
 
-vi.mock('./conversation-service.js', () => ({
+vi.mock('../conversation-service.js', () => ({
   ConversationService: vi.fn(function () {
     return {
       saveStreamingLog: (...args: unknown[]) => mockSaveStreamingChat(...args),
@@ -74,7 +74,7 @@ const {
   createStreamCallbacks,
   recordStreamUsage,
   processStreamingViaBus,
-} = await import('./chat-streaming.js');
+} = await import('./streaming.js');
 
 // ---------------------------------------------------------------------------
 // Helpers

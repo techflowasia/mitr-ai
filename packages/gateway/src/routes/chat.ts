@@ -2,9 +2,9 @@
  * Chat routes
  *
  * Implementation split (Hono handlers live in routes/, pure logic in services/):
- * - services/chat-state.ts:     Shared module-level state (breaks circular dep)
- * - services/chat-streaming.ts: SSE streaming types, callbacks, processing
- * - services/chat-prompt.ts:    System prompt init, execution context, demo mode
+ * - services/chat/state.ts:     Shared module-level state (breaks circular dep)
+ * - services/chat/streaming.ts: SSE streaming types, callbacks, processing
+ * - services/chat/prompt.ts:    System prompt init, execution context, demo mode
  * - services/conversation-service.ts: DB save, logging, post-chat processing
  * - routes/chat-fetch-url.ts:   URL content extraction endpoint
  * - routes/chat-legacy-send.ts: Legacy direct path (non-MessageBus fallback)
@@ -80,19 +80,19 @@ import {
   execPermHash,
   boundedSetAdd,
   boundedMapSet,
-} from '../services/chat-state.js';
+} from '../services/chat/state.js';
 import {
   createStreamCallbacks,
   recordStreamUsage,
   processStreamingViaBus,
   wireStreamApproval,
-} from '../services/chat-streaming.js';
+} from '../services/chat/streaming.js';
 import {
   buildExecutionSystemPrompt,
   buildToolCatalog,
   generateDemoResponse,
   tryGetMessageBus,
-} from '../services/chat-prompt.js';
+} from '../services/chat/prompt.js';
 import {
   ConversationService,
   runPostChatProcessing,
@@ -123,7 +123,7 @@ function toMcpTraceEvent(event: McpToolEvent): {
 // Backward compatibility re-export
 // =============================================================================
 // chat-history.ts imports promptInitializedConversations from './chat.js'
-export { promptInitializedConversations } from '../services/chat-state.js';
+export { promptInitializedConversations } from '../services/chat/state.js';
 
 // =============================================================================
 // Routes

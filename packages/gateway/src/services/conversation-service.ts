@@ -4,8 +4,8 @@
  * Owns: resolve/create conversation, save messages, save request logs,
  * broadcast WS updates, and clear channel sessions.
  *
- * Replaces the scattered logic that was spread across chat-persistence.ts,
- * chat.ts, chat-streaming.ts, and service-impl.ts.
+ * Replaces the scattered logic that was spread across chat handlers and
+ * services/chat/streaming.ts and service-impl.ts.
  */
 
 import { debugLog } from '@ownpilot/core';
