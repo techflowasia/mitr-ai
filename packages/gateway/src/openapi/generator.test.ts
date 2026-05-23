@@ -29,14 +29,14 @@ describe('generateOpenApiSpec', () => {
 
   it('converts Hono :param syntax to OpenAPI {param} and adds path parameters', () => {
     const spec = generateOpenApiSpec(
-      makeApp([makeRoute('POST', '/api/v1/fleet/:fleetId/start')]),
+      makeApp([makeRoute('POST', '/api/v1/claws/:clawsId/start')]),
       '1.0.0'
     );
 
-    expect(spec.paths['/api/v1/fleet/{fleetId}/start']).toBeDefined();
-    const op = spec.paths['/api/v1/fleet/{fleetId}/start']!.post!;
+    expect(spec.paths['/api/v1/claws/{clawsId}/start']).toBeDefined();
+    const op = spec.paths['/api/v1/claws/{clawsId}/start']!.post!;
     expect(op.parameters).toEqual([
-      { name: 'fleetId', in: 'path', required: true, schema: { type: 'string' } },
+      { name: 'clawsId', in: 'path', required: true, schema: { type: 'string' } },
     ]);
   });
 
@@ -53,16 +53,16 @@ describe('generateOpenApiSpec', () => {
   it('derives a tag from the first segment after /api/v1/', () => {
     const spec = generateOpenApiSpec(
       makeApp([
-        makeRoute('GET', '/api/v1/fleet'),
-        makeRoute('GET', '/api/v1/fleet/:id'),
+        makeRoute('GET', '/api/v1/claws'),
+        makeRoute('GET', '/api/v1/claws/:id'),
         makeRoute('GET', '/api/v1/tunnel'),
       ]),
       '1.0.0'
     );
     const tags = spec.tags.map((t) => t.name);
-    expect(tags).toContain('fleet');
+    expect(tags).toContain('claws');
     expect(tags).toContain('tunnel');
-    expect(spec.paths['/api/v1/fleet']!.get!.tags).toEqual(['fleet']);
+    expect(spec.paths['/api/v1/claws']!.get!.tags).toEqual(['claws']);
     expect(spec.paths['/api/v1/tunnel']!.get!.tags).toEqual(['tunnel']);
   });
 
@@ -73,26 +73,26 @@ describe('generateOpenApiSpec', () => {
         makeRoute('GET', '/health'),
         makeRoute('GET', '/metrics'),
         makeRoute('POST', '/webhooks/telegram/abc'),
-        makeRoute('GET', '/api/v2/fleet'), // v2 mirror
-        makeRoute('GET', '/api/v1/fleet'),
+        makeRoute('GET', '/api/v2/claws'), // v2 mirror
+        makeRoute('GET', '/api/v1/claws'),
       ]),
       '1.0.0'
     );
-    expect(Object.keys(spec.paths)).toEqual(['/api/v1/fleet']);
+    expect(Object.keys(spec.paths)).toEqual(['/api/v1/claws']);
   });
 
   it('deduplicates (method, path) pairs registered via multiple mountings', () => {
     const spec = generateOpenApiSpec(
-      makeApp([makeRoute('GET', '/api/v1/fleet'), makeRoute('GET', '/api/v1/fleet')]),
+      makeApp([makeRoute('GET', '/api/v1/claws'), makeRoute('GET', '/api/v1/claws')]),
       '1.0.0'
     );
     expect(Object.keys(spec.paths)).toHaveLength(1);
-    expect(spec.paths['/api/v1/fleet']!.get).toBeDefined();
+    expect(spec.paths['/api/v1/claws']!.get).toBeDefined();
   });
 
   it('attaches default success/error envelope responses to every operation', () => {
-    const spec = generateOpenApiSpec(makeApp([makeRoute('GET', '/api/v1/fleet')]), '1.0.0');
-    const op = spec.paths['/api/v1/fleet']!.get!;
+    const spec = generateOpenApiSpec(makeApp([makeRoute('GET', '/api/v1/claws')]), '1.0.0');
+    const op = spec.paths['/api/v1/claws']!.get!;
     expect(op.responses['200']).toBeDefined();
     expect(op.responses['400']).toBeDefined();
     expect(op.responses['404']).toBeDefined();
@@ -101,12 +101,12 @@ describe('generateOpenApiSpec', () => {
 
   it('emits deterministic operationIds', () => {
     const spec = generateOpenApiSpec(
-      makeApp([makeRoute('POST', '/api/v1/fleet/:id/start'), makeRoute('GET', '/api/v1/fleet')]),
+      makeApp([makeRoute('POST', '/api/v1/claws/:id/start'), makeRoute('GET', '/api/v1/claws')]),
       '1.0.0'
     );
-    expect(spec.paths['/api/v1/fleet']!.get!.operationId).toBe('get-api-v1-fleet');
-    expect(spec.paths['/api/v1/fleet/{id}/start']!.post!.operationId).toBe(
-      'post-api-v1-fleet-by-id-start'
+    expect(spec.paths['/api/v1/claws']!.get!.operationId).toBe('get-api-v1-claws');
+    expect(spec.paths['/api/v1/claws/{id}/start']!.post!.operationId).toBe(
+      'post-api-v1-claws-by-id-start'
     );
   });
 

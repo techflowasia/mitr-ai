@@ -359,11 +359,10 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
         cliChat: '/api/v1/cli-chat',
         // Security Scanner (unified vulnerability analysis)
         security: '/api/v1/security',
-        subagents: '/api/v1/subagents',
         // Agent Command Center (unified overview of all agents)
         agentsOverview: '/api/v1/agent-command/overview',
-        // Agent Orchestra (multi-agent collaboration)
-        orchestra: '/api/v1/orchestra',
+        // Claws (unified autonomous agent runtime)
+        claws: '/api/v1/claws',
         // Artifacts (AI-generated interactive content)
         artifacts: '/api/v1/artifacts',
         voice: '/api/v1/voice',
@@ -433,8 +432,7 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
         cliTools: '/api/v2/cli-tools',
         cliChat: '/api/v2/cli-chat',
         security: '/api/v2/security',
-        subagents: '/api/v2/subagents',
-        orchestra: '/api/v2/orchestra',
+        claws: '/api/v2/claws',
         artifacts: '/api/v2/artifacts',
         voice: '/api/v2/voice',
         browser: '/api/v2/browser',
