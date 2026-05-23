@@ -11,6 +11,7 @@
 3. [Request Flow](#3-request-flow)
 4. [Database Schema](#4-database-schema)
 5. [Core Package Architecture](#5-core-package-architecture)
+   - [5.A Two-Layer Capability Architecture](#5a-two-layer-capability-architecture-2026-05-23)
 6. [Gateway Package Architecture](#6-gateway-package-architecture)
 7. [UI Package](#7-ui-package)
 8. [CLI Package](#8-cli-package)
@@ -497,6 +498,121 @@ packages/core/src/
     ├── code-analyzer.ts     # Code risk analysis
     └── pattern-blocker.ts   # Critical pattern blocking
 ```
+
+---
+
+## 5.A Two-Layer Capability Architecture (2026-05-23)
+
+OwnPilot uses a two-layer model to keep module boundaries clean. Every
+runtime (Chat, Claw, Soul Heartbeat, AgentRunner, Workflow…) consumes a
+fixed set of horizontal capabilities. Capability contracts live in
+`@ownpilot/core`; implementations live in `@ownpilot/gateway`; runtimes
+import the contracts and never reach into implementations directly.
+
+```
+                     ┌─────────────────────────────────────────────────┐
+   Layer 2           │  RUNTIMES (vertical)                            │
+   (vertical)        │                                                 │
+                     │  Chat • Claw • Soul Heartbeat • AgentRunner     │
+                     │  Workflow • Coding Agents • Pulse • Triggers    │
+                     └────────────────────┬────────────────────────────┘
+                                          │ ctx.* (typed bundle)
+                                          ▼
+                     ┌─────────────────────────────────────────────────┐
+   Layer 1           │  CAPABILITIES (horizontal)                      │
+   (horizontal)      │                                                 │
+                     │  ┌─────────────┐  ┌──────────────┐              │
+                     │  │ LLMRouter   │  │ ChannelSvc   │  ConfigCenter│
+                     │  │ pick()      │  │ send()       │  getApiKey() │
+                     │  │ ctx-window  │  │ broadcast()  │  getField()  │
+                     │  └─────────────┘  └──────────────┘              │
+                     │  ┌─────────────┐  ┌──────────────┐  ┌─────────┐ │
+                     │  │ EventSystem │  │ PermGate     │  │ Memory  │ │
+                     │  │ emit/on     │  │ check()      │  │ create  │ │
+                     │  └─────────────┘  └──────────────┘  └─────────┘ │
+                     │  ┌─────────────┐                                │
+                     │  │ AuditSvc    │                                │
+                     │  │ logRequest  │                                │
+                     │  └─────────────┘                                │
+                     └─────────────────────────────────────────────────┘
+```
+
+### Capability accessor pattern
+
+Every capability follows the same shape:
+
+- Contract in core: `IXxx` interface
+- Singleton accessors: `getXxx()`, `setXxx()`, `hasXxx()`
+- ServiceToken (mirrored in `Services.Xxx` for the registry path)
+- Gateway impl wires up at startup: `setXxx(new XxxImpl(...))`
+
+Both paths resolve to the same instance — the accessor checks the
+registry first, falls back to a module-level singleton. Either entry
+point works after `setXxx` has run.
+
+### RuntimeContext bundle
+
+`packages/core/src/services/runtime-context.ts` defines the bundle:
+
+```typescript
+export interface RuntimeContext {
+  readonly llm: ILLMRouter;
+  readonly channels: IChannelService;
+  readonly config: ConfigCenter;
+  readonly events: IEventSystem;
+  readonly permissions: IPermissionGate;
+  readonly memory: IMemoryService;
+  readonly audit: IAuditService;
+}
+```
+
+A runtime takes the bundle once at construction:
+
+```typescript
+class MyRunner {
+  constructor(
+    private config: MyConfig,
+    private runtime: RuntimeContext = getRuntimeContext()
+  ) {}
+
+  async run() {
+    const model = await this.runtime.llm.pick({ process: 'pulse' });
+    // ... use this.runtime.channels, .events, .permissions, etc.
+  }
+}
+```
+
+Production constructs the runner without the second arg and inherits the
+process-wide singletons; tests pass a mock bundle (one stub instead of
+seven separate global overrides). `hasRuntimeContext()` returns true
+once the six explicit capabilities have been installed (the EventSystem
+lazy-creates itself, so it's always available).
+
+### Where each capability lives
+
+| Capability     | Contract                                        | Impl                                           |
+| -------------- | ----------------------------------------------- | ---------------------------------------------- |
+| LLMRouter      | `core/src/services/llm-router.ts`               | `gateway/src/services/llm-router.ts`           |
+| ChannelService | `core/src/channels/service.ts`                  | `gateway/src/channels/service-impl.ts`         |
+| ConfigCenter   | `core/src/services/config-center.ts`            | `gateway/src/services/config-center-impl.ts`   |
+| EventSystem    | `core/src/events/event-system.ts`               | (lazy-created in core)                         |
+| PermissionGate | `core/src/services/permission-gate.ts`          | `gateway/src/services/permission-gate-impl.ts` |
+| MemoryService  | `core/src/services/memory-service-interface.ts` | `gateway/src/services/memory-service.ts`       |
+| AuditService   | `core/src/services/audit-service.ts`            | `gateway/src/services/audit-service-impl.ts`   |
+
+### Adding a new capability
+
+1. Define the contract `IXxx` and accessors (`getXxx` / `setXxx` /
+   `hasXxx` + `XxxToken`) in `packages/core/src/services/xxx.ts`,
+   following the existing pattern (registry-first, singleton fallback).
+2. Add the field to `RuntimeContext` and include it in
+   `getRuntimeContext()` + `hasRuntimeContext()`.
+3. Re-export from `packages/core/src/services/index.ts`.
+4. Implement in `packages/gateway/src/services/xxx-impl.ts` and call
+   `setXxx(impl)` in `server.ts` at startup.
+5. Migrate any direct callers as their files are touched. NEW code
+   consumes the capability through `ctx.xxx.*` or `getXxx()` — never
+   the impl directly.
 
 ---
 
