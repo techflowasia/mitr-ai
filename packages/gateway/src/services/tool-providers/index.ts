@@ -167,7 +167,7 @@ export function createCustomDataToolProvider(): ToolProvider {
  */
 export function createPersonalDataToolProvider(): ToolProvider {
   const executor = lazyRouteExecutor(
-    () => import('../../routes/personal-data-tools.js'),
+    () => import('../../tools/personal-data-tools.js'),
     'executePersonalDataTool'
   );
   return {

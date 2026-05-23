@@ -165,7 +165,7 @@ vi.mock('../../routes/custom-data.js', () => ({
   executeCustomDataTool: mocks.executeCustomDataTool,
 }));
 
-vi.mock('../../routes/personal-data-tools.js', () => ({
+vi.mock('../../tools/personal-data-tools.js', () => ({
   executePersonalDataTool: mocks.executePersonalDataTool,
 }));
 

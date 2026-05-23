@@ -100,10 +100,10 @@ vi.mock('@ownpilot/core', () => ({
 }));
 
 const mockExecuteMemoryTool = vi.fn();
-vi.mock('../routes/memories.js', () => ({ executeMemoryTool: mockExecuteMemoryTool }));
-vi.mock('../routes/goals.js', () => ({ executeGoalTool: vi.fn() }));
-vi.mock('../routes/custom-data.js', () => ({ executeCustomDataTool: vi.fn() }));
-vi.mock('../routes/personal-data-tools.js', () => ({ executePersonalDataTool: vi.fn() }));
+vi.mock('./memory-tools.js', () => ({ executeMemoryTool: mockExecuteMemoryTool }));
+vi.mock('./goal-tools.js', () => ({ executeGoalTool: vi.fn() }));
+vi.mock('./custom-data-tools.js', () => ({ executeCustomDataTool: vi.fn() }));
+vi.mock('./personal-data-tools.js', () => ({ executePersonalDataTool: vi.fn() }));
 
 const mockExecuteCustomToolTool = vi.fn();
 const mockGetActiveCustomToolDefinitions = vi.fn().mockResolvedValue([]);

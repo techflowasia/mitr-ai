@@ -130,7 +130,7 @@ vi.mock('./custom-data.js', () => ({
   executeCustomDataTool: vi.fn(),
 }));
 
-vi.mock('./personal-data-tools.js', () => ({
+vi.mock('../tools/personal-data-tools.js', () => ({
   executePersonalDataTool: vi.fn(),
 }));
 

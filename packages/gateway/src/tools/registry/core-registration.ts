@@ -22,10 +22,10 @@ import {
   type ToolDefinition,
   type ToolExecutionResult as CoreToolResult,
 } from '@ownpilot/core';
-import { executeMemoryTool } from '../../routes/memories.js';
-import { executeGoalTool } from '../../routes/goals.js';
-import { executeCustomDataTool } from '../../routes/custom-data.js';
-import { executePersonalDataTool } from '../../routes/personal-data-tools.js';
+import { executeMemoryTool } from '../memory-tools.js';
+import { executeGoalTool } from '../goal-tools.js';
+import { executeCustomDataTool } from '../custom-data-tools.js';
+import { executePersonalDataTool } from '../personal-data-tools.js';
 import {
   executeCustomToolTool,
   executeActiveCustomTool,

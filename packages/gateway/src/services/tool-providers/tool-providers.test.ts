@@ -33,7 +33,7 @@ vi.mock('../../routes/custom-data.js', () => ({
   })),
 }));
 
-vi.mock('../../routes/personal-data-tools.js', () => ({
+vi.mock('../../tools/personal-data-tools.js', () => ({
   executePersonalDataTool: vi.fn(async (_name: string, _args: unknown, _userId?: string) => ({
     success: true,
     result: { mocked: true },

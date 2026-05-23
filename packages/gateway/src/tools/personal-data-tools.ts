@@ -12,7 +12,7 @@ import {
   CalendarRepository,
   ContactsRepository,
 } from '../db/repositories/index.js';
-import { sanitizeId, getErrorMessage } from './helpers.js';
+import { sanitizeId, getErrorMessage } from '../utils/common.js';
 import type { ToolExecutionResult } from '../services/tool-executor.js';
 import { wsGateway } from '../ws/server.js';
 
