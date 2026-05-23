@@ -15,6 +15,7 @@
  */
 
 import type { ILLMRouter } from '@ownpilot/core';
+import { setLLMRouter, getLLMRouter as coreGetLLMRouter } from '@ownpilot/core';
 import { resolveProviderAndModel, calculateExecutionCost } from './agent-runner-utils.js';
 import {
   resolveContextWindow,
@@ -22,7 +23,8 @@ import {
   computeMemoryMaxTokens,
 } from '../routes/agent-cache.js';
 
-const llmRouter: ILLMRouter = {
+/** Gateway-side LLMRouter implementation — thin facade over scattered helpers. */
+export const llmRouter: ILLMRouter = {
   pick: (opts) =>
     resolveProviderAndModel(
       opts.explicitProvider,
@@ -37,13 +39,22 @@ const llmRouter: ILLMRouter = {
 };
 
 /**
- * Get the singleton LLM router. Stateless — the same instance is returned
- * across the process. Mock by replacing the named export in vitest:
+ * Install the gateway LLMRouter into the core singleton + service registry.
+ * Called once at gateway startup. Idempotent (setLLMRouter checks
+ * registry.has() before re-registering).
+ */
+export function installLLMRouter(): void {
+  setLLMRouter(llmRouter);
+}
+
+/**
+ * Get the singleton LLM router.
  *
- *   vi.mock('./llm-router.js', () => ({
- *     getLLMRouter: () => ({ pick: vi.fn(), getContextWindow: vi.fn(), ... })
- *   }))
+ * @deprecated Prefer `import { getLLMRouter } from '@ownpilot/core'`. This
+ * gateway-side re-export exists only for backward compatibility with
+ * callers wired up before the core promotion. Both resolve to the same
+ * singleton.
  */
 export function getLLMRouter(): ILLMRouter {
-  return llmRouter;
+  return coreGetLLMRouter();
 }

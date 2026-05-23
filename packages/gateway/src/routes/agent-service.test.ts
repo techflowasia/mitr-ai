@@ -45,6 +45,33 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     buildSoulPrompt: (...args: unknown[]) => mockBuildSoulPrompt(...args),
     createFallbackProvider: vi.fn(() => ({})),
     getEventSystem: (...args: unknown[]) => mockGetEventSystem(...args),
+    // agent-service.ts now consumes the LLMRouter capability for context
+    // window / max output / memory budget lookups. Route the router calls
+    // back through the same mocks the test already drives via the
+    // agent-cache.js mock below, so existing assertions still apply.
+    getLLMRouter: () => ({
+      pick: vi.fn(),
+      getContextWindow: (...args: unknown[]) =>
+        mockResolveContextWindow(...(args as [string, string, number?])),
+      getMaxOutput: (...args: unknown[]) => mockResolveMaxOutput(...(args as [string, string])),
+      computeMemoryMaxTokens: (opts: {
+        ctxWindow: number;
+        systemPromptTokens: number;
+        outputBuffer: number;
+        dynamicInjectionReserve?: number;
+      }) => {
+        const reserve =
+          opts.dynamicInjectionReserve ?? Math.min(8192, Math.floor(opts.ctxWindow * 0.25));
+        return Math.max(
+          1024,
+          Math.min(
+            Math.floor(opts.ctxWindow * 0.75),
+            opts.ctxWindow - opts.systemPromptTokens - reserve - opts.outputBuffer - 1024
+          )
+        );
+      },
+      calculateCost: vi.fn().mockReturnValue(0),
+    }),
   };
 });
 

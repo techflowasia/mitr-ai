@@ -25,7 +25,7 @@ import {
   executeAgentPipeline,
   buildDateTimeContext,
 } from './agent-runner-utils.js';
-import { getLLMRouter } from './llm-router.js';
+import { getLLMRouter } from '@ownpilot/core';
 import { runInClawContext } from './claw-context.js';
 import {
   getSessionWorkspaceFiles,

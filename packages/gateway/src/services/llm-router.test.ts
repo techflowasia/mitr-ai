@@ -8,7 +8,7 @@
  * for the rest).
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
 
 const mockResolve = vi.fn();
 const mockCost = vi.fn();
@@ -27,9 +27,15 @@ vi.mock('../routes/agent-cache.js', () => ({
   computeMemoryMaxTokens: mockMemBudget,
 }));
 
-const { getLLMRouter } = await import('./llm-router.js');
+const { getLLMRouter, installLLMRouter } = await import('./llm-router.js');
 
 describe('LLMRouter facade', () => {
+  beforeAll(() => {
+    // Wire the gateway facade into the core singleton — production does
+    // this in server.ts during boot.
+    installLLMRouter();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });

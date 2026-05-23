@@ -273,6 +273,11 @@ async function main() {
   const { setConfigCenter } = await import('@ownpilot/core');
   setConfigCenter(gatewayConfigCenter);
 
+  // 5b. LLM Router (matches the channel + config pattern — capability lives in
+  // core, gateway provides the impl during boot)
+  const { installLLMRouter } = await import('./services/llm-router.js');
+  installLLMRouter();
+
   // Start embedding queue (background embedding generation for memories)
   const { getEmbeddingQueue } = await import('./services/embedding-queue.js');
   getEmbeddingQueue().start();

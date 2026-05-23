@@ -85,6 +85,16 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     registerAllTools: vi.fn(),
     getEventSystem: (...args: unknown[]) => mockGetEventSystem(...args),
     getErrorMessage: (e: unknown) => String(e instanceof Error ? e.message : e),
+    // ClawRunner now consumes getLLMRouter() from core (the unified
+    // capability accessor). Stub it to return the same provider/model
+    // the legacy resolveProviderAndModel waterfall would have produced.
+    getLLMRouter: () => ({
+      pick: vi.fn().mockResolvedValue({ provider: 'openai', model: 'gpt-4o-mini' }),
+      getContextWindow: vi.fn().mockReturnValue(128_000),
+      getMaxOutput: vi.fn().mockReturnValue(8192),
+      computeMemoryMaxTokens: vi.fn().mockReturnValue(96_000),
+      calculateCost: vi.fn().mockReturnValue(0),
+    }),
   };
 });
 

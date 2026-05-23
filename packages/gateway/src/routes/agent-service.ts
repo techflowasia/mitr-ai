@@ -82,7 +82,7 @@ import {
   MAX_AGENT_CACHE_SIZE,
   MAX_CHAT_AGENT_CACHE_SIZE,
 } from './agent-cache.js';
-import { getLLMRouter } from '../services/llm-router.js';
+import { getLLMRouter } from '@ownpilot/core';
 import {
   AGENT_DEFAULT_MAX_TOKENS,
   AGENT_DEFAULT_TEMPERATURE,

@@ -53,6 +53,9 @@ export type {
   LLMMemoryBudgetOptions,
   LLMTokenUsage,
 } from './llm-router.js';
+export { getLLMRouter, setLLMRouter, hasLLMRouter } from './llm-router.js';
+export type { RuntimeContext } from './runtime-context.js';
+export { getRuntimeContext, hasRuntimeContext } from './runtime-context.js';
 export type {
   IAuditService,
   RequestLogEntry,

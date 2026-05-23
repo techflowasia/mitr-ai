@@ -96,3 +96,62 @@ export interface ILLMRouter {
   /** Convert token usage to a USD cost figure. Returns 0 when usage is null. */
   calculateCost(provider: string, model: string, usage?: LLMTokenUsage | null): number;
 }
+
+// ============================================================================
+// Singleton access — matches the IChannelService / ConfigCenter pattern
+// ============================================================================
+
+import { hasServiceRegistry, getServiceRegistry } from './registry.js';
+import { Services } from './tokens.js';
+
+let _llmRouter: ILLMRouter | null = null;
+
+/**
+ * Register the LLMRouter implementation. Called once at gateway startup.
+ * Also mirrors into the service registry under Services.LLMRouter.
+ */
+export function setLLMRouter(router: ILLMRouter): void {
+  _llmRouter = router;
+
+  if (hasServiceRegistry()) {
+    try {
+      const registry = getServiceRegistry();
+      if (!registry.has(Services.LLMRouter)) {
+        registry.register(Services.LLMRouter, router);
+      }
+    } catch {
+      // Registry not ready
+    }
+  }
+}
+
+/**
+ * Get the LLMRouter. Tries the service registry first, falls back to
+ * the direct singleton. Throws if neither is initialized.
+ */
+export function getLLMRouter(): ILLMRouter {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(Services.LLMRouter);
+    } catch {
+      // Not registered yet — fall through to direct singleton
+    }
+  }
+
+  if (!_llmRouter) {
+    throw new Error('LLMRouter not initialized. Call setLLMRouter() during gateway startup.');
+  }
+  return _llmRouter;
+}
+
+/** Check whether the LLMRouter has been initialized. */
+export function hasLLMRouter(): boolean {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().has(Services.LLMRouter);
+    } catch {
+      // fall through
+    }
+  }
+  return _llmRouter !== null;
+}
