@@ -590,8 +590,8 @@ lazy-creates itself, so it's always available).
 
 ### Where each capability lives
 
-Twenty-six capabilities now follow the accessor pattern. The seven in
-the `RuntimeContext` bundle are infrastructure every runtime needs; the
+Thirty capabilities now follow the accessor pattern. The seven in the
+`RuntimeContext` bundle are infrastructure every runtime needs; the
 others are domain/data services with accessor-only access (no bundle
 slot because they're consumed by routes/orchestrators, not by every
 runtime).
@@ -632,13 +632,38 @@ runtime).
 | PulseService       | `core/src/services/pulse-service.ts`        | `gateway/src/autonomy/engine.ts`                    |
 | EdgeService        | `core/src/services/edge-service.ts`         | `gateway/src/services/edge-service.ts`              |
 | CliToolService     | `core/src/services/cli-tool-service.ts`     | `gateway/src/services/cli-tool-service.ts`          |
+| MessageBus         | `core/src/services/message-bus.ts`          | `gateway/src/services/message-bus-impl.ts`          |
+| ClawService        | `core/src/services/claw-types.ts`           | `gateway/src/services/claw-service.ts`              |
 
 **Migration completion (2026-05-23):** The gateway has **zero production
-callsites** using `getServiceRegistry().get(Services.X)`. Every consumer
-resolves through the capability accessor. The service registry is kept
-as a secondary mounting point for backward compatibility and for any
-future consumer that prefers iteration over the registry (e.g. third-
-party plugins listing what's available).
+callsites** using `getServiceRegistry().get(Services.X)` outside the
+generic `crud-factory.ts` (which is parameterised over an arbitrary
+`ServiceToken<T>` and legitimately needs the registry API). Every other
+consumer resolves through its capability accessor:
+
+- `hasServiceRegistry()` / `getServiceRegistry()` direct calls — gone
+  from all runtime files. The few `tryGet(Services.X)` fallbacks (audit
+  middleware, tool-executor) were collapsed into the canonical
+  `hasXService()` / `getXService()` pair on the same day.
+- `configServicesRepo.getFieldValue()` / `.getApiKey()` /
+  `.getDefaultEntry()` / `.isAvailable()` / `.getEntries()` / `.getByName()`
+  direct reads — migrated to `getConfigCenter()`. The repo retains CRUD
+  ownership (its `upsert` / `createEntry` / `updateEntry` calls still
+  belong to the gateway-internal route module, the seed file, the
+  api-service-registrar, and the `*-overrides.ts` schema registrants).
+- `resolveForProcess()` direct calls in runtime code — migrated to
+  `getLLMRouter().pick({ process })`. The function still exists as the
+  bottom-of-stack implementation that the router delegates to.
+- Module-level singletons in autonomous runtimes — Claw was already a
+  class taking `RuntimeContext`; Soul Heartbeat was the last holdout
+  (collection of module-level functions with shared mutable state) and
+  was extracted into a `SoulHeartbeatService` class matching the
+  ClawRunner shape. Module-level wrappers remain only as
+  backward-compat entry points for legacy callers.
+
+The service registry is kept as a secondary mounting point so
+third-party plugins that prefer iteration (e.g. listing what's
+available) can still resolve through it.
 
 ### Adding a new capability
 
