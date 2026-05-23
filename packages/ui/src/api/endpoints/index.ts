@@ -105,16 +105,6 @@ export type {
   VoiceDiagnosticCheck,
   VoiceDiagnostics,
 } from './voice';
-export { browserApi } from './browser';
-export type {
-  BrowserConfig,
-  BrowserNavigateResult,
-  BrowserActionResult,
-  BrowserScreenshotResult,
-  BrowserAction,
-  BrowserWorkflow,
-  CreateBrowserWorkflowInput,
-} from './browser';
 export { skillsApi } from './skills';
 export { tunnelApi } from './tunnel';
 export type { TunnelStatus, TunnelConfig } from './tunnel';
