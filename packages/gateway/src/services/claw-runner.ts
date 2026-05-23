@@ -414,6 +414,26 @@ export class ClawRunner {
     );
     parts.push('');
 
+    // Channels — reach the outside world
+    parts.push('## Channels (Telegram / Discord / WhatsApp / Slack / SMS / Email / Matrix)');
+    parts.push('You can send and receive messages on any connected channel:');
+    parts.push(
+      '- **list_channels**(connected_only?): Discover which channel plugins are installed and connected'
+    );
+    parts.push(
+      '- **get_channel_inbox**(channel?, limit?): Read recent inbound messages — sender, content, IDs to reply with'
+    );
+    parts.push(
+      '- **send_channel_message**(channel, chat_id, text, reply_to_id?): Reply to a user on a specific platform'
+    );
+    parts.push(
+      '- **broadcast_channel_message**(text, chat_id, platform?): Fan-out to all channels on a platform or every connected channel'
+    );
+    parts.push(
+      'Use these instead of claw_send_output when you need to talk to a user on their channel rather than the claw control feed. claw_send_output is for progress updates on the configured Telegram bot + UI.'
+    );
+    parts.push('');
+
     // Coding agents — full IDE delegation
     parts.push('## Coding Agents');
     parts.push('You can delegate coding tasks to specialized AI coding assistants:');
