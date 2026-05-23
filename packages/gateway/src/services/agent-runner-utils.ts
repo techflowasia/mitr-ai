@@ -106,7 +106,7 @@ export async function registerAllToolSources(
 export async function resolveProviderAndModel(
   explicitProvider: string | undefined,
   explicitModel: string | undefined,
-  process: 'pulse' | 'chat' = 'pulse',
+  process: 'pulse' | 'chat' | 'channel' | 'channel_media' = 'pulse',
   errorContext?: string
 ): Promise<{
   provider: string;

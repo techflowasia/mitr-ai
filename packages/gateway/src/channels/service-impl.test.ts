@@ -96,6 +96,16 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     createEvent: mockCreateEvent,
     hasServiceRegistry: mockHasServiceRegistry,
     getServiceRegistry: mockGetServiceRegistry,
+    // channels/service-impl.ts migrated from resolveForProcess() to
+    // getLLMRouter().pick({ process }). Route the new accessor through the
+    // existing mockResolveForProcess so test overrides still take effect.
+    getLLMRouter: () => ({
+      pick: (_opts: { process: string }) => mockResolveForProcess(),
+      getContextWindow: vi.fn(() => 128000),
+      getMaxOutput: vi.fn(() => 4096),
+      computeMemoryMaxTokens: vi.fn(() => 8192),
+      calculateCost: vi.fn(() => 0),
+    }),
   };
 });
 

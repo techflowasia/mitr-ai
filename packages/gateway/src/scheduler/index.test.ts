@@ -52,6 +52,16 @@ vi.mock('../config/defaults.js', () => ({
   SCHEDULER_MAX_HISTORY_PER_TASK: 100,
 }));
 
+const mockResolveForProcess = vi.hoisted(() =>
+  vi.fn(async () => ({
+    provider: 'openai',
+    model: 'gpt-4',
+    fallbackProvider: null,
+    fallbackModel: null,
+    source: 'global',
+  }))
+);
+
 vi.mock('@ownpilot/core', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
@@ -62,6 +72,17 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
       return { handler };
     }),
     getChannelService: vi.fn(() => mockChannelService),
+    // scheduler/index.ts migrated from resolveForProcess() to
+    // getLLMRouter().pick({ process }). Route the new accessor through the
+    // existing mock so test assertions and mockResolvedValueOnce calls
+    // against resolveForProcess still take effect.
+    getLLMRouter: () => ({
+      pick: (_opts: { process: string }) => mockResolveForProcess(),
+      getContextWindow: vi.fn(() => 128000),
+      getMaxOutput: vi.fn(() => 4096),
+      computeMemoryMaxTokens: vi.fn(() => 8192),
+      calculateCost: vi.fn(() => 0),
+    }),
   };
 });
 
@@ -70,13 +91,7 @@ vi.mock('../routes/agents.js', () => ({
 }));
 
 vi.mock('../services/model-routing.js', () => ({
-  resolveForProcess: vi.fn(async () => ({
-    provider: 'openai',
-    model: 'gpt-4',
-    fallbackProvider: null,
-    fallbackModel: null,
-    source: 'global',
-  })),
+  resolveForProcess: mockResolveForProcess,
 }));
 
 vi.mock('../paths/index.js', () => ({

@@ -154,14 +154,18 @@ vi.mock('../services/config-tools.js', () => ({
   executeConfigTool: vi.fn(),
 }));
 
-vi.mock('../services/model-routing.js', () => ({
-  resolveForProcess: vi.fn(async () => ({
+const mockResolveForProcess = vi.hoisted(() =>
+  vi.fn(async () => ({
     provider: 'openai',
     model: 'gpt-4',
     fallbackProvider: null,
     fallbackModel: null,
     source: 'global',
-  })),
+  }))
+);
+
+vi.mock('../services/model-routing.js', () => ({
+  resolveForProcess: mockResolveForProcess,
 }));
 
 vi.mock('./settings.js', () => ({
@@ -239,6 +243,17 @@ vi.mock('@ownpilot/core', () => ({
   applyToolLimits: vi.fn((_n: string, a: unknown) => a),
   getProviderConfig: vi.fn(() => null),
   Agent: vi.fn(),
+  // routes/chat.ts migrated from resolveForProcess() to
+  // getLLMRouter().pick({ process }). Route the new accessor through the
+  // existing mockResolveForProcess so test overrides via
+  // vi.mocked(resolveForProcess).mockResolvedValue(...) still take effect.
+  getLLMRouter: () => ({
+    pick: (_opts: { process: string }) => mockResolveForProcess(),
+    getContextWindow: vi.fn(() => 128000),
+    getMaxOutput: vi.fn(() => 4096),
+    computeMemoryMaxTokens: vi.fn(() => 8192),
+    calculateCost: vi.fn(() => 0),
+  }),
 }));
 
 vi.mock('../services/memory-service.js', () => ({

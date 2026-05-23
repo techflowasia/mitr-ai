@@ -22,6 +22,17 @@ export interface LLMTokenUsage {
   completionTokens?: number;
 }
 
+/**
+ * Process kinds that may have their own per-process default routing.
+ * Keep in sync with the gateway's `RoutingProcess` union.
+ *
+ * - `pulse`         — autonomous loops (Claw, Soul Heartbeat, Pulse)
+ * - `chat`          — interactive conversation
+ * - `channel`       — channel-driven (Telegram/Discord/etc.) text replies
+ * - `channel_media` — channel-driven media (image/voice) handling
+ */
+export type LLMProcessKind = 'pulse' | 'chat' | 'channel' | 'channel_media';
+
 /** Options for picking a provider+model. */
 export interface LLMPickOptions {
   /** When set together with explicitModel, used directly without waterfall. */
@@ -29,10 +40,9 @@ export interface LLMPickOptions {
   explicitModel?: string;
   /**
    * The runtime kind asking. Determines which per-process default applies
-   * when explicit provider/model is omitted: 'pulse' = autonomous (Claw /
-   * Soul Heartbeat / Pulse), 'chat' = interactive conversation.
+   * when explicit provider/model is omitted.
    */
-  process?: 'pulse' | 'chat';
+  process?: LLMProcessKind;
   /** Free-form label included in the "no provider configured" error message. */
   errorContext?: string;
 }

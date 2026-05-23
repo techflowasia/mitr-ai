@@ -23,9 +23,8 @@ import {
   type TaskNotificationEvent,
 } from '@ownpilot/core';
 import type { NotificationRequest } from '@ownpilot/core';
-import { getChannelService } from '@ownpilot/core';
+import { getChannelService, getLLMRouter } from '@ownpilot/core';
 import { getOrCreateChatAgent } from '../routes/agents.js';
-import { resolveForProcess } from '../services/model-routing.js';
 import { getDataPaths } from '../paths/index.js';
 import { getLog } from '../services/log.js';
 import { getErrorMessage } from '../routes/helpers.js';
@@ -40,7 +39,7 @@ const MAX_WORKFLOW_DEPTH = 10;
 
 /** Resolve the pulse routing and get a chat agent with optional fallback. */
 async function getSchedulerAgent() {
-  const routing = await resolveForProcess('pulse');
+  const routing = await getLLMRouter().pick({ process: 'pulse' });
   const fallback =
     routing.fallbackProvider && routing.fallbackModel
       ? { provider: routing.fallbackProvider, model: routing.fallbackModel }

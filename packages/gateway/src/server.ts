@@ -621,8 +621,8 @@ async function main() {
     // context injection, persistence, audit logging, and post-processing.
     triggerEngine.setChatHandler(async (message, _payload) => {
       const { getOrCreateChatAgent } = await import('./routes/agents.js');
-      const { resolveForProcess } = await import('./services/model-routing.js');
-      const resolved = await resolveForProcess('pulse');
+      const { getLLMRouter } = await import('@ownpilot/core');
+      const resolved = await getLLMRouter().pick({ process: 'pulse' });
       const provider = resolved.provider ?? 'openai';
       const model = resolved.model ?? 'gpt-4o-mini';
       const fallback =

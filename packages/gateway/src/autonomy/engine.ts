@@ -478,8 +478,8 @@ export class AutonomyEngine implements IPulseService {
   ): Promise<{ responseContent: string; toolCalls: Array<{ name?: string; arguments?: string }> }> {
     try {
       const { getOrCreateChatAgent } = await import('../routes/agent-service.js');
-      const { resolveForProcess } = await import('../services/model-routing.js');
-      const resolved = await resolveForProcess('pulse');
+      const { getLLMRouter } = await import('@ownpilot/core');
+      const resolved = await getLLMRouter().pick({ process: 'pulse' });
       if (!resolved.provider || !resolved.model) {
         throw new Error(
           'No AI provider configured for autonomous pulse. Set a default provider in Settings → AI Models.'

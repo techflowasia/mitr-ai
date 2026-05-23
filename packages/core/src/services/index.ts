@@ -65,6 +65,7 @@ export type {
   LLMResolvedModel,
   LLMMemoryBudgetOptions,
   LLMTokenUsage,
+  LLMProcessKind,
 } from './llm-router.js';
 export { getLLMRouter, setLLMRouter, hasLLMRouter } from './llm-router.js';
 export type {

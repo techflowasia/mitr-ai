@@ -36,7 +36,7 @@ import {
   getCliCorrelationId,
 } from './agents.js';
 import { onMcpToolEvents } from '../mcp/mcp-events.js';
-import { resolveForProcess } from '../services/model-routing.js';
+import { getLLMRouter } from '@ownpilot/core';
 import { ChatRepository } from '../db/repositories/index.js';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
 import type { NormalizedMessage, MessageProcessingResult } from '@ownpilot/core';
@@ -282,7 +282,7 @@ chatRoutes.post('/', async (c) => {
     model = requestedModel ?? 'gpt-4o';
   } else {
     // Use per-process model routing with waterfall to global default
-    const resolved = await resolveForProcess('chat');
+    const resolved = await getLLMRouter().pick({ process: 'chat' });
     provider = resolved.provider ?? 'openai';
     requestedModel = resolved.model;
     model = requestedModel ?? 'gpt-4o';
