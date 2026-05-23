@@ -24,13 +24,15 @@ import {
   resolvePermissions,
 } from './coding-agent-providers.js';
 
-// Mock dependencies
+// Mock dependencies — coding-agent-providers now reads keys via the
+// ConfigCenter capability (read-only) instead of the repo directly.
 const mockGetApiKey = vi.fn();
 
-vi.mock('../db/repositories/config-services.js', () => ({
-  configServicesRepo: {
+vi.mock('@ownpilot/core', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  getConfigCenter: () => ({
     getApiKey: (...args: unknown[]) => mockGetApiKey(...args),
-  },
+  }),
 }));
 
 describe('coding-agent-providers', () => {

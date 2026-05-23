@@ -111,12 +111,11 @@ vi.mock('@ownpilot/core', () => ({
   hasPII: (...args: unknown[]) => mockHasPII(...args),
   detectPII: (...args: unknown[]) => mockDetectPII(...args),
   getLog: (...args: unknown[]) => mockGetLog(...args),
-}));
-
-vi.mock('../db/repositories/config-services.js', () => ({
-  configServicesRepo: {
+  // BrowserService now reads allowed-domains config through the
+  // ConfigCenter capability instead of the repo directly.
+  getConfigCenter: () => ({
     getFieldValue: (...args: unknown[]) => mockConfigServicesRepoGetFieldValue(...args),
-  },
+  }),
 }));
 
 vi.mock('puppeteer-core', () => ({

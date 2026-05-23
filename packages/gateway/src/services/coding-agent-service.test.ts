@@ -30,13 +30,22 @@ vi.mock('node:child_process', async (importOriginal) => {
   };
 });
 
-// Mock tryImport (core) — use importOriginal to preserve all exports
+// Mock tryImport (core) — use importOriginal to preserve all exports.
+// Also stub getConfigCenter so coding-agent-providers' resolveBuiltinApiKey
+// reads keys via mockGetApiKey instead of throwing on uninitialized
+// capability.
 const mockTryImport = vi.fn();
 vi.mock('@ownpilot/core', async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;
   return {
     ...actual,
     tryImport: (name: string) => mockTryImport(name),
+    getConfigCenter: () => ({
+      getApiKey: (name: string) => mockGetApiKey(name),
+      getByName: vi.fn(),
+      getDefaultEntry: vi.fn(),
+      getFieldValue: vi.fn(),
+    }),
   };
 });
 

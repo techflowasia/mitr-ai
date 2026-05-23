@@ -6,8 +6,8 @@
  */
 
 import type { IEmbeddingService } from '@ownpilot/core';
+import { getConfigCenter } from '@ownpilot/core';
 import { getLog } from './log.js';
-import { configServicesRepo } from '../db/repositories/config-services.js';
 import {
   EmbeddingCacheRepository,
   embeddingCacheRepo,
@@ -53,7 +53,7 @@ export class EmbeddingService implements IEmbeddingService {
    */
   private getApiKey(): string {
     // Config Center (synchronous, cached)
-    const ccKey = configServicesRepo.getApiKey('openai');
+    const ccKey = getConfigCenter().getApiKey('openai');
     if (ccKey) return ccKey;
 
     // Environment variable fallback
@@ -68,7 +68,7 @@ export class EmbeddingService implements IEmbeddingService {
    * Get the API base URL (for custom endpoints / Azure).
    */
   private getBaseUrl(): string {
-    const customUrl = configServicesRepo.getFieldValue('openai', 'base_url');
+    const customUrl = getConfigCenter().getFieldValue('openai', 'base_url');
     if (typeof customUrl === 'string' && customUrl.length > 0) return customUrl;
     return 'https://api.openai.com/v1';
   }

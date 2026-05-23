@@ -5,7 +5,7 @@
  * Config Center integration, and caching.
  */
 
-import { configServicesRepo } from '../db/repositories/config-services.js';
+import { getConfigCenter } from '@ownpilot/core';
 import { getLog } from './log.js';
 
 const log = getLog('Composio');
@@ -67,7 +67,7 @@ class ComposioService {
    * Resolve API key from Config Center or env var.
    */
   private getApiKey(): string | undefined {
-    const cfgValue = configServicesRepo.getFieldValue('composio', 'api_key');
+    const cfgValue = getConfigCenter().getFieldValue('composio', 'api_key');
     if (cfgValue && typeof cfgValue === 'string') return cfgValue;
     return process.env.COMPOSIO_API_KEY;
   }

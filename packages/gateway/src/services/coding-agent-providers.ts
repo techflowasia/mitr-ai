@@ -14,8 +14,7 @@ import {
   DEFAULT_CODING_AGENT_PERMISSIONS,
   getErrorMessage,
 } from '@ownpilot/core';
-import { tryImport } from '@ownpilot/core';
-import { configServicesRepo } from '../db/repositories/config-services.js';
+import { tryImport, getConfigCenter } from '@ownpilot/core';
 import { type CliProviderRecord } from '../db/repositories/cli-providers.js';
 import { validateCwd, createSanitizedEnv, spawnCliProcess } from './binary-utils.js';
 import { getAllowedDirs } from '../routes/settings.js';
@@ -86,7 +85,7 @@ export const AUTH_METHODS: Record<BuiltinCodingAgentProvider, 'api-key' | 'login
  */
 export function resolveBuiltinApiKey(provider: BuiltinCodingAgentProvider): string | undefined {
   const serviceName = CONFIG_SERVICE_NAMES[provider];
-  const key = configServicesRepo.getApiKey(serviceName);
+  const key = getConfigCenter().getApiKey(serviceName);
   if (key) return key;
   return process.env[API_KEY_ENV_VARS[provider]];
 }
@@ -96,7 +95,7 @@ export function resolveBuiltinApiKey(provider: BuiltinCodingAgentProvider): stri
  */
 export function resolveCustomApiKey(customProvider: CliProviderRecord): string | undefined {
   if (customProvider.authMethod === 'config_center' && customProvider.configServiceName) {
-    const key = configServicesRepo.getApiKey(customProvider.configServiceName);
+    const key = getConfigCenter().getApiKey(customProvider.configServiceName);
     if (key) return key;
   }
   if (customProvider.apiKeyEnvVar) {

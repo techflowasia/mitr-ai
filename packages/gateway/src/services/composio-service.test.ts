@@ -12,10 +12,14 @@ const mockConfigServicesRepo = {
   getFieldValue: vi.fn(),
 };
 
-vi.mock('../db/repositories/config-services.js', () => ({
-  configServicesRepo: {
+// Composio now reads through the ConfigCenter capability instead of the
+// repo directly. Spread the original module so other core exports stay
+// intact, and only override the getter.
+vi.mock('@ownpilot/core', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  getConfigCenter: () => ({
     getFieldValue: (...args: unknown[]) => mockConfigServicesRepo.getFieldValue(...args),
-  },
+  }),
 }));
 
 const mockComposioInstance = {

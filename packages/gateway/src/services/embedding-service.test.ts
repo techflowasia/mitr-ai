@@ -25,11 +25,13 @@ const mockConfigServicesRepo = {
   getApiKey: vi.fn(),
   getFieldValue: vi.fn(),
 };
-vi.mock('../db/repositories/config-services.js', () => ({
-  configServicesRepo: {
+// EmbeddingService now reads via ConfigCenter capability.
+vi.mock('@ownpilot/core', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  getConfigCenter: () => ({
     getApiKey: (...args: unknown[]) => mockConfigServicesRepo.getApiKey(...args),
     getFieldValue: (...args: unknown[]) => mockConfigServicesRepo.getFieldValue(...args),
-  },
+  }),
 }));
 
 const mockEmbeddingCacheRepo = {

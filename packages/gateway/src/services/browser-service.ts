@@ -8,8 +8,7 @@
 
 import { existsSync } from 'node:fs';
 import type { Browser, Page } from 'puppeteer-core';
-import { hasPII, detectPII, getLog } from '@ownpilot/core';
-import { configServicesRepo } from '../db/repositories/config-services.js';
+import { hasPII, detectPII, getLog, getConfigCenter } from '@ownpilot/core';
 import { isBlockedUrl, isPrivateUrlAsync } from '../utils/ssrf.js';
 
 const log = getLog('BrowserService');
@@ -530,7 +529,7 @@ export class BrowserService {
 
   private getAllowedDomains(): string[] {
     try {
-      const raw = configServicesRepo.getFieldValue(BROWSER_SERVICE, 'allowed_domains') as
+      const raw = getConfigCenter().getFieldValue(BROWSER_SERVICE, 'allowed_domains') as
         | string
         | undefined;
       if (!raw) return [];
