@@ -591,6 +591,26 @@ async function main() {
     setArtifactService(artifact);
   }
 
+  // 25. CLI Tool Service — installed on the core capability singleton so
+  // consumers can resolve via getCliToolService() without going through the
+  // gateway-local accessor. CliTool is not in the service registry; the core
+  // singleton is the canonical access path for cross-package consumers.
+  {
+    const { getCliToolService: getLocalCliToolService } =
+      await import('./services/cli-tool-service.js');
+    const { setCliToolService } = await import('@ownpilot/core');
+    setCliToolService(getLocalCliToolService());
+  }
+
+  // 26. Edge Service (IoT/MQTT device management) — installed on the core
+  // capability singleton. Same pattern as CliTool: not registry-registered,
+  // but exposed through the core accessor for cross-package consumers.
+  {
+    const { getEdgeService: getLocalEdgeService } = await import('./services/edge-service.js');
+    const { setEdgeService } = await import('@ownpilot/core');
+    setEdgeService(getLocalEdgeService());
+  }
+
   // Start trigger engine (proactive automation)
   log.info('Starting Trigger Engine...');
   try {

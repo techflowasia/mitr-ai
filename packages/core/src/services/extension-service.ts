@@ -5,7 +5,7 @@
  * Handles installation, enabling/disabling, and tool definition export.
  *
  * Usage:
- *   const extensions = registry.get(Services.Extension);
+ *   const extensions = getExtensionService();
  *   const ext = await extensions.install('/path/to/manifest.json');
  *   const tools = extensions.getToolDefinitions();
  */

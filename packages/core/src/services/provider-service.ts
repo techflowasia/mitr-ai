@@ -6,7 +6,7 @@
  * provider discovery and selection.
  *
  * Usage:
- *   const providers = registry.get(Services.Provider);
+ *   const providers = getProviderService();
  *   const resolved = await providers.resolve({ provider: 'default', model: 'default' });
  *   const models = await providers.listModels('openai');
  */

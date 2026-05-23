@@ -6,7 +6,7 @@
  * All methods accept userId as first parameter for per-user isolation.
  *
  * Usage:
- *   const triggers = registry.get(Services.Trigger);
+ *   const triggers = getTriggerService();
  *   const trigger = await triggers.createTrigger('user-1', { name: 'Daily check', type: 'schedule', ... });
  */
 

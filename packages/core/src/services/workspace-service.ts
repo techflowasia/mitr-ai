@@ -5,7 +5,7 @@
  * Manages workspace lifecycle, channel associations, and agent configuration.
  *
  * Usage:
- *   const workspaces = registry.get(Services.Workspace);
+ *   const workspaces = getWorkspaceService();
  *   const ws = workspaces.create({ name: 'My Workspace' });
  *   workspaces.associateChannel(ws.id, 'channel-1');
  */

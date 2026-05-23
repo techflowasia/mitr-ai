@@ -5,7 +5,7 @@
  * providing tool discovery and invocation.
  *
  * Usage:
- *   const mcp = registry.get(Services.McpClient);
+ *   const mcp = getMcpClientService();
  *   const tools = await mcp.connect(serverRecord);
  *   const result = await mcp.callTool('server-name', 'tool-name', { arg: 'value' });
  */

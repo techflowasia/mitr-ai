@@ -5,7 +5,7 @@
  * Each heartbeat owns one backing trigger and keeps it in sync.
  *
  * Usage:
- *   const heartbeats = registry.get(Services.Heartbeat);
+ *   const heartbeats = getHeartbeatService();
  *   const list = await heartbeats.listHeartbeats(userId);
  */
 

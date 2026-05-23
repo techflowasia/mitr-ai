@@ -5,7 +5,7 @@
  * Wraps RequestLogsRepository + AuditLogger.
  *
  * Usage:
- *   const audit = registry.get(Services.Audit);
+ *   const audit = getAuditService();
  *   audit.logRequest({
  *     userId: 'default',
  *     type: 'chat',

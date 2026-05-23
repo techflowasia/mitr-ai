@@ -5,7 +5,7 @@
  * for plugin-managed tables and records.
  *
  * Usage:
- *   const db = registry.get(Services.Database);
+ *   const db = getDatabaseService();
  *   const table = await db.createTable('users', 'Users', columns);
  *   const record = await db.addRecord('users', { name: 'Alice' });
  */

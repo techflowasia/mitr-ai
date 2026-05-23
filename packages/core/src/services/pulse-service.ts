@@ -6,7 +6,7 @@
  * user prompting. Runs on an adaptive interval (5-15 min).
  *
  * Usage:
- *   const pulse = registry.get(Services.Pulse);
+ *   const pulse = getPulseService();
  *   const result = await pulse.runPulse(userId);
  */
 

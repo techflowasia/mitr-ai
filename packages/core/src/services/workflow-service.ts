@@ -4,7 +4,7 @@
  * Provides workflow execution, cancellation, and status checks.
  *
  * Usage:
- *   const workflows = registry.get(Services.Workflow);
+ *   const workflows = getWorkflowService();
  *   const log = await workflows.executeWorkflow('wf-1', 'user-1');
  */
 

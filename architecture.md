@@ -590,6 +590,14 @@ lazy-creates itself, so it's always available).
 
 ### Where each capability lives
 
+Twenty-six capabilities now follow the accessor pattern. The seven in
+the `RuntimeContext` bundle are infrastructure every runtime needs; the
+others are domain/data services with accessor-only access (no bundle
+slot because they're consumed by routes/orchestrators, not by every
+runtime).
+
+**In `RuntimeContext` bundle (infrastructure):**
+
 | Capability     | Contract                                        | Impl                                           |
 | -------------- | ----------------------------------------------- | ---------------------------------------------- |
 | LLMRouter      | `core/src/services/llm-router.ts`               | `gateway/src/services/llm-router.ts`           |
@@ -600,19 +608,53 @@ lazy-creates itself, so it's always available).
 | MemoryService  | `core/src/services/memory-service-interface.ts` | `gateway/src/services/memory-service.ts`       |
 | AuditService   | `core/src/services/audit-service.ts`            | `gateway/src/services/audit-service-impl.ts`   |
 
+**Accessor-only (domain/data services):**
+
+| Capability         | Contract                                    | Impl                                                |
+| ------------------ | ------------------------------------------- | --------------------------------------------------- |
+| GoalService        | `core/src/services/goal-service.ts`         | `gateway/src/services/goal-service.ts`              |
+| TriggerService     | `core/src/services/trigger-service.ts`      | `gateway/src/services/trigger-service.ts`           |
+| PlanService        | `core/src/services/plan-service.ts`         | `gateway/src/services/plan-service.ts`              |
+| DatabaseService    | `core/src/services/database-service.ts`     | `gateway/src/services/custom-data-service.ts`       |
+| ExtensionService   | `core/src/services/extension-service.ts`    | `gateway/src/services/extension-service.ts`         |
+| McpClientService   | `core/src/services/mcp-client-service.ts`   | `gateway/src/services/mcp-client-service.ts`        |
+| PluginService      | `core/src/services/plugin-service.ts`       | `gateway/src/services/plugin-service-impl.ts`       |
+| WorkflowService    | `core/src/services/workflow-service.ts`     | `gateway/src/services/workflow/workflow-service.ts` |
+| EmbeddingService   | `core/src/services/embedding-service.ts`    | `gateway/src/services/embedding-service.ts`         |
+| HeartbeatService   | `core/src/services/heartbeat-service.ts`    | `gateway/src/services/heartbeat-service.ts`         |
+| ToolService        | `core/src/services/tool-service.ts`         | `gateway/src/services/tool-service-impl.ts`         |
+| ProviderService    | `core/src/services/provider-service.ts`     | `gateway/src/services/provider-service-impl.ts`     |
+| SessionService     | `core/src/services/session-service.ts`      | `gateway/src/services/session-service-impl.ts`      |
+| ResourceService    | `core/src/services/resource-service.ts`     | `gateway/src/services/resource-service-impl.ts`     |
+| WorkspaceService   | `core/src/services/workspace-service.ts`    | `gateway/src/services/workspace-service-impl.ts`    |
+| ArtifactService    | `core/src/services/artifact-service.ts`     | `gateway/src/services/artifact-service.ts`          |
+| CodingAgentService | `core/src/services/coding-agent-service.ts` | `gateway/src/services/coding-agent-service.ts`      |
+| PulseService       | `core/src/services/pulse-service.ts`        | `gateway/src/autonomy/engine.ts`                    |
+| EdgeService        | `core/src/services/edge-service.ts`         | `gateway/src/services/edge-service.ts`              |
+| CliToolService     | `core/src/services/cli-tool-service.ts`     | `gateway/src/services/cli-tool-service.ts`          |
+
+**Migration completion (2026-05-23):** The gateway has **zero production
+callsites** using `getServiceRegistry().get(Services.X)`. Every consumer
+resolves through the capability accessor. The service registry is kept
+as a secondary mounting point for backward compatibility and for any
+future consumer that prefers iteration over the registry (e.g. third-
+party plugins listing what's available).
+
 ### Adding a new capability
 
 1. Define the contract `IXxx` and accessors (`getXxx` / `setXxx` /
    `hasXxx` + `XxxToken`) in `packages/core/src/services/xxx.ts`,
    following the existing pattern (registry-first, singleton fallback).
-2. Add the field to `RuntimeContext` and include it in
-   `getRuntimeContext()` + `hasRuntimeContext()`.
+2. If it's infrastructure used by every runtime, add the field to
+   `RuntimeContext` and include it in `getRuntimeContext()` +
+   `hasRuntimeContext()`. Otherwise skip this step — the accessor is
+   the canonical access path for domain services.
 3. Re-export from `packages/core/src/services/index.ts`.
 4. Implement in `packages/gateway/src/services/xxx-impl.ts` and call
    `setXxx(impl)` in `server.ts` at startup.
 5. Migrate any direct callers as their files are touched. NEW code
-   consumes the capability through `ctx.xxx.*` or `getXxx()` — never
-   the impl directly.
+   consumes the capability through `ctx.xxx.*` (if in the bundle) or
+   `getXxx()` — never the impl directly, never the service registry.
 
 ---
 

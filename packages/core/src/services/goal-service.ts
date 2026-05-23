@@ -5,7 +5,7 @@
  * All methods accept userId as first parameter for per-user isolation.
  *
  * Usage:
- *   const goals = registry.get(Services.Goal);
+ *   const goals = getGoalService();
  *   const goal = await goals.createGoal('user-1', { title: 'Learn TypeScript' });
  */
 

@@ -6,7 +6,7 @@
  * Internal methods (createContext, createStorage, routeMessage) are excluded.
  *
  * Usage:
- *   const plugins = registry.get(Services.Plugin);
+ *   const plugins = getPluginService();
  *   const all = plugins.getAll();
  *   const tool = plugins.getTool('my_tool');
  */

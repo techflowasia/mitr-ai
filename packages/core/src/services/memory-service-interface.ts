@@ -5,7 +5,7 @@
  * All methods accept userId as first parameter for per-user isolation.
  *
  * Usage:
- *   const memory = registry.get(Services.Memory);
+ *   const memory = getMemoryService();
  *   const entry = await memory.createMemory('user-1', { type: 'fact', content: '...' });
  */
 

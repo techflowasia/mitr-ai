@@ -5,7 +5,7 @@
  * Used for semantic search in memories and other resources.
  *
  * Usage:
- *   const embeddings = registry.get(Services.Embedding);
+ *   const embeddings = getEmbeddingService();
  *   if (embeddings.isAvailable()) {
  *     const result = await embeddings.generateEmbedding('some text');
  *   }

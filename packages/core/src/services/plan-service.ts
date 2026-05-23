@@ -6,7 +6,7 @@
  * All methods accept userId as first parameter for per-user isolation.
  *
  * Usage:
- *   const plans = registry.get(Services.Plan);
+ *   const plans = getPlanService();
  *   const plan = await plans.createPlan('user-1', { name: 'Deploy v2', goal: 'Ship new version' });
  */
 

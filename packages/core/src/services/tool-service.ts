@@ -5,7 +5,7 @@
  * All tool access (execution, discovery, middleware) goes through this.
  *
  * Usage:
- *   const tools = registry.get(Services.Tool);
+ *   const tools = getToolService();
  *   const defs = tools.getDefinitions();
  *   const result = await tools.execute('get_current_time', {});
  */

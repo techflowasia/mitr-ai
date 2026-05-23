@@ -8,7 +8,7 @@
  * with a unified concept where session source is just metadata.
  *
  * Usage:
- *   const sessions = registry.get(Services.Session);
+ *   const sessions = getSessionService();
  *   const session = sessions.getOrCreate({
  *     userId: 'default',
  *     source: 'channel',
