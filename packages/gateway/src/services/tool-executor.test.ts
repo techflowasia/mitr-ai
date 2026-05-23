@@ -63,6 +63,9 @@ vi.mock('@ownpilot/core', async () => {
     })),
     createPluginId: vi.fn((id: string) => id),
     qualifyToolName: vi.fn((name: string, ns: string, extId: string) => `${ns}.${extId}.${name}`),
+    // tool-executor now reads ConfigCenter through the capability accessor
+    // instead of importing the gateway impl directly.
+    getConfigCenter: () => ({ mocked: true }),
     Services: {
       ...(actual as Record<string, unknown>)['Services'],
       Plugin: { name: 'plugin' },
@@ -135,10 +138,6 @@ vi.mock('./extension-permissions.js', () => ({
   checkPermission: vi.fn(() => true),
   getRequiredPermission: vi.fn(() => null),
   logPermissionDenied: vi.fn(),
-}));
-
-vi.mock('./config-center-impl.js', () => ({
-  gatewayConfigCenter: { mocked: true },
 }));
 
 const mockMemoryProvider = { name: 'memory', getTools: vi.fn(() => []) };

@@ -27,7 +27,6 @@ import type {
   DynamicToolDefinition,
   ExecutionPermissions,
 } from '@ownpilot/core';
-import { gatewayConfigCenter } from './config-center-impl.js';
 import { registerToolConfigRequirements } from './api-service-registrar.js';
 import { registerAllGatewayProviders } from '../tools/provider-manifest.js';
 import { createCustomToolsRepo } from '../db/repositories/custom-tools.js';
@@ -41,7 +40,7 @@ import { registerImageOverrides } from './image-overrides.js';
 import { registerEmailOverrides } from './email-overrides.js';
 import { registerAudioOverrides } from './audio-overrides.js';
 import { registerExpenseOverrides } from './expense-overrides.js';
-import { hasServiceRegistry, getServiceRegistry, Services } from '@ownpilot/core';
+import { hasServiceRegistry, getServiceRegistry, Services, getConfigCenter } from '@ownpilot/core';
 import type { IAuditService } from '@ownpilot/core';
 import { checkToolPermission } from './tool-permission-service.js';
 import type { ToolExecContext } from './permission-utils.js';
@@ -117,7 +116,7 @@ export function getSharedToolRegistry(userId = 'default'): ToolRegistry {
   // Duplicates are safely ignored by ToolRegistry
   registerCoreTools(tools);
 
-  tools.setConfigCenter(gatewayConfigCenter);
+  tools.setConfigCenter(getConfigCenter());
 
   // Register all gateway tool providers from declarative manifest (source: 'gateway')
   registerAllGatewayProviders(tools, userId);

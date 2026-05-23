@@ -15,6 +15,7 @@ import {
   TOOL_GROUPS,
   getServiceRegistry,
   Services,
+  getConfigCenter,
   type ToolDefinition,
 } from '@ownpilot/core';
 import type { ToolInfo } from '../types/index.js';
@@ -25,7 +26,6 @@ import {
   batchExecuteToolsSchema,
 } from '../middleware/validation.js';
 import { getAgent } from './agents.js';
-import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getSharedToolRegistry } from '../services/tool-executor.js';
 import { initToolSourceMappings, getToolSource } from '../services/tool-source.js';
 import {
@@ -58,7 +58,7 @@ function getToolRegistry(): ToolRegistry {
   if (!toolRegistry) {
     toolRegistry = new ToolRegistry();
     registerCoreTools(toolRegistry);
-    toolRegistry.setConfigCenter(gatewayConfigCenter);
+    toolRegistry.setConfigCenter(getConfigCenter());
   }
   return toolRegistry;
 }

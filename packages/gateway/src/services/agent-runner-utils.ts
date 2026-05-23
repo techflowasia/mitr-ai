@@ -27,7 +27,7 @@ import type { AIProvider, ToolCall, ToolId } from '@ownpilot/core';
 import { getLog } from './log.js';
 import { resolveForProcess } from './model-routing.js';
 import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from '../routes/agent-cache.js';
-import { getLLMRouter } from '@ownpilot/core';
+import { getLLMRouter, getConfigCenter } from '@ownpilot/core';
 import {
   registerGatewayTools,
   registerDynamicTools,
@@ -35,7 +35,6 @@ import {
   registerExtensionTools,
   registerMcpTools,
 } from '../tools/agent-tool-registry.js';
-import { gatewayConfigCenter } from './config-center-impl.js';
 import { AGENT_DEFAULT_MAX_TOKENS, AGENT_DEFAULT_TEMPERATURE } from '../config/defaults.js';
 import { getLlmSemaphore } from './llm-semaphore.js';
 import type { ExtensionService } from './extension-service.js';
@@ -59,7 +58,7 @@ export async function registerAllToolSources(
 ): Promise<void> {
   // 1. Core tools (built-in utilities, file, code, web, etc.)
   registerAllTools(tools);
-  tools.setConfigCenter(gatewayConfigCenter);
+  tools.setConfigCenter(getConfigCenter());
 
   // 2. Gateway domain tools (memory, goals, custom data, triggers, plans, etc.)
   registerGatewayTools(tools, userId, false);

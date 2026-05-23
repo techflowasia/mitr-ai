@@ -118,13 +118,6 @@ vi.mock('./settings.js', () => ({
   getDefaultModel: vi.fn(() => 'gpt-4'),
 }));
 
-vi.mock('../services/config-center-impl.js', () => ({
-  gatewayConfigCenter: {
-    get: vi.fn(),
-    set: vi.fn(),
-  },
-}));
-
 vi.mock('./memories.js', () => ({
   executeMemoryTool: vi.fn(),
 }));

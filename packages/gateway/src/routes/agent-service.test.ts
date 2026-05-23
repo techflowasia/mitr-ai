@@ -72,6 +72,9 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
       },
       calculateCost: vi.fn().mockReturnValue(0),
     }),
+    // agent-service now consumes ConfigCenter through the capability
+    // accessor instead of importing the gateway impl directly.
+    getConfigCenter: () => ({}),
   };
 });
 
@@ -146,10 +149,6 @@ vi.mock('../services/cli-chat-provider.js', () => ({
   getCliBinaryFromProviderId: vi.fn(() => '/usr/bin/test'),
   createCliChatProvider: vi.fn(() => ({})),
   getCliChatProviderDefinition: vi.fn(() => null),
-}));
-
-vi.mock('../services/config-center-impl.js', () => ({
-  gatewayConfigCenter: {},
 }));
 
 vi.mock('../services/extension-service.js', () => ({

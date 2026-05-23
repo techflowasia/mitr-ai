@@ -101,6 +101,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     // want to assert on specific calls can pass their own runtime arg to
     // `new ClawRunner(config, runtime)`.
     getLLMRouter: () => mockLLMRouter,
+    getConfigCenter: () => ({ getApiKey: vi.fn(), getFieldValue: vi.fn() }),
     getPermissionGate: () => ({
       check: vi.fn().mockResolvedValue({ type: 'allow' }),
     }),
@@ -155,10 +156,6 @@ vi.mock('../routes/agent-tools.js', () => ({
   registerPluginTools: mockRegisterPluginTools,
   registerExtensionTools: mockRegisterExtensionTools,
   registerMcpTools: mockRegisterMcpTools,
-}));
-
-vi.mock('./config-center-impl.js', () => ({
-  gatewayConfigCenter: {},
 }));
 
 vi.mock('../config/defaults.js', async (importOriginal) => {

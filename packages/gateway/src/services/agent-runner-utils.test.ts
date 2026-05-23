@@ -82,6 +82,9 @@ vi.mock('@ownpilot/core', async (importOriginal) => ({
     ),
     calculateCost: vi.fn(),
   }),
+  // agent-runner-utils now reads ConfigCenter through the capability
+  // accessor instead of importing the gateway impl directly.
+  getConfigCenter: () => mockGatewayConfigCenter,
 }));
 
 vi.mock('./model-routing.js', () => ({
@@ -100,10 +103,6 @@ vi.mock('../tools/agent-tool-registry.js', () => ({
   registerPluginTools: mockRegisterPluginTools,
   registerExtensionTools: mockRegisterExtensionTools,
   registerMcpTools: mockRegisterMcpTools,
-}));
-
-vi.mock('./config-center-impl.js', () => ({
-  gatewayConfigCenter: mockGatewayConfigCenter,
 }));
 
 vi.mock('./log.js', () => ({

@@ -39,7 +39,6 @@ import {
 import { localProvidersRepo } from '../db/repositories/local-providers.js';
 import { getSoulsRepository } from '../db/repositories/souls.js';
 import { getAgentMessagesRepository } from '../db/repositories/agent-messages.js';
-import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getLog } from '../services/log.js';
 import { BASE_SYSTEM_PROMPT, CLI_SYSTEM_PROMPT } from './agent-prompt.js';
 import {
@@ -82,7 +81,7 @@ import {
   MAX_AGENT_CACHE_SIZE,
   MAX_CHAT_AGENT_CACHE_SIZE,
 } from './agent-cache.js';
-import { getLLMRouter } from '@ownpilot/core';
+import { getLLMRouter, getConfigCenter } from '@ownpilot/core';
 import {
   AGENT_DEFAULT_MAX_TOKENS,
   AGENT_DEFAULT_TEMPERATURE,
@@ -152,7 +151,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
   // Create tool registry with ALL tools (not just core)
   const tools = new ToolRegistry();
   registerAllTools(tools);
-  tools.setConfigCenter(gatewayConfigCenter);
+  tools.setConfigCenter(getConfigCenter());
 
   // Register all gateway domain tools (memory, goals, etc.) with tracing
   const userId = 'default';
@@ -513,7 +512,7 @@ async function createChatAgentInstance(
 
   const tools = new ToolRegistry();
   registerAllTools(tools);
-  tools.setConfigCenter(gatewayConfigCenter);
+  tools.setConfigCenter(getConfigCenter());
 
   const userId = 'default';
   registerGatewayTools(tools, userId, false);

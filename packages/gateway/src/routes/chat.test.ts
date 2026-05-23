@@ -154,10 +154,6 @@ vi.mock('../services/config-tools.js', () => ({
   executeConfigTool: vi.fn(),
 }));
 
-vi.mock('../services/config-center-impl.js', () => ({
-  gatewayConfigCenter: { get: vi.fn(), set: vi.fn() },
-}));
-
 vi.mock('../services/model-routing.js', () => ({
   resolveForProcess: vi.fn(async () => ({
     provider: 'openai',
