@@ -380,7 +380,7 @@ vi.mock('../services/chat-prompt.js', () => ({
   tryGetMessageBus: vi.fn(() => null),
 }));
 
-vi.mock('./chat-streaming.js', () => ({
+vi.mock('../services/chat-streaming.js', () => ({
   createStreamCallbacks: vi.fn(),
   recordStreamUsage: vi.fn(),
   processStreamingViaBus: vi.fn(),

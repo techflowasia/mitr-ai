@@ -18,20 +18,20 @@ import type {
   IMessageBus,
 } from '@ownpilot/core';
 import { checkToolCallApproval } from '../assistant/index.js';
-import { getSessionInfo } from '../services/agent-service.js';
-import { usageTracker } from '../services/usage-tracking.js';
+import { getSessionInfo } from './agent-service.js';
+import { usageTracker } from './usage-tracking.js';
 import {
   extractSuggestions,
   extractMemoriesFromResponse,
   normalizeChatWidgets,
 } from '../utils/index.js';
-import { generateApprovalId, createApprovalRequest } from '../services/execution-approval.js';
-import type { getAgent } from '../services/agent-service.js';
+import { generateApprovalId, createApprovalRequest } from './execution-approval.js';
+import type { getAgent } from './agent-service.js';
 import {
   ConversationService,
   runPostChatProcessing,
   toAttachmentMeta,
-} from '../services/conversation-service.js';
+} from './conversation-service.js';
 /**
  * Extract display-friendly tool name and args from a ToolCall.
  * For use_tool calls, unwraps the inner tool_name and arguments.

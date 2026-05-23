@@ -86,7 +86,7 @@ import {
   recordStreamUsage,
   processStreamingViaBus,
   wireStreamApproval,
-} from './chat-streaming.js';
+} from '../services/chat-streaming.js';
 import {
   buildExecutionSystemPrompt,
   buildToolCatalog,

@@ -161,7 +161,7 @@ import {
   type SaveChatParams,
   type SaveStreamingParams,
 } from './conversation-service.js';
-import type { StreamState } from '../routes/chat-streaming.js';
+import type { StreamState } from './streaming-types.js';
 import type { Conversation } from '../db/repositories/chat.js';
 
 // ---------------------------------------------------------------------------
