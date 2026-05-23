@@ -9,7 +9,7 @@
  * Follows the TriggerEngine singleton lifecycle pattern.
  */
 
-import { generateId, getEventSystem, getErrorMessage } from '@ownpilot/core';
+import { generateId, getEventSystem, getErrorMessage, getLLMRouter } from '@ownpilot/core';
 import type {
   IPulseService,
   PulseResult,
@@ -478,7 +478,6 @@ export class AutonomyEngine implements IPulseService {
   ): Promise<{ responseContent: string; toolCalls: Array<{ name?: string; arguments?: string }> }> {
     try {
       const { getOrCreateChatAgent } = await import('../routes/agent-service.js');
-      const { getLLMRouter } = await import('@ownpilot/core');
       const resolved = await getLLMRouter().pick({ process: 'pulse' });
       if (!resolved.provider || !resolved.model) {
         throw new Error(
