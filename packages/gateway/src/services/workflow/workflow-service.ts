@@ -19,8 +19,7 @@ import {
   type WorkflowLogStatus,
 } from '../../db/repositories/workflows.js';
 import {
-  getServiceRegistry,
-  Services,
+  getToolService as getCoreToolService,
   type IWorkflowService,
   type IToolService,
   sleep,
@@ -101,7 +100,7 @@ export class WorkflowService implements IWorkflowService {
   }
 
   private getToolService(): IToolService {
-    return getServiceRegistry().get(Services.Tool);
+    return getCoreToolService();
   }
 
   /**

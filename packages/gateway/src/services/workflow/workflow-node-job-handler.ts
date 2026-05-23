@@ -138,8 +138,8 @@ async function executeWorkflowNodeJob(job: JobRecord): Promise<Record<string, un
   }
 
   // Get tool service (lazy to avoid circular deps)
-  const { getServiceRegistry, Services } = await import('@ownpilot/core');
-  const toolService = getServiceRegistry().get(Services.Tool) as IToolService;
+  const { getToolService } = await import('@ownpilot/core');
+  const toolService = getToolService() as IToolService;
 
   // Build the execution context for dispatchNode
   // The real dispatchNode in WorkflowService does the full routing.

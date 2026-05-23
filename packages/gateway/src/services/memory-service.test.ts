@@ -14,18 +14,19 @@ import type { Memory } from '../db/repositories/memories.js';
 // ---------------------------------------------------------------------------
 
 const mockEmit = vi.fn();
+const fakeEmbeddingServiceForMemory = {
+  isAvailable: () => mockEmbeddingAvailable(),
+  generateEmbedding: (...args: unknown[]) => mockGenerateEmbedding(...args),
+};
 vi.mock('@ownpilot/core', () => ({
   getEventSystem: () => ({ emit: mockEmit }),
   getServiceRegistry: () => ({
     get: (token: { key: string }) => {
-      if (token.key === 'embedding')
-        return {
-          isAvailable: () => mockEmbeddingAvailable(),
-          generateEmbedding: (...args: unknown[]) => mockGenerateEmbedding(...args),
-        };
+      if (token.key === 'embedding') return fakeEmbeddingServiceForMemory;
       throw new Error(`Unexpected token: ${token.key}`);
     },
   }),
+  getEmbeddingService: () => fakeEmbeddingServiceForMemory,
   Services: { Embedding: { key: 'embedding' } },
 }));
 

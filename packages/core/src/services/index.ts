@@ -40,6 +40,7 @@ export type {
   MessageProcessingResult,
 } from './message-types.js';
 export type { IToolService, ToolServiceResult } from './tool-service.js';
+export { getToolService, setToolService, hasToolService, ToolToken } from './tool-service.js';
 export type {
   IProviderService,
   ProviderInfo,
@@ -251,6 +252,12 @@ export {
 
 // Embedding Service
 export type { IEmbeddingService, EmbeddingResult } from './embedding-service.js';
+export {
+  getEmbeddingService,
+  setEmbeddingService,
+  hasEmbeddingService,
+  EmbeddingToken,
+} from './embedding-service.js';
 
 // Heartbeat Service
 export type {
@@ -258,6 +265,12 @@ export type {
   HeartbeatInfo,
   CreateHeartbeatInput as HeartbeatCreateInput,
   UpdateHeartbeatInput as HeartbeatUpdateInput,
+} from './heartbeat-service.js';
+export {
+  getHeartbeatService,
+  setHeartbeatService,
+  hasHeartbeatService,
+  HeartbeatToken,
 } from './heartbeat-service.js';
 
 // Pulse Service (Autonomy Engine)

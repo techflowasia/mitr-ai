@@ -76,6 +76,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     getServiceRegistry: vi.fn(() => ({
       get: () => mockToolService,
     })),
+    getToolService: vi.fn(() => mockToolService),
     sleep: vi.fn(async () => {}),
     withTimeout: vi.fn(async (promise: Promise<unknown>) => promise),
   };

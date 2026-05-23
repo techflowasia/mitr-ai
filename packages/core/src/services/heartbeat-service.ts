@@ -73,3 +73,55 @@ export interface IHeartbeatService {
   exportMarkdown(userId: string): Promise<string>;
   countHeartbeats(userId: string, enabled?: boolean): Promise<number>;
 }
+
+// ============================================================================
+// Singleton access — same pattern as MemoryService / GoalService / etc.
+// ============================================================================
+
+import { hasServiceRegistry, getServiceRegistry } from './registry.js';
+import { ServiceToken } from './registry.js';
+
+export const HeartbeatToken = new ServiceToken<IHeartbeatService>('heartbeat');
+
+let _heartbeatService: IHeartbeatService | null = null;
+
+export function setHeartbeatService(service: IHeartbeatService): void {
+  _heartbeatService = service;
+  if (hasServiceRegistry()) {
+    try {
+      const registry = getServiceRegistry();
+      if (!registry.has(HeartbeatToken)) {
+        registry.register(HeartbeatToken, service);
+      }
+    } catch {
+      // Registry not ready
+    }
+  }
+}
+
+export function getHeartbeatService(): IHeartbeatService {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(HeartbeatToken);
+    } catch {
+      // Fall through
+    }
+  }
+  if (!_heartbeatService) {
+    throw new Error(
+      'HeartbeatService not initialized. Call setHeartbeatService() during gateway startup.'
+    );
+  }
+  return _heartbeatService;
+}
+
+export function hasHeartbeatService(): boolean {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().has(HeartbeatToken);
+    } catch {
+      // Fall through
+    }
+  }
+  return _heartbeatService !== null;
+}

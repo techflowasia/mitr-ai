@@ -73,3 +73,53 @@ export interface IToolService {
    */
   getCount(): number;
 }
+
+// ============================================================================
+// Singleton access — same pattern as MemoryService / GoalService / etc.
+// ============================================================================
+
+import { hasServiceRegistry, getServiceRegistry } from './registry.js';
+import { ServiceToken } from './registry.js';
+
+export const ToolToken = new ServiceToken<IToolService>('tool');
+
+let _toolService: IToolService | null = null;
+
+export function setToolService(service: IToolService): void {
+  _toolService = service;
+  if (hasServiceRegistry()) {
+    try {
+      const registry = getServiceRegistry();
+      if (!registry.has(ToolToken)) {
+        registry.register(ToolToken, service);
+      }
+    } catch {
+      // Registry not ready
+    }
+  }
+}
+
+export function getToolService(): IToolService {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(ToolToken);
+    } catch {
+      // Fall through
+    }
+  }
+  if (!_toolService) {
+    throw new Error('ToolService not initialized. Call setToolService() during gateway startup.');
+  }
+  return _toolService;
+}
+
+export function hasToolService(): boolean {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().has(ToolToken);
+    } catch {
+      // Fall through
+    }
+  }
+  return _toolService !== null;
+}

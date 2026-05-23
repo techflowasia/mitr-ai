@@ -288,9 +288,14 @@ async function main() {
   const { getEmbeddingQueue } = await import('./services/embedding-queue.js');
   getEmbeddingQueue().start();
 
-  // 6. Embedding Service
-  const { getEmbeddingService } = await import('./services/embedding-service.js');
-  registry.register(Services.Embedding, getEmbeddingService());
+  // 6. Embedding Service — also installed on the core capability singleton
+  {
+    const { getEmbeddingService } = await import('./services/embedding-service.js');
+    const embedding = getEmbeddingService();
+    registry.register(Services.Embedding, embedding);
+    const { setEmbeddingService } = await import('@ownpilot/core');
+    setEmbeddingService(embedding);
+  }
 
   // 7. Database Service — also installed on the core capability singleton
   {
@@ -462,8 +467,13 @@ async function main() {
     setPlanService(plan);
   }
 
-  // 14. Tool Service (wraps ToolRegistry)
-  registry.register(Services.Tool, createToolService());
+  // 14. Tool Service (wraps ToolRegistry) — also installed on the core capability singleton
+  {
+    const tool = createToolService();
+    registry.register(Services.Tool, tool);
+    const { setToolService } = await import('@ownpilot/core');
+    setToolService(tool);
+  }
 
   // 15. Provider Service
   registry.register(Services.Provider, createProviderService());
@@ -530,9 +540,14 @@ async function main() {
     log.warn('Retention Cleanup Worker failed to start', { error: String(error) });
   }
 
-  // 19. Heartbeat Service
-  const { getHeartbeatService } = await import('./services/heartbeat-service.js');
-  registry.register(Services.Heartbeat, getHeartbeatService());
+  // 19. Heartbeat Service — also installed on the core capability singleton
+  {
+    const { getHeartbeatService } = await import('./services/heartbeat-service.js');
+    const heartbeat = getHeartbeatService();
+    registry.register(Services.Heartbeat, heartbeat);
+    const { setHeartbeatService } = await import('@ownpilot/core');
+    setHeartbeatService(heartbeat);
+  }
 
   // 19b. Pulse Metrics Service (claw + soul monitoring)
   const { getPulseMetricsService } = await import('./services/pulse-metrics-service.js');

@@ -83,6 +83,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
         throw new Error(`Unexpected token: ${token.key}`);
       },
     }),
+    getHeartbeatService: () => mockService,
     Services: { ...actual.Services, Heartbeat: { key: 'heartbeat' } },
   };
 });

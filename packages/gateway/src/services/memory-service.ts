@@ -5,7 +5,7 @@
  * Both HTTP routes and tool executors delegate here.
  */
 
-import { getEventSystem, getServiceRegistry, Services, type IMemoryService } from '@ownpilot/core';
+import { getEmbeddingService, getEventSystem, type IMemoryService } from '@ownpilot/core';
 import type { MemoriesRepository } from '../db/repositories/memories.js';
 import {
   createMemoriesRepository,
@@ -311,7 +311,7 @@ export class MemoryService implements IMemoryService {
     // Try to generate embedding for the query
     let queryEmbedding: number[] | undefined;
     try {
-      const embeddingService = getServiceRegistry().get(Services.Embedding);
+      const embeddingService = getEmbeddingService();
       if (embeddingService.isAvailable()) {
         const result = await embeddingService.generateEmbedding(query);
         queryEmbedding = result.embedding;

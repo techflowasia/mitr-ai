@@ -9,7 +9,7 @@
  */
 
 import { Hono } from 'hono';
-import { getServiceRegistry, Services } from '@ownpilot/core';
+import { getHeartbeatService, Services } from '@ownpilot/core';
 import { HeartbeatServiceError } from '../services/heartbeat-service.js';
 import type { HeartbeatService } from '../services/heartbeat-service.js';
 import {
@@ -28,7 +28,7 @@ import { createCrudRoutes } from './crud-factory.js';
 export const heartbeatsRoutes = new Hono();
 
 /** Get HeartbeatService from registry. */
-const getService = () => getServiceRegistry().get(Services.Heartbeat) as HeartbeatService;
+const getService = () => getHeartbeatService() as unknown as HeartbeatService;
 
 // ============================================================================
 // Custom Routes (must be registered BEFORE parametric /:id routes)
