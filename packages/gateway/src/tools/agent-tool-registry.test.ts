@@ -107,7 +107,7 @@ vi.mock('./personal-data-tools.js', () => ({ executePersonalDataTool: vi.fn() })
 
 const mockExecuteCustomToolTool = vi.fn();
 const mockGetActiveCustomToolDefinitions = vi.fn().mockResolvedValue([]);
-vi.mock('../routes/custom-tools.js', () => ({
+vi.mock('./custom-tools.js', () => ({
   executeCustomToolTool: mockExecuteCustomToolTool,
   executeActiveCustomTool: vi.fn(),
   getActiveCustomToolDefinitions: mockGetActiveCustomToolDefinitions,
@@ -1701,7 +1701,7 @@ describe('agent-tools helpers', () => {
     });
 
     it('invokes active custom tool executor with trace (lines 378-395)', async () => {
-      const { executeActiveCustomTool } = await import('../routes/custom-tools.js');
+      const { executeActiveCustomTool } = await import('./custom-tools.js');
       vi.mocked(executeActiveCustomTool).mockResolvedValue({ success: true, result: 'custom' });
       mockGetActiveCustomToolDefinitions.mockResolvedValueOnce([
         { name: 'my_custom', description: 'Custom', parameters: {} },

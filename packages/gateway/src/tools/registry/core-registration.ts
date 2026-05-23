@@ -30,7 +30,7 @@ import {
   executeCustomToolTool,
   executeActiveCustomTool,
   getActiveCustomToolDefinitions,
-} from '../../routes/custom-tools.js';
+} from '../custom-tools.js';
 import {
   TRIGGER_TOOLS,
   executeTriggerTool,
