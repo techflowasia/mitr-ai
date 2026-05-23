@@ -17,6 +17,8 @@
 
 import { getErrorMessage, type Agent } from '@ownpilot/core';
 import type { ClawConfig, ClawSession, ClawCycleResult, ClawToolCall } from '@ownpilot/core';
+import type { RuntimeContext } from '@ownpilot/core';
+import { getRuntimeContext } from '@ownpilot/core';
 import { getLog } from './log.js';
 import { buildEnhancedSystemPrompt } from '../assistant/orchestrator.js';
 import {
@@ -25,7 +27,6 @@ import {
   executeAgentPipeline,
   buildDateTimeContext,
 } from './agent-runner-utils.js';
-import { getLLMRouter } from '@ownpilot/core';
 import { runInClawContext } from './claw-context.js';
 import {
   getSessionWorkspaceFiles,
@@ -55,9 +56,16 @@ export class ClawRunner {
   private agent: Agent | null = null;
   private cachedProvider = '';
   private cachedModel = '';
+  /**
+   * Process-wide capabilities (LLMRouter, ChannelService, ConfigCenter,
+   * EventSystem). Defaults to the singleton; tests can pass a mock bundle
+   * to swap individual capabilities without per-global mocking.
+   */
+  private runtime: RuntimeContext;
 
-  constructor(config: ClawConfig) {
+  constructor(config: ClawConfig, runtime: RuntimeContext = getRuntimeContext()) {
     this.config = config;
+    this.runtime = runtime;
   }
 
   updateConfig(config: ClawConfig): void {
@@ -96,7 +104,7 @@ export class ClawRunner {
     const startTime = Date.now();
     const cycleNumber = session.cyclesCompleted + 1;
 
-    const { provider, model } = await getLLMRouter().pick({
+    const { provider, model } = await this.runtime.llm.pick({
       explicitProvider: this.config.provider,
       explicitModel: this.config.model,
       process: 'pulse',

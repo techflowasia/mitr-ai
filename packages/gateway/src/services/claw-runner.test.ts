@@ -12,6 +12,7 @@ import type { ClawConfig, ClawSession } from '@ownpilot/core';
 const {
   mockChat,
   mockGetEventSystem,
+  mockLLMRouter,
   mockRegisterGatewayTools,
   mockRegisterDynamicTools,
   mockRegisterPluginTools,
@@ -53,9 +54,18 @@ const {
     })),
   }));
 
+  const mockLLMRouter = {
+    pick: vi.fn().mockResolvedValue({ provider: 'openai', model: 'gpt-4o-mini' }),
+    getContextWindow: vi.fn().mockReturnValue(128_000),
+    getMaxOutput: vi.fn().mockReturnValue(8192),
+    computeMemoryMaxTokens: vi.fn().mockReturnValue(96_000),
+    calculateCost: vi.fn().mockReturnValue(0),
+  };
+
   return {
     mockChat,
     mockGetEventSystem,
+    mockLLMRouter,
     mockRegisterGatewayTools: vi.fn(),
     mockRegisterDynamicTools: vi.fn().mockResolvedValue([]),
     mockRegisterPluginTools: vi.fn().mockReturnValue([]),
@@ -85,15 +95,17 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     registerAllTools: vi.fn(),
     getEventSystem: (...args: unknown[]) => mockGetEventSystem(...args),
     getErrorMessage: (e: unknown) => String(e instanceof Error ? e.message : e),
-    // ClawRunner now consumes getLLMRouter() from core (the unified
-    // capability accessor). Stub it to return the same provider/model
-    // the legacy resolveProviderAndModel waterfall would have produced.
-    getLLMRouter: () => ({
-      pick: vi.fn().mockResolvedValue({ provider: 'openai', model: 'gpt-4o-mini' }),
-      getContextWindow: vi.fn().mockReturnValue(128_000),
-      getMaxOutput: vi.fn().mockReturnValue(8192),
-      computeMemoryMaxTokens: vi.fn().mockReturnValue(96_000),
-      calculateCost: vi.fn().mockReturnValue(0),
+    // ClawRunner now takes a RuntimeContext bundle in its constructor
+    // (defaulting to getRuntimeContext()). Provide a fully-stubbed bundle
+    // so the test never touches the real capability registry. Tests that
+    // want to assert on specific calls can pass their own runtime arg to
+    // `new ClawRunner(config, runtime)`.
+    getLLMRouter: () => mockLLMRouter,
+    getRuntimeContext: () => ({
+      llm: mockLLMRouter,
+      channels: { send: vi.fn(), listChannels: vi.fn(() => []) },
+      config: { getApiKey: vi.fn(), getFieldValue: vi.fn() },
+      events: mockGetEventSystem(),
     }),
   };
 });
