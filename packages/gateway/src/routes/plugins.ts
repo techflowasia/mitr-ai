@@ -6,6 +6,7 @@
 import { Hono } from 'hono';
 import {
   getPluginService,
+  getConfigCenter,
   type Plugin,
   type PluginCapability,
   type PluginPermission,
@@ -22,7 +23,6 @@ import {
 } from './helpers.js';
 import { validateBody, pluginSettingsSchema } from '../middleware/validation.js';
 import { pluginsRepo } from '../db/repositories/plugins.js';
-import { configServicesRepo } from '../db/repositories/config-services.js';
 import { getLog } from '../services/log.js';
 import { wsGateway } from '../ws/server.js';
 import { hasConfiguredData } from '../services/config-entry-validation.js';
@@ -106,10 +106,10 @@ function toPluginInfo(plugin: Plugin): PluginInfo {
     requiredServices: (plugin.manifest.requiredServices ?? []).map((svc) => ({
       name: svc.name,
       displayName: svc.displayName ?? svc.name,
-      isConfigured: hasConfiguredEntry(configServicesRepo.getEntries(svc.name)),
+      isConfigured: hasConfiguredEntry(getConfigCenter().getConfigEntries(svc.name)),
     })),
     hasUnconfiguredServices: (plugin.manifest.requiredServices ?? []).some(
-      (svc) => !hasConfiguredEntry(configServicesRepo.getEntries(svc.name))
+      (svc) => !hasConfiguredEntry(getConfigCenter().getConfigEntries(svc.name))
     ),
   };
 }
@@ -464,9 +464,10 @@ pluginsRoutes.get('/:id/required-services', async (c) => {
     return notFoundError(c, 'Plugin', id);
   }
 
+  const config = getConfigCenter();
   const requiredServices = (plugin.manifest.requiredServices ?? []).map((svc) => {
-    const serviceDef = configServicesRepo.getByName(svc.name);
-    const entries = serviceDef ? configServicesRepo.getEntries(svc.name) : [];
+    const serviceDef = config.getServiceDefinition(svc.name);
+    const entries = serviceDef ? config.getConfigEntries(svc.name) : [];
     return {
       name: svc.name,
       displayName: svc.displayName ?? svc.name,

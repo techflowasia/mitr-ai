@@ -83,6 +83,16 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
       }),
     })),
     getPluginService: vi.fn(() => mockPluginRegistry),
+    // plugins.ts now reads required-service config via ConfigCenter
+    // (`getConfigEntries` + `getServiceDefinition`). Route both through the
+    // existing mockConfigServicesRepo so each test's DB-shaped setup drives
+    // the new code path unchanged.
+    getConfigCenter: vi.fn(() => ({
+      getConfigEntries: (name: string) =>
+        (mockConfigServicesRepo.getEntries as (n: string) => unknown[])(name),
+      getServiceDefinition: (name: string) =>
+        (mockConfigServicesRepo.getByName as (n: string) => unknown)(name),
+    })),
     Services: {
       ...(original['Services'] as Record<string, unknown>),
       Plugin: { name: 'plugin' },
