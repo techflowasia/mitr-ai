@@ -4,23 +4,28 @@
  * Bridges the core HeartbeatRunner with gateway repositories and services.
  * Registers a 'run_heartbeat' action handler with the Trigger Engine.
  *
- * Crew orchestration additions:
+ * Architecture:
+ * - `SoulHeartbeatService` is the canonical class — takes a RuntimeContext
+ *   in its constructor (defaults to the process-wide singleton) so tests
+ *   can swap individual capabilities without per-global mocking.
+ * - Module-level exports (`getHeartbeatRunner`, `runAgentHeartbeat`, etc.)
+ *   delegate to a process-default instance for backward compatibility.
+ *
+ * Crew orchestration:
  * - runInHeartbeatContext() wraps every agent.chat() call so communication
  *   tools (read_agent_inbox, send_agent_message, crew tools) resolve the
  *   correct soul agent ID instead of the generic human userId.
- * - buildCrewContextForHeartbeat() fetches crew membership + unread count
- *   and prepends a crew context section to each task prompt when the soul
- *   belongs to a crew.
+ * - Crew context (members, unread count, coordination pattern) is fetched
+ *   on demand and prepended to each task prompt when the soul belongs to
+ *   a crew. Results are cached per agent for short-lived re-use.
  */
 
 import {
   HeartbeatRunner,
   AgentCommunicationBus,
   BudgetTracker,
-  getEventSystem,
   calculateCost,
-  getPermissionGate,
-  getMemoryService,
+  getRuntimeContext,
 } from '@ownpilot/core';
 import type {
   AIProvider,
@@ -28,6 +33,7 @@ import type {
   IHeartbeatEventBus,
   ISoulRepository,
   IHeartbeatLogRepository,
+  RuntimeContext,
 } from '@ownpilot/core';
 import { buildCrewContextSection } from '@ownpilot/core';
 import type { CrewContextInfo } from '@ownpilot/core';
@@ -42,12 +48,17 @@ import { HeartbeatCircuitBreaker } from '@ownpilot/core';
 import { HeartbeatMetricsCollector } from '@ownpilot/core';
 import type { BudgetForecaster } from '@ownpilot/core';
 import { HEARTBEAT_CREW_CONTEXT_CACHE_TTL_MS } from '../config/defaults.js';
+import { TTLCache } from '../utils/ttl-cache.js';
 
 const log = getLog('SoulHeartbeatService');
 
-// ============================================================
-// Gateway Soul Repository Adapter (implements ISoulRepository)
-// ============================================================
+const CREW_CONTEXT_CACHE_TTL_MS =
+  parseInt(process.env.SOUL_CREW_CONTEXT_CACHE_TTL_MS ?? '', 10) ||
+  HEARTBEAT_CREW_CONTEXT_CACHE_TTL_MS;
+
+// ============================================================================
+// Gateway repository adapters
+// ============================================================================
 
 function createSoulRepoAdapter(): ISoulRepository {
   const repo = getSoulsRepository();
@@ -63,10 +74,6 @@ function createSoulRepoAdapter(): ISoulRepository {
   };
 }
 
-// ============================================================
-// Gateway Heartbeat Log Repository Adapter
-// ============================================================
-
 function createHeartbeatLogRepoAdapter(): IHeartbeatLogRepository {
   const repo = getHeartbeatLogRepository();
   return {
@@ -76,329 +83,398 @@ function createHeartbeatLogRepoAdapter(): IHeartbeatLogRepository {
   };
 }
 
-// ============================================================
-// Crew context injection
-// ============================================================
+// ============================================================================
+// SoulHeartbeatService — class form (takes RuntimeContext explicitly)
+// ============================================================================
 
-/**
- * Fetch crew membership info and build the crew context section to prepend to
- * heartbeat task prompts. Returns null when the agent has no crew or on error.
- */
-async function buildCrewContextForHeartbeat(
-  agentId: string,
-  crewId: string
-): Promise<string | null> {
-  try {
-    const crewRepo = getCrewsRepository();
-    const soulsRepo = getSoulsRepository();
-    const msgRepo = getAgentMessagesRepository();
+export class SoulHeartbeatService {
+  private runner: HeartbeatRunner | null = null;
+  private communicationBus: AgentCommunicationBus | null = null;
+  private circuitBreaker: HeartbeatCircuitBreaker | null = null;
+  private metricsCollector: HeartbeatMetricsCollector | null = null;
+  private readonly budgetForecasters = new Map<string, BudgetForecaster>();
+  private readonly crewContextCache: TTLCache<string, string | null>;
+  private readonly runtimeOverride: RuntimeContext | null;
 
-    const [crew, members, unreadCount] = await Promise.all([
-      crewRepo.getById(crewId),
-      crewRepo.getMembers(crewId),
-      msgRepo.countUnread(agentId),
-    ]);
-
-    if (!crew || members.length === 0) return null;
-
-    const memberInfos = await Promise.all(
-      members.map(async (m) => {
-        const soul = await soulsRepo.getByAgentId(m.agentId);
-        return {
-          agentId: m.agentId,
-          name: soul?.identity.name ?? m.agentId,
-          emoji: soul?.identity.emoji ?? '🤖',
-          role: m.role,
-          isCurrentAgent: m.agentId === agentId,
-        };
-      })
-    );
-
-    const ctx: CrewContextInfo = {
-      crewId,
-      crewName: crew.name,
-      coordinationPattern: crew.coordinationPattern,
-      members: memberInfos,
-      unreadCount,
-    };
-
-    return buildCrewContextSection(ctx);
-  } catch (err) {
-    log.warn('Failed to build crew context for heartbeat', { agentId, crewId, error: String(err) });
-    return null;
+  /**
+   * Capabilities resolved on demand. Construction stays cheap and does not
+   * require the runtime context to be fully wired — that's only needed when
+   * a heartbeat cycle actually runs. Tests can pass an explicit context to
+   * pin every capability without touching globals.
+   */
+  private get runtime(): RuntimeContext {
+    return this.runtimeOverride ?? getRuntimeContext();
   }
-}
 
-// ============================================================
-// Crew context cache — avoid re-fetching crew membership for every task
-// within the same heartbeat cycle (typically completes within seconds).
-// ============================================================
+  constructor(runtime: RuntimeContext | null = null) {
+    this.runtimeOverride = runtime;
+    this.crewContextCache = new TTLCache<string, string | null>({
+      defaultTtlMs: CREW_CONTEXT_CACHE_TTL_MS,
+    });
+  }
 
-import { TTLCache } from '../utils/ttl-cache.js';
+  /**
+   * Dispose the AgentCommunicationBus timer and clear cached state. Call in
+   * shutdown hooks or test teardown.
+   */
+  reset(): void {
+    this.communicationBus?.dispose();
+    this.communicationBus = null;
+    this.runner = null;
+    this.circuitBreaker = null;
+    this.metricsCollector = null;
+    this.budgetForecasters.clear();
+  }
 
-const CREW_CONTEXT_CACHE_TTL_MS =
-  parseInt(process.env.SOUL_CREW_CONTEXT_CACHE_TTL_MS ?? '', 10) ||
-  HEARTBEAT_CREW_CONTEXT_CACHE_TTL_MS;
+  /** Lazily build (and cache) the HeartbeatRunner. */
+  getRunner(): HeartbeatRunner {
+    if (!this.runner) {
+      const soulRepo = createSoulRepoAdapter();
+      const hbLogRepo = createHeartbeatLogRepoAdapter();
+      const msgRepo = getAgentMessagesRepository();
+      const db = getAdapterSync();
 
-const crewContextCache = new TTLCache<string, string | null>({
-  defaultTtlMs: CREW_CONTEXT_CACHE_TTL_MS,
-});
+      this.communicationBus = new AgentCommunicationBus(msgRepo, this.createEventBusAdapter());
+      const budgetTracker = new BudgetTracker(db);
+      const agentEngine = this.createAgentEngine();
 
-// Per-agent budget forecasters (reset with the runner)
-const budgetForecasters = new Map<string, BudgetForecaster>();
-
-async function getCachedCrewContext(agentId: string, crewId: string): Promise<string | null> {
-  const cacheKey = `${agentId}:${crewId}`;
-  const cached = crewContextCache.get(cacheKey);
-  if (cached !== null) return cached;
-  const value = await buildCrewContextForHeartbeat(agentId, crewId);
-  // Cache null results too (as empty string) to avoid repeated DB lookups for solo agents
-  crewContextCache.set(cacheKey, value ?? '');
-  return value;
-}
-
-// ============================================================
-// Minimal Agent Engine (sends heartbeat prompt to the agent)
-// ============================================================
-
-function createHeartbeatAgentEngine(): IHeartbeatAgentEngine {
-  return {
-    async processMessage(request) {
-      // Dynamic import to avoid circular dependencies
-      const { getOrCreateChatAgent } = await import('../routes/agents.js');
-
-      // Use provider/model from soul config (passed via context) when available,
-      // otherwise resolve via the LLMRouter capability (which encapsulates the
-      // per-process routing waterfall + fallback lookup).
-      const ctxProvider = request.context?.provider as string | undefined;
-      const ctxModel = request.context?.model as string | undefined;
-      const ctxFallbackProvider = request.context?.fallbackProvider as string | undefined;
-      const ctxFallbackModel = request.context?.fallbackModel as string | undefined;
-
-      const { getLLMRouter } = await import('@ownpilot/core');
-      const picked = await getLLMRouter().pick({
-        explicitProvider: ctxProvider,
-        explicitModel: ctxModel,
-        process: 'pulse',
-        errorContext: 'soul heartbeat',
+      this.circuitBreaker = new HeartbeatCircuitBreaker({
+        failureThreshold: 3,
+        cooldownMs: 60_000,
+      });
+      this.metricsCollector = new HeartbeatMetricsCollector({
+        rollingWindowSize: 10,
       });
 
-      const provider = picked.provider || 'anthropic';
-      const model = picked.model || 'claude-sonnet-4-5-20250514';
+      this.runner = new HeartbeatRunner(
+        agentEngine,
+        soulRepo,
+        this.communicationBus,
+        hbLogRepo,
+        budgetTracker,
+        this.createEventBusAdapter(),
+        this.circuitBreaker,
+        this.metricsCollector
+      );
+    }
+    return this.runner;
+  }
 
-      // Context-level fallback overrides routing-level fallback when both supplied.
-      const fallbackProvider = ctxFallbackProvider ?? picked.fallbackProvider;
-      const fallbackModel = ctxFallbackModel ?? picked.fallbackModel;
-      const fallback =
-        fallbackProvider && fallbackModel
-          ? { provider: fallbackProvider, model: fallbackModel }
-          : undefined;
+  /**
+   * The shared AgentCommunicationBus instance. Initialises the runner on
+   * first call. Used by crew-tools.ts for broadcast_to_crew.
+   */
+  getCommunicationBus(): AgentCommunicationBus {
+    this.getRunner();
+    if (!this.communicationBus) {
+      throw new Error('AgentCommunicationBus not initialized — heartbeat runner failed to start');
+    }
+    return this.communicationBus;
+  }
 
-      const agent = await getOrCreateChatAgent(provider, model, fallback);
-
-      // Inject crew context at the top of the task prompt when the soul is in a crew.
-      // Uses a short-lived cache to avoid re-fetching crew membership for every task
-      // within the same heartbeat cycle.
-      const crewId = request.context?.crewId as string | undefined;
-      let taskMessage = request.message;
-      if (crewId) {
-        log.info(`[Heartbeat ${request.agentId}] Injecting crew context (crew: ${crewId})`);
-        const crewSection = await getCachedCrewContext(request.agentId, crewId);
-        if (crewSection) {
-          taskMessage = `${crewSection}\n${taskMessage}`;
-        }
+  /**
+   * Run a heartbeat cycle for a specific agent. Called by the trigger
+   * engine's 'run_heartbeat' action handler.
+   */
+  async runHeartbeat(
+    agentId: string,
+    force = false
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const result = await this.getRunner().runHeartbeat(agentId, force);
+      if (result.ok) {
+        log.info(`Heartbeat completed for agent ${agentId}`, {
+          tasksRun: result.value.tasks.length,
+          cost: result.value.totalCost,
+          durationMs: result.value.durationMs,
+        });
+        return { success: true };
+      } else {
+        log.warn(`Heartbeat failed for agent ${agentId}: ${result.error.message}`);
+        return { success: false, error: result.error.message };
       }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      log.error(`Heartbeat error for agent ${agentId}: ${msg}`);
+      return { success: false, error: msg };
+    }
+  }
 
-      // Claw mode (autonomy level 5) — bypass all tool restrictions
-      const clawMode = request.context?.clawMode === true;
+  // ---------------------------------------------------------------------------
+  // Crew context (membership + unread count) injected into task prompts
+  // ---------------------------------------------------------------------------
 
-      // Enforce allowedTools (task-level) and skillAccess (soul-level) restrictions.
-      const allowedTools = request.context?.allowedTools as string[] | undefined;
-      const skillAccessAllowed = request.context?.skillAccessAllowed as string[] | undefined;
-      const skillAccessBlocked = request.context?.skillAccessBlocked as string[] | undefined;
+  private async buildCrewContext(agentId: string, crewId: string): Promise<string | null> {
+    try {
+      const crewRepo = getCrewsRepository();
+      const soulsRepo = getSoulsRepository();
+      const msgRepo = getAgentMessagesRepository();
 
-      const hasToolFilter =
-        !clawMode &&
-        !!(allowedTools?.length || skillAccessAllowed?.length || skillAccessBlocked?.length);
+      const [crew, members, unreadCount] = await Promise.all([
+        crewRepo.getById(crewId),
+        crewRepo.getMembers(crewId),
+        msgRepo.countUnread(agentId),
+      ]);
 
-      // Wrap agent.chat() in the heartbeat context so communication/crew tools
-      // can resolve the correct soul agent ID via AsyncLocalStorage.
-      //
-      // Tool authorization is delegated to the unified PermissionGate, which
-      // applies the same skillAccess* / allowedTools logic across every
-      // runtime that participates in the two-layer architecture.
-      const gate = hasToolFilter ? getPermissionGate() : null;
-      const result = await runInHeartbeatContext({ agentId: request.agentId, crewId }, () =>
-        agent.chat(taskMessage, {
-          onBeforeToolCall: gate
-            ? async (toolCall) => {
-                let parsedArgs: Record<string, unknown> | undefined;
-                if (toolCall.arguments) {
-                  try {
-                    parsedArgs = JSON.parse(toolCall.arguments) as Record<string, unknown>;
-                  } catch {
-                    parsedArgs = undefined;
-                  }
-                }
-                const decision = await gate.check({
-                  actorId: request.agentId,
-                  tool: toolCall.name,
-                  context: {
-                    actorType: 'soul-heartbeat',
-                    allowedTools,
-                    skillAccessAllowed,
-                    skillAccessBlocked,
-                    args: parsedArgs,
-                  },
-                });
-                if (decision.type === 'allow') {
-                  return { approved: true };
-                }
-                return { approved: false, reason: decision.reason };
-              }
-            : undefined,
+      if (!crew || members.length === 0) return null;
+
+      const memberInfos = await Promise.all(
+        members.map(async (m) => {
+          const soul = await soulsRepo.getByAgentId(m.agentId);
+          return {
+            agentId: m.agentId,
+            name: soul?.identity.name ?? m.agentId,
+            emoji: soul?.identity.emoji ?? '🤖',
+            role: m.role,
+            isCurrentAgent: m.agentId === agentId,
+          };
         })
       );
 
-      if (!result.ok) {
-        throw result.error;
-      }
-
-      const usage = result.value.usage;
-      const cost = usage
-        ? calculateCost(
-            provider as AIProvider,
-            model,
-            usage.promptTokens ?? 0,
-            usage.completionTokens ?? 0
-          )
-        : undefined;
-
-      return {
-        content: result.value.content,
-        tokenUsage: usage
-          ? { input: usage.promptTokens, output: usage.completionTokens }
-          : undefined,
-        cost,
+      const ctx: CrewContextInfo = {
+        crewId,
+        crewName: crew.name,
+        coordinationPattern: crew.coordinationPattern,
+        members: memberInfos,
+        unreadCount,
       };
-    },
 
-    async saveMemory(agentId, content, source) {
-      try {
-        await getMemoryService().createMemory(agentId, {
-          content,
-          source,
-          type: 'fact',
-        });
-      } catch (err) {
-        log.warn('Failed to save heartbeat memory', { agentId, error: String(err) });
-      }
-    },
+      return buildCrewContextSection(ctx);
+    } catch (err) {
+      log.warn('Failed to build crew context for heartbeat', {
+        agentId,
+        crewId,
+        error: String(err),
+      });
+      return null;
+    }
+  }
 
-    // H4: Implemented — was missing, causing silent output loss for note-type tasks
-    async createNote(note) {
-      try {
-        await getMemoryService().createMemory('system', {
-          content: note.content,
-          source: note.source,
-          type: 'fact',
-          tags: [note.category],
-        });
-      } catch (err) {
-        log.warn('Failed to create heartbeat note', {
-          category: note.category,
-          error: String(err),
-        });
-      }
-    },
+  private async getCachedCrewContext(agentId: string, crewId: string): Promise<string | null> {
+    const cacheKey = `${agentId}:${crewId}`;
+    const cached = this.crewContextCache.get(cacheKey);
+    if (cached !== null) return cached;
+    const value = await this.buildCrewContext(agentId, crewId);
+    // Cache null as empty string to avoid repeated DB lookups for solo agents
+    this.crewContextCache.set(cacheKey, value ?? '');
+    return value;
+  }
 
-    // M8: Use chatId when provided, not always 'default'
-    async sendToChannel(channel, message, chatId) {
-      try {
-        const { sendTelegramMessage } = await import('../tools/notification-tools.js');
-        if (channel === 'telegram') {
-          await sendTelegramMessage(chatId ?? 'default', message);
-        } else {
-          log.debug(`Channel ${channel} not supported for heartbeat output`);
+  // ---------------------------------------------------------------------------
+  // Agent engine — sends each heartbeat task prompt to the LLM
+  // ---------------------------------------------------------------------------
+
+  private createAgentEngine(): IHeartbeatAgentEngine {
+    const runtime = this.runtime;
+    const getCachedCrewContext = (agentId: string, crewId: string) =>
+      this.getCachedCrewContext(agentId, crewId);
+
+    return {
+      async processMessage(request) {
+        // Dynamic import to avoid circular dependencies
+        const { getOrCreateChatAgent } = await import('../routes/agents.js');
+
+        // Use provider/model from soul config (passed via context) when available,
+        // otherwise resolve via the LLMRouter capability.
+        const ctxProvider = request.context?.provider as string | undefined;
+        const ctxModel = request.context?.model as string | undefined;
+        const ctxFallbackProvider = request.context?.fallbackProvider as string | undefined;
+        const ctxFallbackModel = request.context?.fallbackModel as string | undefined;
+
+        const picked = await runtime.llm.pick({
+          explicitProvider: ctxProvider,
+          explicitModel: ctxModel,
+          process: 'pulse',
+          errorContext: 'soul heartbeat',
+        });
+
+        const provider = picked.provider || 'anthropic';
+        const model = picked.model || 'claude-sonnet-4-5-20250514';
+
+        const fallbackProvider = ctxFallbackProvider ?? picked.fallbackProvider;
+        const fallbackModel = ctxFallbackModel ?? picked.fallbackModel;
+        const fallback =
+          fallbackProvider && fallbackModel
+            ? { provider: fallbackProvider, model: fallbackModel }
+            : undefined;
+
+        const agent = await getOrCreateChatAgent(provider, model, fallback);
+
+        // Inject crew context at the top of the task prompt when in a crew.
+        const crewId = request.context?.crewId as string | undefined;
+        let taskMessage = request.message;
+        if (crewId) {
+          log.info(`[Heartbeat ${request.agentId}] Injecting crew context (crew: ${crewId})`);
+          const crewSection = await getCachedCrewContext(request.agentId, crewId);
+          if (crewSection) {
+            taskMessage = `${crewSection}\n${taskMessage}`;
+          }
         }
-      } catch (err) {
-        log.warn('Failed to send heartbeat output to channel', { channel, error: String(err) });
-      }
-    },
-  };
+
+        // Claw mode (autonomy level 5) — bypass all tool restrictions
+        const clawMode = request.context?.clawMode === true;
+
+        // Enforce allowedTools (task-level) and skillAccess (soul-level) restrictions.
+        const allowedTools = request.context?.allowedTools as string[] | undefined;
+        const skillAccessAllowed = request.context?.skillAccessAllowed as string[] | undefined;
+        const skillAccessBlocked = request.context?.skillAccessBlocked as string[] | undefined;
+
+        const hasToolFilter =
+          !clawMode &&
+          !!(allowedTools?.length || skillAccessAllowed?.length || skillAccessBlocked?.length);
+
+        // Tool authorization is delegated to the unified PermissionGate so
+        // every runtime applies the same allow / deny logic.
+        const gate = hasToolFilter ? runtime.permissions : null;
+        const result = await runInHeartbeatContext({ agentId: request.agentId, crewId }, () =>
+          agent.chat(taskMessage, {
+            onBeforeToolCall: gate
+              ? async (toolCall) => {
+                  let parsedArgs: Record<string, unknown> | undefined;
+                  if (toolCall.arguments) {
+                    try {
+                      parsedArgs = JSON.parse(toolCall.arguments) as Record<string, unknown>;
+                    } catch {
+                      parsedArgs = undefined;
+                    }
+                  }
+                  const decision = await gate.check({
+                    actorId: request.agentId,
+                    tool: toolCall.name,
+                    context: {
+                      actorType: 'soul-heartbeat',
+                      allowedTools,
+                      skillAccessAllowed,
+                      skillAccessBlocked,
+                      args: parsedArgs,
+                    },
+                  });
+                  if (decision.type === 'allow') {
+                    return { approved: true };
+                  }
+                  return { approved: false, reason: decision.reason };
+                }
+              : undefined,
+          })
+        );
+
+        if (!result.ok) {
+          throw result.error;
+        }
+
+        const usage = result.value.usage;
+        const cost = usage
+          ? calculateCost(
+              provider as AIProvider,
+              model,
+              usage.promptTokens ?? 0,
+              usage.completionTokens ?? 0
+            )
+          : undefined;
+
+        return {
+          content: result.value.content,
+          tokenUsage: usage
+            ? { input: usage.promptTokens, output: usage.completionTokens }
+            : undefined,
+          cost,
+        };
+      },
+
+      async saveMemory(agentId, content, source) {
+        try {
+          await runtime.memory.createMemory(agentId, {
+            content,
+            source,
+            type: 'fact',
+          });
+        } catch (err) {
+          log.warn('Failed to save heartbeat memory', { agentId, error: String(err) });
+        }
+      },
+
+      // H4: Implemented — was missing, causing silent output loss for note-type tasks
+      async createNote(note) {
+        try {
+          await runtime.memory.createMemory('system', {
+            content: note.content,
+            source: note.source,
+            type: 'fact',
+            tags: [note.category],
+          });
+        } catch (err) {
+          log.warn('Failed to create heartbeat note', {
+            category: note.category,
+            error: String(err),
+          });
+        }
+      },
+
+      // M8: Use chatId when provided, not always 'default'
+      async sendToChannel(channel, message, chatId) {
+        try {
+          const { sendTelegramMessage } = await import('../tools/notification-tools.js');
+          if (channel === 'telegram') {
+            await sendTelegramMessage(chatId ?? 'default', message);
+          } else {
+            log.debug(`Channel ${channel} not supported for heartbeat output`);
+          }
+        } catch (err) {
+          log.warn('Failed to send heartbeat output to channel', {
+            channel,
+            error: String(err),
+          });
+        }
+      },
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Event bus adapter — bridges core IHeartbeatEventBus to the EventSystem
+  // ---------------------------------------------------------------------------
+
+  // H5: Wire to real EventBus so soul.heartbeat.* events reach UI/WS subscribers
+  private createEventBusAdapter(): IHeartbeatEventBus {
+    const runtime = this.runtime;
+    return {
+      emit(event, payload) {
+        try {
+          runtime.events.emit(event as never, 'soul-heartbeat', payload as never);
+        } catch {
+          // EventSystem may not be initialized in tests — fall through to log
+        }
+        log.info(`[HeartbeatEvent] ${event}`, payload as Record<string, unknown>);
+      },
+    };
+  }
 }
 
-// ============================================================
-// Event Bus Adapter
-// ============================================================
+// ============================================================================
+// Process-default instance + backward-compatible module-level exports
+// ============================================================================
 
-// H5: Wire to real EventBus so soul.heartbeat.* events reach UI/WS subscribers
-function createEventBusAdapter(): IHeartbeatEventBus {
-  return {
-    emit(event, payload) {
-      try {
-        getEventSystem().emit(event as never, 'soul-heartbeat', payload as never);
-      } catch {
-        // EventSystem may not be initialized in tests — fall through to log
-      }
-      log.info(`[HeartbeatEvent] ${event}`, payload as Record<string, unknown>);
-    },
-  };
+let _defaultInstance: SoulHeartbeatService | null = null;
+
+function getDefaultInstance(): SoulHeartbeatService {
+  if (!_defaultInstance) {
+    _defaultInstance = new SoulHeartbeatService();
+  }
+  return _defaultInstance;
 }
-
-// ============================================================
-// Service Singleton
-// ============================================================
-
-let runner: HeartbeatRunner | null = null;
-let communicationBusInstance: AgentCommunicationBus | null = null;
-let circuitBreaker: HeartbeatCircuitBreaker | null = null;
-let metricsCollector: HeartbeatMetricsCollector | null = null;
 
 /**
- * M5: Reset the singleton — disposes the AgentCommunicationBus timer.
+ * Reset the default singleton — disposes the AgentCommunicationBus timer.
  * Call in server shutdown hooks and test teardown.
  */
 export function resetHeartbeatRunner(): void {
-  communicationBusInstance?.dispose();
-  communicationBusInstance = null;
-  runner = null;
-  circuitBreaker = null;
-  metricsCollector = null;
-  budgetForecasters.clear();
+  if (_defaultInstance) {
+    _defaultInstance.reset();
+    _defaultInstance = null;
+  }
 }
 
 export function getHeartbeatRunner(): HeartbeatRunner {
-  if (!runner) {
-    const soulRepo = createSoulRepoAdapter();
-    const hbLogRepo = createHeartbeatLogRepoAdapter();
-    const msgRepo = getAgentMessagesRepository();
-    const db = getAdapterSync();
-
-    communicationBusInstance = new AgentCommunicationBus(msgRepo, createEventBusAdapter());
-    const budgetTracker = new BudgetTracker(db);
-    const agentEngine = createHeartbeatAgentEngine();
-
-    circuitBreaker = new HeartbeatCircuitBreaker({
-      failureThreshold: 3,
-      cooldownMs: 60_000,
-    });
-    metricsCollector = new HeartbeatMetricsCollector({
-      rollingWindowSize: 10,
-    });
-
-    runner = new HeartbeatRunner(
-      agentEngine,
-      soulRepo,
-      communicationBusInstance,
-      hbLogRepo,
-      budgetTracker,
-      createEventBusAdapter(),
-      circuitBreaker,
-      metricsCollector
-    );
-  }
-  return runner;
+  return getDefaultInstance().getRunner();
 }
 
 /**
@@ -406,11 +482,7 @@ export function getHeartbeatRunner(): HeartbeatRunner {
  * if not yet started). Used by crew-tools.ts for broadcast_to_crew.
  */
 export function getCommunicationBus(): AgentCommunicationBus {
-  getHeartbeatRunner(); // ensures communicationBusInstance is set
-  if (!communicationBusInstance) {
-    throw new Error('AgentCommunicationBus not initialized — heartbeat runner failed to start');
-  }
-  return communicationBusInstance;
+  return getDefaultInstance().getCommunicationBus();
 }
 
 /**
@@ -421,23 +493,5 @@ export async function runAgentHeartbeat(
   agentId: string,
   force = false
 ): Promise<{ success: boolean; error?: string }> {
-  try {
-    const hbRunner = getHeartbeatRunner();
-    const result = await hbRunner.runHeartbeat(agentId, force);
-    if (result.ok) {
-      log.info(`Heartbeat completed for agent ${agentId}`, {
-        tasksRun: result.value.tasks.length,
-        cost: result.value.totalCost,
-        durationMs: result.value.durationMs,
-      });
-      return { success: true };
-    } else {
-      log.warn(`Heartbeat failed for agent ${agentId}: ${result.error.message}`);
-      return { success: false, error: result.error.message };
-    }
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    log.error(`Heartbeat error for agent ${agentId}: ${msg}`);
-    return { success: false, error: msg };
-  }
+  return getDefaultInstance().runHeartbeat(agentId, force);
 }

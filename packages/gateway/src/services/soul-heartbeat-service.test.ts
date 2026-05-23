@@ -142,23 +142,8 @@ const {
 // Module mocks
 // ---------------------------------------------------------------------------
 
-vi.mock('@ownpilot/core', async (importOriginal) => ({
-  ...(await importOriginal<Record<string, unknown>>()),
-  HeartbeatRunner: MockHeartbeatRunner,
-  AgentCommunicationBus: MockAgentCommunicationBus,
-  BudgetTracker: MockBudgetTracker,
-  getEventSystem: mockGetEventSystem,
-  getServiceRegistry: mockGetServiceRegistry,
-  getLog: vi.fn().mockReturnValue({
-    info: vi.fn(),
-    warn: vi.fn(),
-    debug: vi.fn(),
-    error: vi.fn(),
-  }),
-  // The heartbeat engine now resolves provider/model via the unified
-  // LLMRouter capability instead of calling resolveForProcess directly.
-  // Route both back to the same mock so existing assertions still pass.
-  getLLMRouter: () => ({
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const mockLLMRouter = {
     pick: async (opts: { explicitProvider?: string; explicitModel?: string }) => {
       if (opts.explicitProvider && opts.explicitModel) {
         return { provider: opts.explicitProvider, model: opts.explicitModel };
@@ -175,17 +160,43 @@ vi.mock('@ownpilot/core', async (importOriginal) => ({
     getMaxOutput: vi.fn(),
     computeMemoryMaxTokens: vi.fn(),
     calculateCost: vi.fn(),
-  }),
-  // PermissionGate is consulted on every tool call when the heartbeat runs
-  // with a tool filter. Use the real DefaultPermissionGate so existing
-  // allowedTools / skillAccess assertions still cover end-to-end behavior.
-  getPermissionGate: () => {
-    return mockPermissionGate;
-  },
-  // Memory now resolves through the capability accessor; route saveMemory
-  // and createNote at the same mock the registry mock already points to.
-  getMemoryService: () => mockMemoryService,
-}));
+  };
+  return {
+    ...(await importOriginal<Record<string, unknown>>()),
+    HeartbeatRunner: MockHeartbeatRunner,
+    AgentCommunicationBus: MockAgentCommunicationBus,
+    BudgetTracker: MockBudgetTracker,
+    getEventSystem: mockGetEventSystem,
+    getServiceRegistry: mockGetServiceRegistry,
+    getLog: vi.fn().mockReturnValue({
+      info: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+      error: vi.fn(),
+    }),
+    // The heartbeat engine resolves provider/model via the unified LLMRouter
+    // capability. Route through mockResolveForProcess so existing assertions
+    // still cover the per-process routing call.
+    getLLMRouter: () => mockLLMRouter,
+    // PermissionGate is consulted on every tool call when the heartbeat runs
+    // with a tool filter — mock mirrors DefaultPermissionGate behavior.
+    getPermissionGate: () => mockPermissionGate,
+    // Memory now resolves through the capability accessor.
+    getMemoryService: () => mockMemoryService,
+    // Runtime context bundle — the SoulHeartbeatService resolves capabilities
+    // through this rather than reaching for each global individually. Build
+    // it from the same mocks the rest of the file already wires up.
+    getRuntimeContext: () => ({
+      llm: mockLLMRouter,
+      channels: {},
+      config: {},
+      events: { emit: mockEmit },
+      permissions: mockPermissionGate,
+      memory: mockMemoryService,
+      audit: {},
+    }),
+  };
+});
 
 vi.mock('../db/adapters/index.js', () => ({
   getAdapterSync: vi.fn().mockReturnValue(mockAdapter),
