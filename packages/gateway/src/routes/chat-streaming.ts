@@ -19,7 +19,7 @@ import type {
 } from '@ownpilot/core';
 import { checkToolCallApproval } from '../assistant/index.js';
 import { getSessionInfo } from './agent-service.js';
-import { usageTracker } from './costs.js';
+import { usageTracker } from '../services/usage-tracking.js';
 import {
   extractSuggestions,
   extractMemoriesFromResponse,

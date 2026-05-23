@@ -7,14 +7,14 @@
 import { Hono } from 'hono';
 import { getLog } from '../services/log.js';
 import {
-  UsageTracker,
-  BudgetManager,
   estimateCost,
   MODEL_PRICING,
   formatCost,
   type AIProvider,
   type BudgetConfig,
 } from '@ownpilot/core';
+import { usageTracker, budgetManager } from '../services/usage-tracking.js';
+import { getUsageRepository } from '../db/repositories/usage.js';
 import {
   apiResponse,
   apiError,
@@ -34,31 +34,6 @@ import {
 
 export const costRoutes = new Hono();
 const log = getLog('Costs');
-
-// Initialize usage tracker
-const usageTracker = new UsageTracker();
-
-// Initialize budget manager with tracker
-const budgetManager = new BudgetManager(usageTracker);
-
-// Wire DB persistence — fire-and-forget, errors are logged by the tracker callback
-getUsageRepository()
-  .then((repo) => {
-    usageTracker.setRecordCallback(async (record) => {
-      await repo.save(record);
-    });
-  })
-  .catch((err: unknown) => {
-    const msg = err instanceof Error ? err.message : String(err);
-    log.warn(`[costs] UsageRepository unavailable, DB persistence disabled: ${msg}`);
-  });
-
-async function getUsageRepository(): Promise<
-  import('../db/repositories/usage.js').UsageRepository
-> {
-  const { getUsageRepository: getRepo } = await import('../db/repositories/usage.js');
-  return getRepo();
-}
 
 /**
  * Helper to get period start date
@@ -683,7 +658,5 @@ costRoutes.get('/export', async (c) => {
   return apiResponse(c, parsed);
 });
 
-/**
- * Export tracker for use in other routes
- */
+// usageTracker re-exported from services/usage-tracking.js for legacy callers.
 export { usageTracker };

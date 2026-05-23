@@ -90,7 +90,7 @@ vi.mock('./agents.js', () => ({
   clearAllChatAgentCaches: vi.fn(() => 3),
 }));
 
-vi.mock('./costs.js', () => ({
+vi.mock('../services/usage-tracking.js', () => ({
   usageTracker: {
     record: vi.fn(),
   },

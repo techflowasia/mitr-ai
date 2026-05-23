@@ -26,7 +26,7 @@ vi.mock('./agent-service.js', () => ({
   getSessionInfo: (...args: unknown[]) => mockGetSessionInfo(...args),
 }));
 
-vi.mock('./costs.js', () => ({
+vi.mock('../services/usage-tracking.js', () => ({
   usageTracker: { record: (...args: unknown[]) => mockUsageRecord(...args) },
 }));
 

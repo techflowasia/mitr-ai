@@ -10,7 +10,7 @@ import type { ChatRequest } from '../types/index.js';
 import type { AIProvider } from '@ownpilot/core';
 import { apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
 import { getSessionInfo } from './agents.js';
-import { usageTracker } from './costs.js';
+import { usageTracker } from '../services/usage-tracking.js';
 import { logChatEvent } from '../audit/index.js';
 import { LogsRepository } from '../db/repositories/index.js';
 import { buildEnhancedSystemPrompt, checkToolCallApproval } from '../assistant/index.js';

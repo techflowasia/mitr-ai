@@ -16,7 +16,7 @@ const { mockUsageTracker, mockLogChatEvent, mockLogsRepoLog, mockLog } = vi.hois
   mockLog: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
 }));
 
-vi.mock('../../routes/costs.js', () => ({
+vi.mock('../usage-tracking.js', () => ({
   usageTracker: mockUsageTracker,
 }));
 

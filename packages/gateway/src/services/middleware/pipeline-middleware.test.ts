@@ -50,7 +50,7 @@ const {
 }));
 
 // --- routes/costs.js ---
-vi.mock('../../routes/costs.js', () => ({
+vi.mock('../usage-tracking.js', () => ({
   usageTracker: { record: mockUsageRecord },
 }));
 
