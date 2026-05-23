@@ -1,21 +1,22 @@
 /**
  * LLMRouter — gateway implementation of the ILLMRouter contract from core.
  *
- * This is a thin facade over the existing scattered helpers
- * (`resolveProviderAndModel` in agent-runner-utils, `resolveContextWindow`
- * et al. in agent-cache, `calculateExecutionCost`). The functions remain
- * in their current homes because they have other reasonable callers
- * (chat layer, tests, etc.); the router gives every NEW caller a single
- * named import path so runtimes consume a typed capability surface
- * instead of stitching together private helpers.
+ * Thin facade over the gateway-internal helpers (`resolveProviderAndModel`
+ * in agent-runner-utils, `resolveContextWindow` / `resolveMaxOutput` /
+ * `computeMemoryMaxTokens` in routes/agent-cache, `calculateExecutionCost`
+ * in agent-runner-utils). Those helpers stay in their homes because they
+ * have other legitimate dependencies (cache, model-routing); this facade
+ * binds them to the single `ILLMRouter` capability contract that runtimes
+ * consume via `getLLMRouter()` from `@ownpilot/core` (or `ctx.llm`).
  *
- * Migration policy: new code should `import { getLLMRouter } from './llm-router.js'`
- * and call methods on it. Old call sites are not auto-migrated — they get
- * cleaned up as their files are touched for other reasons.
+ * Callers MUST import `getLLMRouter` from `@ownpilot/core`, never from
+ * this file — runtimes are not allowed to reach into gateway-internal
+ * paths. The gateway's job is to *install* the impl at startup
+ * (`installLLMRouter()`); after that the core singleton is canonical.
  */
 
 import type { ILLMRouter } from '@ownpilot/core';
-import { setLLMRouter, getLLMRouter as coreGetLLMRouter } from '@ownpilot/core';
+import { setLLMRouter } from '@ownpilot/core';
 import { resolveProviderAndModel, calculateExecutionCost } from './agent-runner-utils.js';
 import {
   resolveContextWindow,
@@ -45,16 +46,4 @@ export const llmRouter: ILLMRouter = {
  */
 export function installLLMRouter(): void {
   setLLMRouter(llmRouter);
-}
-
-/**
- * Get the singleton LLM router.
- *
- * @deprecated Prefer `import { getLLMRouter } from '@ownpilot/core'`. This
- * gateway-side re-export exists only for backward compatibility with
- * callers wired up before the core promotion. Both resolve to the same
- * singleton.
- */
-export function getLLMRouter(): ILLMRouter {
-  return coreGetLLMRouter();
 }

@@ -27,7 +27,8 @@ vi.mock('../routes/agent-cache.js', () => ({
   computeMemoryMaxTokens: mockMemBudget,
 }));
 
-const { getLLMRouter, installLLMRouter } = await import('./llm-router.js');
+const { installLLMRouter } = await import('./llm-router.js');
+const { getLLMRouter } = await import('@ownpilot/core');
 
 describe('LLMRouter facade', () => {
   beforeAll(() => {
