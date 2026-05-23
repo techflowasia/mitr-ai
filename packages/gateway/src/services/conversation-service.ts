@@ -13,7 +13,7 @@ import { ChatRepository, LogsRepository } from '../db/repositories/index.js';
 import { channelSessionsRepo } from '../db/repositories/channel-sessions.js';
 import { wsGateway } from '../ws/server.js';
 import { getLog } from './log.js';
-import { truncate } from '../routes/helpers.js';
+import { truncate } from '../utils/common.js';
 import type { StreamState } from '../routes/chat-streaming.js';
 import type { CreateConversationInput, Conversation } from '../db/repositories/chat.js';
 

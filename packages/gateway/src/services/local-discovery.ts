@@ -7,7 +7,7 @@
  */
 
 import type { LocalProvider } from '../db/repositories/local-providers.js';
-import { getErrorMessage } from '../routes/helpers.js';
+import { getErrorMessage } from '../utils/common.js';
 
 // ============================================================================
 // Types

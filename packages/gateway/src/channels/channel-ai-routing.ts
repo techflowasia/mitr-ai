@@ -18,7 +18,7 @@ import type {
   ToolCall,
 } from '@ownpilot/core';
 import type { ChannelSessionsRepository } from '../db/repositories/channel-sessions.js';
-import { truncate } from '../routes/helpers.js';
+import { truncate } from '../utils/common.js';
 import { stripInternalTags } from './normalizers/base.js';
 
 /** Generate the standard demo-mode reply. */

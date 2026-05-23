@@ -26,7 +26,7 @@ vi.mock('../../db/repositories/index.js', () => ({
   }),
 }));
 
-vi.mock('../../routes/helpers.js', () => ({
+vi.mock('../../utils/common.js', () => ({
   truncate: (...args: unknown[]) => mockTruncate(...args),
 }));
 

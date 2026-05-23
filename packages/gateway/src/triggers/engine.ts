@@ -29,7 +29,7 @@ import {
 import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
 import { downgradePromptToBlocked } from '../services/permission-utils.js';
 import { getLog } from '../services/log.js';
-import { getErrorMessage } from '../routes/helpers.js';
+import { getErrorMessage } from '../utils/common.js';
 import {
   MS_PER_DAY,
   TRIGGER_POLL_INTERVAL_MS,

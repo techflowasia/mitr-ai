@@ -42,7 +42,7 @@ function escapeHtml(unsafe: string): string {
     .replace(/'/g, '&#039;');
 }
 // Lazy-imported to break circular dependency: routes/agents.ts ↔ ws/server.ts
-import { getErrorMessage } from '../routes/helpers.js';
+import { getErrorMessage } from '../utils/common.js';
 import { handleWebChatMessage } from './webchat-handler.js';
 import { getLog } from '../services/log.js';
 

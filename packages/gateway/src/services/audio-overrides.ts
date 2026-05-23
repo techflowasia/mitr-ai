@@ -16,7 +16,7 @@ import { configServicesRepo } from '../db/repositories/config-services.js';
 import { resolveDefaultProviderAndModel } from './app-settings.js';
 import { getProviderApiKey, loadProviderConfig } from './agent-cache.js';
 import { getLog } from './log.js';
-import { getErrorMessage } from '../routes/helpers.js';
+import { getErrorMessage } from '../utils/common.js';
 import { isWithinDirectory } from '../utils/file-safety.js';
 
 const log = getLog('AudioOverrides');

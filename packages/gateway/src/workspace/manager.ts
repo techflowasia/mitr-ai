@@ -16,7 +16,7 @@ import type {
 import { gatewayEvents } from '../ws/events.js';
 import { getChannelService } from '@ownpilot/core';
 import type { IncomingMessage } from '../ws/types.js';
-import { getErrorMessage } from '../routes/helpers.js';
+import { getErrorMessage } from '../utils/common.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('WorkspaceManager');

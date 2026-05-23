@@ -21,7 +21,7 @@ import {
   getTimeContext,
 } from '@ownpilot/core';
 import { buildEnhancedSystemPrompt } from '../../assistant/index.js';
-import { getErrorMessage } from '../../routes/helpers.js';
+import { getErrorMessage } from '../../utils/common.js';
 import type { RequestRouting } from './request-preprocessor.js';
 import { buildPageContextSection, type PageContext } from './page-context-section.js';
 import { getLog } from '../log.js';

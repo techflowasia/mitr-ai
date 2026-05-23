@@ -14,7 +14,7 @@ import type { ToolRegistry, ToolExecutor, ToolExecutionResult } from '@ownpilot/
 import { getConfigCenter, isPathAllowedAsync } from '@ownpilot/core';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { getLog } from './log.js';
-import { getErrorMessage } from '../routes/helpers.js';
+import { getErrorMessage } from '../utils/common.js';
 
 const log = getLog('EmailOverrides');
 

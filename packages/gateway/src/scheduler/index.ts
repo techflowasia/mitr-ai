@@ -27,7 +27,7 @@ import { getChannelService, getLLMRouter } from '@ownpilot/core';
 import { getOrCreateChatAgent } from '../routes/agents.js';
 import { getDataPaths } from '../paths/index.js';
 import { getLog } from '../services/log.js';
-import { getErrorMessage } from '../routes/helpers.js';
+import { getErrorMessage } from '../utils/common.js';
 
 const log = getLog('Scheduler');
 

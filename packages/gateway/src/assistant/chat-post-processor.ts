@@ -12,7 +12,7 @@
 import type { ToolCall } from '@ownpilot/core';
 import { getLog } from '../services/log.js';
 import { extractMemories, updateGoalProgress, evaluateTriggers } from './index.js';
-import { getErrorMessage } from '../routes/helpers.js';
+import { getErrorMessage } from '../utils/common.js';
 
 const log = getLog('ChatPostProcessor');
 

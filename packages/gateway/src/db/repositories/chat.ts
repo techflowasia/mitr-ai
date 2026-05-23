@@ -5,7 +5,7 @@
  */
 
 import { BaseRepository, parseJsonField, parseJsonFieldNullable } from './base.js';
-import { truncate } from '../../routes/helpers.js';
+import { truncate } from '../../utils/common.js';
 
 // =====================================================
 // TYPES

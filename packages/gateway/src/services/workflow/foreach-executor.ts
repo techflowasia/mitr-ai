@@ -11,7 +11,7 @@ import {
   type NodeResult,
 } from '../../db/repositories/workflows.js';
 import type { IToolService } from '@ownpilot/core';
-import { getErrorMessage } from '../../routes/helpers.js';
+import { getErrorMessage } from '../../utils/common.js';
 import { getLog } from '../log.js';
 import { topologicalSort, getForEachBodyNodes, getDownstreamNodesByHandle } from './dag-utils.js';
 import { resolveTemplates } from './template-resolver.js';

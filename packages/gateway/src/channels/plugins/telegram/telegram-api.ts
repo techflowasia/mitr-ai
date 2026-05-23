@@ -28,7 +28,7 @@ import {
   createEvent,
 } from '@ownpilot/core';
 import { getLog } from '../../../services/log.js';
-import { getErrorMessage } from '../../../routes/helpers.js';
+import { getErrorMessage } from '../../../utils/common.js';
 import { MAX_MESSAGE_CHAT_MAP_SIZE } from '../../../config/defaults.js';
 import { splitMessage, PLATFORM_MESSAGE_LIMITS } from '../../utils/message-utils.js';
 import { markdownToTelegramHtml } from '../../utils/markdown-telegram.js';

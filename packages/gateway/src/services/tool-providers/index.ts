@@ -39,7 +39,7 @@ import {
   executeSkillTool,
 } from '../../tools/index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../config-tools.js';
-import { getErrorMessage } from '../../routes/helpers.js';
+import { getErrorMessage } from '../../utils/common.js';
 
 // ============================================================================
 // Result type from gateway executors

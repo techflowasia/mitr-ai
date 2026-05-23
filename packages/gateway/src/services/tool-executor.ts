@@ -34,7 +34,7 @@ import {
   getCustomToolDynamicRegistry,
   setSharedRegistryForCustomTools,
 } from './custom-tool-registry.js';
-import { getErrorMessage } from '../routes/helpers.js';
+import { getErrorMessage } from '../utils/common.js';
 import { getLog } from './log.js';
 import { registerImageOverrides } from './image-overrides.js';
 import { registerEmailOverrides } from './email-overrides.js';

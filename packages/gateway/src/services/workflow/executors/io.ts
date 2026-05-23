@@ -15,7 +15,7 @@ import type {
   WebhookResponseNodeData,
   NodeResult,
 } from '../../../db/repositories/workflows.js';
-import { getErrorMessage } from '../../../routes/helpers.js';
+import { getErrorMessage } from '../../../utils/common.js';
 import { safeFetch, DEFAULT_MAX_REQUEST_BODY_SIZE } from '../../../utils/safe-fetch.js';
 import { resolveTemplates } from '../template-resolver.js';
 import { log } from './utils.js';

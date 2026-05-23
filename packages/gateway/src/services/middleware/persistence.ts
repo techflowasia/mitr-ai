@@ -7,7 +7,7 @@
 
 import type { MessageMiddleware } from '@ownpilot/core';
 import { ChatRepository } from '../../db/repositories/index.js';
-import { truncate } from '../../routes/helpers.js';
+import { truncate } from '../../utils/common.js';
 import { wsGateway } from '../../ws/server.js';
 import { getLog } from '../log.js';
 import { toAttachmentMeta } from '../conversation-service.js';

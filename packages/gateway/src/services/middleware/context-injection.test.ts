@@ -21,7 +21,7 @@ vi.mock('../../assistant/index.js', () => ({
   buildEnhancedSystemPrompt: (...args: unknown[]) => mockBuildEnhancedSystemPrompt(...args),
 }));
 
-vi.mock('../../routes/helpers.js', () => ({
+vi.mock('../../utils/common.js', () => ({
   getErrorMessage: (...args: unknown[]) => mockGetErrorMessage(...args),
 }));
 

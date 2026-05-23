@@ -17,7 +17,7 @@ import type {
   NodeResult,
 } from '../../../db/repositories/workflows.js';
 import { createProvider, type ProviderConfig, type IToolService } from '@ownpilot/core';
-import { getErrorMessage } from '../../../routes/helpers.js';
+import { getErrorMessage } from '../../../utils/common.js';
 import { NATIVE_PROVIDERS, loadProviderConfig, getProviderApiKey } from '../../agent-cache.js';
 import { resolveDefaultProviderAndModel } from '../../app-settings.js';
 import { resolveTemplates } from '../template-resolver.js';

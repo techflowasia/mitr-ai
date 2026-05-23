@@ -86,7 +86,7 @@ import { createResourceServiceImpl } from './services/resource-service-impl.js';
 import { stopAllRateLimiters } from './middleware/rate-limit.js';
 import { getApprovalManager } from './autonomy/approvals.js';
 import { getLog } from './services/log.js';
-import { getErrorMessage } from './routes/helpers.js';
+import { getErrorMessage } from './utils/common.js';
 
 const log = getLog('Server');
 

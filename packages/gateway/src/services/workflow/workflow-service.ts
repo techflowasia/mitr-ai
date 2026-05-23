@@ -26,7 +26,7 @@ import {
   withTimeout,
 } from '@ownpilot/core';
 import { createWorkflowApprovalsRepository } from '../../db/repositories/workflow-approvals.js';
-import { getErrorMessage } from '../../routes/helpers.js';
+import { getErrorMessage } from '../../utils/common.js';
 import { getLog } from '../log.js';
 import {
   topologicalSort,

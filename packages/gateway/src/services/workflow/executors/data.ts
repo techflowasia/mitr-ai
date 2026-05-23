@@ -20,7 +20,7 @@ import type {
   AggregateNodeData,
   NodeResult,
 } from '../../../db/repositories/workflows.js';
-import { getErrorMessage } from '../../../routes/helpers.js';
+import { getErrorMessage } from '../../../utils/common.js';
 import { resolveTemplates } from '../template-resolver.js';
 import { log, safeVmEval, MAX_ARRAY_EVAL_SIZE } from './utils.js';
 

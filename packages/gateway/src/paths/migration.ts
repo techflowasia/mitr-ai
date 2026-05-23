@@ -14,7 +14,7 @@ import {
   initializeDataDirectories,
 } from './index.js';
 import { getLog } from '../services/log.js';
-import { getErrorMessage } from '../routes/helpers.js';
+import { getErrorMessage } from '../utils/common.js';
 
 const log = getLog('Migration');
 

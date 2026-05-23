@@ -98,7 +98,7 @@ vi.mock('../paths/index.js', () => ({
   getDataPaths: vi.fn(() => ({ data: '/tmp/data' })),
 }));
 
-vi.mock('../routes/helpers.js', () => ({
+vi.mock('../utils/common.js', () => ({
   getErrorMessage: vi.fn((e: unknown) => (e instanceof Error ? e.message : String(e))),
 }));
 

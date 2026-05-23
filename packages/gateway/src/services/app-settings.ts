@@ -15,7 +15,7 @@
  *   - Tool group enable/disable state
  */
 
-import { sanitizeProviderName } from '../routes/helpers.js';
+import { sanitizeProviderName } from '../utils/common.js';
 import { settingsRepo, localProvidersRepo } from '../db/repositories/index.js';
 import {
   getDefaultModelForProvider,

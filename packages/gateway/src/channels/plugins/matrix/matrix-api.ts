@@ -24,7 +24,7 @@ import {
   createEvent,
 } from '@ownpilot/core';
 import { getLog } from '../../../services/log.js';
-import { getErrorMessage } from '../../../routes/helpers.js';
+import { getErrorMessage } from '../../../utils/common.js';
 import { splitMessage } from '../../utils/message-utils.js';
 
 const log = getLog('Matrix');

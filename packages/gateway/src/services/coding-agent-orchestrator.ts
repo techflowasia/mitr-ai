@@ -24,7 +24,7 @@ import { codingAgentResultsRepo } from '../db/repositories/coding-agent-results.
 import { resolveDefaultProviderAndModel } from './app-settings.js';
 import { NATIVE_PROVIDERS, loadProviderConfig, getProviderApiKey } from './agent-cache.js';
 import { getLog } from './log.js';
-import { getErrorMessage } from '../routes/helpers.js';
+import { getErrorMessage } from '../utils/common.js';
 import { wsGateway } from '../ws/server.js';
 
 const log = getLog('Orchestrator');

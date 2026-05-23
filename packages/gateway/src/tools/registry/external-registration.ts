@@ -24,7 +24,7 @@ import { getCustomToolDynamicRegistry } from '../../services/custom-tool-registr
 import { getSharedToolRegistry } from '../../services/tool-executor.js';
 import type { ExtensionService } from '../../services/extension-service.js';
 import { traceToolCallStart, traceToolCallEnd } from '../../tracing/index.js';
-import { getErrorMessage } from '../../routes/helpers.js';
+import { getErrorMessage } from '../../utils/common.js';
 import { getLog } from '../../services/log.js';
 import { removeSupersededCoreStubs } from './utils.js';
 

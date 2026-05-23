@@ -47,7 +47,7 @@ import {
   type ChannelVerificationService,
 } from './auth/verification.js';
 import { wsGateway } from '../ws/server.js';
-import { getErrorMessage } from '../routes/helpers.js';
+import { getErrorMessage } from '../utils/common.js';
 import { getLog } from '../services/log.js';
 import {
   claimOwnership,

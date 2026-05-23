@@ -8,7 +8,7 @@
  */
 
 import type { WorkflowNode, NodeResult } from '../../../db/repositories/workflows.js';
-import { getErrorMessage } from '../../../routes/helpers.js';
+import { getErrorMessage } from '../../../utils/common.js';
 import { resolveTemplates } from '../template-resolver.js';
 import { log } from './utils.js';
 import { getEventSystem } from '@ownpilot/core';
