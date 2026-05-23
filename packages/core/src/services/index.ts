@@ -47,6 +47,13 @@ export type {
   ResolvedProvider,
 } from './provider-service.js';
 export type {
+  ILLMRouter,
+  LLMPickOptions,
+  LLMResolvedModel,
+  LLMMemoryBudgetOptions,
+  LLMTokenUsage,
+} from './llm-router.js';
+export type {
   IAuditService,
   RequestLogEntry,
   AuditLogEvent,

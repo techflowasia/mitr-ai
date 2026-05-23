@@ -20,12 +20,12 @@ import type { ClawConfig, ClawSession, ClawCycleResult, ClawToolCall } from '@ow
 import { getLog } from './log.js';
 import { buildEnhancedSystemPrompt } from '../assistant/orchestrator.js';
 import {
-  resolveProviderAndModel,
   createConfiguredAgent,
   resolveToolFilter,
   executeAgentPipeline,
   buildDateTimeContext,
 } from './agent-runner-utils.js';
+import { getLLMRouter } from './llm-router.js';
 import { runInClawContext } from './claw-context.js';
 import {
   getSessionWorkspaceFiles,
@@ -96,11 +96,11 @@ export class ClawRunner {
     const startTime = Date.now();
     const cycleNumber = session.cyclesCompleted + 1;
 
-    const { provider, model } = await resolveProviderAndModel(
-      this.config.provider,
-      this.config.model,
-      'pulse'
-    );
+    const { provider, model } = await getLLMRouter().pick({
+      explicitProvider: this.config.provider,
+      explicitModel: this.config.model,
+      process: 'pulse',
+    });
 
     log.info(`[${this.config.id}] Starting cycle ${cycleNumber}`, {
       dbProvider: this.config.provider ?? '(none)',

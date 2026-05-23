@@ -76,15 +76,13 @@ import {
   createSoulAwareApprovalCallback,
   getProviderApiKey,
   loadProviderConfig,
-  resolveContextWindow,
-  resolveMaxOutput,
-  computeMemoryMaxTokens,
   resolveRecordTools,
   resolveToolGroups,
   evictAgentFromCache,
   MAX_AGENT_CACHE_SIZE,
   MAX_CHAT_AGENT_CACHE_SIZE,
 } from './agent-cache.js';
+import { getLLMRouter } from '../services/llm-router.js';
 import {
   AGENT_DEFAULT_MAX_TOKENS,
   AGENT_DEFAULT_TEMPERATURE,
@@ -579,15 +577,15 @@ async function createChatAgentInstance(
 
   const chatMetaToolFilter = AI_META_TOOL_NAMES.map((n) => unsafeToolId(n));
 
-  const ctxWindow = resolveContextWindow(provider, model);
-  // Shared cap helper — see `computeMemoryMaxTokens` in agent-cache.ts.
+  const router = getLLMRouter();
+  const ctxWindow = router.getContextWindow(provider, model);
   // For chat we DO include the dynamic-injection reserve because
   // context-injection middleware grows the system prompt per request with
   // extensions, skills, page context, tool suggestions, and data hints.
   const systemPromptTokens = Math.ceil(enhancedPrompt.length / 4);
-  const modelMaxOutput = resolveMaxOutput(provider, model);
+  const modelMaxOutput = router.getMaxOutput(provider, model);
   const outputBuffer = Math.min(AGENT_DEFAULT_MAX_TOKENS, modelMaxOutput);
-  const memoryMaxTokens = computeMemoryMaxTokens({
+  const memoryMaxTokens = router.computeMemoryMaxTokens({
     ctxWindow,
     systemPromptTokens,
     outputBuffer,
@@ -763,7 +761,7 @@ export function getSessionInfo(
   const conversation = agent.getConversation();
   const memory = agent.getMemory();
   const stats = memory.getStats(conversation.id);
-  const maxCtx = resolveContextWindow(provider, model, contextWindowOverride);
+  const maxCtx = getLLMRouter().getContextWindow(provider, model, contextWindowOverride);
 
   const systemPromptTokens = conversation.systemPrompt
     ? Math.ceil(conversation.systemPrompt.length / 4)
@@ -822,7 +820,7 @@ export function getContextBreakdown(
 
   const conversation = agent.getConversation();
   const memory = agent.getMemory();
-  const maxCtx = resolveContextWindow(provider, model, contextWindowOverride);
+  const maxCtx = getLLMRouter().getContextWindow(provider, model, contextWindowOverride);
   const systemPrompt = conversation.systemPrompt ?? '';
   const stats = memory.getStats(conversation.id);
 
