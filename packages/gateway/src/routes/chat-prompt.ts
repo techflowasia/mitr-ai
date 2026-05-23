@@ -8,6 +8,8 @@
 import {
   Services,
   getBaseName,
+  hasDatabaseService,
+  getDatabaseService,
   type ToolDefinition,
   type ExecutionPermissions,
   type IMessageBus,
@@ -95,9 +97,8 @@ export async function buildToolCatalog(allTools: readonly ToolDefinition[]): Pro
 
   // 2. Fetch custom data tables
   try {
-    const service = tryGetService(Services.Database);
-    if (!service) throw new Error('no registry');
-    const tables = await service.listTables();
+    if (!hasDatabaseService()) throw new Error('no database service');
+    const tables = await getDatabaseService().listTables();
     if (tables.length > 0) {
       if (lines.length === 0) {
         lines.push('');

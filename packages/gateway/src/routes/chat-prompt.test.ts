@@ -10,6 +10,16 @@ const mockGetServiceRegistry = vi.fn();
 vi.mock('@ownpilot/core', () => ({
   hasServiceRegistry: (...args: unknown[]) => mockHasServiceRegistry(...args),
   getServiceRegistry: (...args: unknown[]) => mockGetServiceRegistry(...args),
+  // chat-prompt.ts now resolves the custom-data tables through
+  // getDatabaseService()/hasDatabaseService() directly. Route both accessors
+  // through the existing registry mock so tests that drive
+  // `mockGetServiceRegistry.mockReturnValue({ get: ... })` see their fake
+  // service surface on both paths.
+  hasDatabaseService: (...args: unknown[]) => mockHasServiceRegistry(...args),
+  getDatabaseService: () => {
+    const registry = mockGetServiceRegistry();
+    return registry?.get?.({ name: 'database' });
+  },
   Services: { Message: 'message', Database: 'database' },
   getBaseName: (name: string) =>
     name.includes('.') ? name.substring(name.lastIndexOf('.') + 1) : name,
