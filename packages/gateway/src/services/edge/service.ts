@@ -21,15 +21,15 @@ import {
   EdgeDevicesRepository,
   EdgeCommandsRepository,
   EdgeTelemetryRepository,
-} from '../db/repositories/edge.js';
+} from '../../db/repositories/edge.js';
 import {
   getEdgeMqttClient,
   commandTopic,
   telemetryWildcard,
   statusWildcard,
   parseTopicIds,
-} from './edge-mqtt-client.js';
-import { wsGateway } from '../ws/server.js';
+} from './mqtt-client.js';
+import { wsGateway } from '../../ws/server.js';
 
 const log = getLog('EdgeService');
 

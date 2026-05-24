@@ -60,7 +60,7 @@ const {
   };
 });
 
-vi.mock('../db/repositories/edge.js', () => ({
+vi.mock('../../db/repositories/edge.js', () => ({
   EdgeDevicesRepository: MockEdgeDevicesRepository,
   EdgeCommandsRepository: MockEdgeCommandsRepository,
   EdgeTelemetryRepository: MockEdgeTelemetryRepository,
@@ -81,7 +81,7 @@ const { mockMqttClient, mockGetEdgeMqttClient } = vi.hoisted(() => {
   return { mockMqttClient, mockGetEdgeMqttClient };
 });
 
-vi.mock('./edge-mqtt-client.js', () => ({
+vi.mock('./mqtt-client.js', () => ({
   getEdgeMqttClient: mockGetEdgeMqttClient,
   commandTopic: vi.fn(
     (userId: string, deviceId: string) => `ownpilot/${userId}/devices/${deviceId}/commands`
@@ -108,7 +108,7 @@ const { mockWsBroadcast } = vi.hoisted(() => {
   return { mockWsBroadcast };
 });
 
-vi.mock('../ws/server.js', () => ({
+vi.mock('../../ws/server.js', () => ({
   wsGateway: { broadcast: mockWsBroadcast },
 }));
 
@@ -129,7 +129,7 @@ vi.mock('@ownpilot/core', () => ({
 // Import service under test — AFTER all mocks are declared
 // =============================================================================
 
-import { getEdgeService } from './edge-service.js';
+import { getEdgeService } from './service.js';
 
 // =============================================================================
 // Helpers
@@ -614,7 +614,7 @@ describe('EdgeService MQTT callbacks', () => {
     });
 
     // Import a fresh service (module-level singleton is reset)
-    const { getEdgeService: freshGetEdgeService } = await import('./edge-service.js');
+    const { getEdgeService: freshGetEdgeService } = await import('./service.js');
     const svc = freshGetEdgeService();
 
     // Trigger initMqtt by calling registerDevice

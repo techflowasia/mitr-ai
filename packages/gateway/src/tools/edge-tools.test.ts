@@ -19,7 +19,7 @@ const mockEdgeService = {
   getTelemetryHistory: vi.fn(),
 };
 
-vi.mock('../services/edge-service.js', () => ({
+vi.mock('../services/edge/service.js', () => ({
   getEdgeService: () => mockEdgeService,
 }));
 

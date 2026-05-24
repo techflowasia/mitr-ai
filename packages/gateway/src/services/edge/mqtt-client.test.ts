@@ -13,7 +13,7 @@ const { mockLog, mockMqttConnect } = vi.hoisted(() => ({
   mockMqttConnect: vi.fn(),
 }));
 
-vi.mock('./log.js', () => ({
+vi.mock('../log.js', () => ({
   getLog: vi.fn(() => mockLog),
 }));
 
@@ -57,7 +57,7 @@ import {
   telemetryWildcard,
   statusWildcard,
   parseTopicIds,
-} from './edge-mqtt-client.js';
+} from './mqtt-client.js';
 
 // ---------------------------------------------------------------------------
 // Topic helper tests

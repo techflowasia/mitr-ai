@@ -13,7 +13,7 @@ import {
   type EdgeActuator,
   getErrorMessage,
 } from '@ownpilot/core';
-import { getEdgeService } from '../services/edge-service.js';
+import { getEdgeService } from '../services/edge/service.js';
 
 // =============================================================================
 // Tool Definitions

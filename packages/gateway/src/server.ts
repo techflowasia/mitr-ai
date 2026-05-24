@@ -610,7 +610,7 @@ async function main() {
   // capability singleton. Same pattern as CliTool: not registry-registered,
   // but exposed through the core accessor for cross-package consumers.
   {
-    const { getEdgeService: getLocalEdgeService } = await import('./services/edge-service.js');
+    const { getEdgeService: getLocalEdgeService } = await import('./services/edge/service.js');
     const { setEdgeService } = await import('@ownpilot/core');
     setEdgeService(getLocalEdgeService());
   }

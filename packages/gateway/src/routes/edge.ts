@@ -6,8 +6,8 @@
 
 import { Hono } from 'hono';
 import type { EdgeDeviceType, EdgeDeviceStatus, UpdateDeviceInput } from '@ownpilot/core';
-import { getEdgeService } from '../services/edge-service.js';
-import { getEdgeMqttClient } from '../services/edge-mqtt-client.js';
+import { getEdgeService } from '../services/edge/service.js';
+import { getEdgeMqttClient } from '../services/edge/mqtt-client.js';
 import { createCircuitBreakerMiddleware } from '../middleware/circuit-breaker.js';
 import {
   getUserId,

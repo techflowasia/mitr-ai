@@ -35,11 +35,11 @@ const { mockEdgeService, mockMqttClient } = vi.hoisted(() => {
 // Module mocks
 // =============================================================================
 
-vi.mock('../services/edge-service.js', () => ({
+vi.mock('../services/edge/service.js', () => ({
   getEdgeService: () => mockEdgeService,
 }));
 
-vi.mock('../services/edge-mqtt-client.js', () => ({
+vi.mock('../services/edge/mqtt-client.js', () => ({
   getEdgeMqttClient: () => mockMqttClient,
 }));
 

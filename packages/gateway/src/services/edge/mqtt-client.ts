@@ -6,7 +6,7 @@
  * Dormant if MQTT_BROKER_URL is not configured.
  */
 
-import { getLog } from './log.js';
+import { getLog } from '../log.js';
 
 const log = getLog('EdgeMqtt');
 
