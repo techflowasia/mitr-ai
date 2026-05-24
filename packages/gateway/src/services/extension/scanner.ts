@@ -37,7 +37,7 @@ export function getWorkspaceSkillsDirectory(): string | null {
   return existsSync(candidate) ? candidate : null;
 }
 
-export function getBundledDefaultExtensionsDirectory(): string | null {
+function getBundledDefaultExtensionsDirectory(): string | null {
   try {
     const thisDir = dirname(fileURLToPath(import.meta.url));
     const candidate = join(thisDir, '..', '..', 'data', 'default-extensions');
@@ -47,7 +47,7 @@ export function getBundledDefaultExtensionsDirectory(): string | null {
   }
 }
 
-export function getBundledExampleSkillsDirectory(): string | null {
+function getBundledExampleSkillsDirectory(): string | null {
   try {
     const thisDir = dirname(fileURLToPath(import.meta.url));
     const candidate = join(thisDir, '..', '..', 'data', 'example-skills');

@@ -262,11 +262,7 @@ export function inlineSystemPrompt(prompt: string, systemPrompt?: string): strin
   return `<system_prompt>\n${systemPrompt}\n</system_prompt>\n\n${prompt}`;
 }
 
-export function injectWorkspaceGuidance(
-  binary: CliChatBinary,
-  prompt: string,
-  cwd?: string
-): string {
+function injectWorkspaceGuidance(binary: CliChatBinary, prompt: string, cwd?: string): string {
   if (!cwd) return prompt;
 
   const common = [

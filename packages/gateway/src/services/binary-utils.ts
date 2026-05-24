@@ -60,18 +60,6 @@ export function getBinaryVersion(binary: string, flag = '--version'): string | u
   }
 }
 
-/**
- * Resolve a binary — returns the name if on PATH, null otherwise.
- *
- * Install commands for built-in providers:
- *   npm install -g @anthropic-ai/claude-code   → claude
- *   npm install -g @openai/codex                → codex
- *   npm install -g @google/gemini-cli           → gemini
- */
-export function resolveBinaryPath(binary: string): string | null {
-  return isBinaryInstalled(binary) ? binary : null;
-}
-
 // =============================================================================
 // PATH VALIDATION
 // =============================================================================

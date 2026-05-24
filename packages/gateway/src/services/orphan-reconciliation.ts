@@ -49,7 +49,7 @@ export interface ReconciliationResult {
  * Finds claw_sessions with state='running' and last_heartbeat older than ORPHAN_THRESHOLD_MS,
  * marks them as 'stopped' with reason 'orphan_recovery'.
  */
-export async function reconcileOrphanedClaws(): Promise<ReconciliationResult> {
+async function reconcileOrphanedClaws(): Promise<ReconciliationResult> {
   const result: ReconciliationResult = { system: 'claw', orphaned: 0, recovered: 0, errors: [] };
 
   try {
@@ -96,7 +96,7 @@ export async function reconcileOrphanedClaws(): Promise<ReconciliationResult> {
  * is older than ORPHAN_THRESHOLD_MS.
  * Marks them as 'failed' with reason 'orphan_recovery'.
  */
-export async function reconcileOrphanedWorkflows(): Promise<ReconciliationResult> {
+async function reconcileOrphanedWorkflows(): Promise<ReconciliationResult> {
   const result: ReconciliationResult = {
     system: 'workflow',
     orphaned: 0,
@@ -147,7 +147,7 @@ export async function reconcileOrphanedWorkflows(): Promise<ReconciliationResult
  * is older than ORPHAN_THRESHOLD_MS.
  * Marks them as 'failed' with reason 'orphan_recovery'.
  */
-export async function reconcileOrphanedPlans(): Promise<ReconciliationResult> {
+async function reconcileOrphanedPlans(): Promise<ReconciliationResult> {
   const result: ReconciliationResult = {
     system: 'plan',
     orphaned: 0,

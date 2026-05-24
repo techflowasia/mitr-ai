@@ -930,8 +930,6 @@ export class MemoriesRepository extends BaseRepository {
   }
 }
 
-export const memoriesRepo = new MemoriesRepository();
-
 // Factory function
 export function createMemoriesRepository(userId = 'default'): MemoriesRepository {
   return new MemoriesRepository(userId);

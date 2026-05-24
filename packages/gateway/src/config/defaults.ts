@@ -180,29 +180,8 @@ export const MAX_DAYS_LOOKBACK = 365;
 // Pagination
 // ============================================================================
 
-/** Default page limit for list endpoints */
-export const PAGINATION_DEFAULT_LIMIT = 20;
-
-/** Maximum allowed page limit */
-export const PAGINATION_MAX_LIMIT = 100;
-
 /** Maximum offset for paginated queries */
 export const MAX_PAGINATION_OFFSET = 10_000;
-
-/** Maximum limit for skill search/featured endpoints */
-export const SKILLS_MAX_LIMIT = 50;
-
-/** Maximum limit for edge device command history */
-export const EDGE_COMMANDS_MAX_LIMIT = 200;
-
-/** Maximum limit for edge telemetry history */
-export const EDGE_TELEMETRY_MAX_LIMIT = 500;
-
-/** Maximum limit for channel message history fetch */
-export const CHANNEL_HISTORY_MAX_LIMIT = 50;
-
-/** Maximum limit for activity feed endpoints */
-export const ACTIVITY_MAX_LIMIT = 100;
 
 // ============================================================================
 // Agent Caches
@@ -331,45 +310,11 @@ export const PULSE_QUIET_HOURS_END = 7;
 export const PULSE_LOG_RETENTION_DAYS = 30;
 
 // ============================================================================
-// Autonomous Agent Scheduling
-// ============================================================================
-
-/** Max consecutive errors before auto-pause */
-export const MANAGER_MAX_CONSECUTIVE_ERRORS = 5;
-
-/** Session persist interval — save to DB periodically (ms) */
-export const MANAGER_SESSION_PERSIST_INTERVAL_MS = 30_000; // 30 seconds
-
-// ============================================================================
 // Heartbeat Engine (Pulse)
 // ============================================================================
 
 /** Default TTL for crew context cache per heartbeat cycle (ms) */
 export const HEARTBEAT_CREW_CONTEXT_CACHE_TTL_MS = 30_000;
-
-/** Default circuit breaker failure threshold (consecutive failures before open) */
-export const HEARTBEAT_CIRCUIT_FAILURE_THRESHOLD = 3;
-
-/** Default circuit breaker cooldown (ms) — time before attempting half-open */
-export const HEARTBEAT_CIRCUIT_COOLDOWN_MS = 60_000;
-
-/** Default task retry budget: max retries */
-export const HEARTBEAT_DEFAULT_MAX_RETRIES = 3;
-
-/** Default task retry budget: initial delay (ms) */
-export const HEARTBEAT_DEFAULT_RETRY_DELAY_MS = 5_000;
-
-/** Default task retry backoff multiplier */
-export const HEARTBEAT_DEFAULT_BACKOFF_MULTIPLIER = 2.0;
-
-/** Default max retry delay cap (ms) */
-export const HEARTBEAT_DEFAULT_MAX_RETRY_DELAY_MS = 120_000;
-
-/** Metrics rolling window size (number of cycles for running average) */
-export const HEARTBEAT_METRICS_WINDOW_SIZE = 10;
-
-/** Budget warning threshold as fraction of daily limit (0.8 = 80%) */
-export const HEARTBEAT_BUDGET_WARNING_THRESHOLD = 0.8;
 
 // ============================================================================
 // HTTP / Security

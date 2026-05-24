@@ -22,7 +22,7 @@ import { truncate } from '../utils/common.js';
 import { stripInternalTags } from './normalizers/base.js';
 
 /** Generate the standard demo-mode reply. */
-export function demoModeReply(text: string): string {
+function demoModeReply(text: string): string {
   return `[Demo Mode] I received your message: "${truncate(text, 100)}"\n\nTo get real AI responses, configure an API key in OwnPilot settings.`;
 }
 

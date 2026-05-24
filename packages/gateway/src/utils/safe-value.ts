@@ -13,7 +13,7 @@
  * Returns safe finite non-negative number, or fallback.
  * Guards against NaN / Infinity / negative values propagating into budgets/costs.
  */
-export function safeNumber(value: unknown, fallback: number): number {
+function safeNumber(value: unknown, fallback: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
     return fallback;
   }

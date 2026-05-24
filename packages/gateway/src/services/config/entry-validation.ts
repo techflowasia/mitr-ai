@@ -4,7 +4,7 @@ type LegacyConfigFieldDefinition = Omit<ConfigFieldDefinition, 'type'> & {
   type: ConfigFieldDefinition['type'] | 'text';
 };
 
-export function isEmptyConfigValue(value: unknown): boolean {
+function isEmptyConfigValue(value: unknown): boolean {
   return value === undefined || value === null || value === '';
 }
 

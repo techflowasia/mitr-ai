@@ -93,7 +93,7 @@ interface ValidationResult {
  * Validate all critical configuration at boot time.
  * Returns a result with errors (fail in production) and warnings.
  */
-export function validateBootConfig(): ValidationResult {
+function validateBootConfig(): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 

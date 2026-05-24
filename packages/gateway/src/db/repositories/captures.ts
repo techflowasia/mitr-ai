@@ -364,8 +364,6 @@ export class CapturesRepository extends BaseRepository {
   }
 }
 
-export const capturesRepo = new CapturesRepository();
-
 // Factory function
 export function createCapturesRepository(userId = 'default'): CapturesRepository {
   return new CapturesRepository(userId);

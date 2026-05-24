@@ -33,7 +33,7 @@ export async function resolveSkillDirectory(pkg: {
   return null;
 }
 
-export async function locateNpmPackageDirectory(npmPackage: string): Promise<string | null> {
+async function locateNpmPackageDirectory(npmPackage: string): Promise<string | null> {
   // Strategy A: relative to gateway package (most reliable in monorepo)
   try {
     const currentFileDir = dirname(fileURLToPath(import.meta.url));
