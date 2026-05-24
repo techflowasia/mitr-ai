@@ -522,7 +522,7 @@ describe('LEGITIMATE code must still work', () => {
     );
   });
 
-  it('ALLOWED: Fetch (when network is allowed)', async () => {
+  it('ALLOWED: Fetch (when network is allowed)', { timeout: 15000 }, async () => {
     const executor = createSandbox({ ...SANDBOX_CONFIG, permissions: { network: true } });
     const result = await executor.execute(`
       try {
