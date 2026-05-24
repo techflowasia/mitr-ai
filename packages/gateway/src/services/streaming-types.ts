@@ -45,6 +45,8 @@ export interface StreamState {
   rawContent: string;
   /** Length of clean content already sent to the client */
   sentContentLength: number;
+  /** Length of inline-<think> inner text already emitted as thinkingDelta */
+  sentThinkLength: number;
   /** Model is currently producing thinking content */
   isThinking: boolean;
   /** Accumulated thinking content from extended thinking (Anthropic) */

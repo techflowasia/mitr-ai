@@ -339,6 +339,9 @@ export class OpenAICompatibleProvider {
           for (const line of lines) {
             if (!line.startsWith('data: ')) continue;
             const data = line.slice(6).trim();
+            if (process.env.OWNPILOT_DEBUG_STREAM) {
+              console.log(`[stream:${this.providerId}] ${data.slice(0, 500)}`);
+            }
             if (data === '[DONE]') {
               yield ok({
                 id: '',
@@ -357,7 +360,7 @@ export class OpenAICompatibleProvider {
               const choice = parsed.choices?.[0];
               const delta = choice?.delta ?? {};
 
-              // Handle reasoning content streaming (DeepSeek R1, QwQ)
+              // Handle reasoning content streaming (DeepSeek R1, QwQ, MiniMax-M2)
               if (delta.reasoning_content) {
                 reasoningBuffer += delta.reasoning_content;
                 yield ok({
@@ -366,7 +369,14 @@ export class OpenAICompatibleProvider {
                   metadata: { type: 'reasoning' },
                   done: false,
                 });
-                continue;
+                // Skip the rest of this iteration only when the chunk is
+                // reasoning-only. Some providers (notably MiniMax) bundle
+                // reasoning_content together with delta.content / tool_calls
+                // / finish_reason in the SAME chunk — `continue` here would
+                // silently drop the final answer or stop signal.
+                if (!delta.content && !delta.tool_calls && choice?.finish_reason == null) {
+                  continue;
+                }
               }
 
               // When switching from reasoning to content

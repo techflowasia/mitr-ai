@@ -155,6 +155,7 @@ export function createStreamCallbacks(config: StreamingConfig): {
     startTime: performance.now(),
     rawContent: '',
     sentContentLength: 0,
+    sentThinkLength: 0,
     isThinking: false,
     thinkingContent: '',
     mcpToolEvents: [],
@@ -250,8 +251,12 @@ export function createStreamCallbacks(config: StreamingConfig): {
         if (!chunk.content && !chunk.toolCalls?.length) return;
       }
 
-      // Handle extended thinking chunks (Anthropic) — separate path
-      const isThinkingChunk = chunk.metadata?.type === 'thinking';
+      // Handle extended thinking chunks (Anthropic) AND reasoning chunks
+      // (DeepSeek R1, QwQ, MiniMax-M2 via reasoning_content) — both flow to
+      // the thinking panel as thinkingDelta so they show up in the UI without
+      // polluting the main answer text.
+      const chunkType = chunk.metadata?.type;
+      const isThinkingChunk = chunkType === 'thinking' || chunkType === 'reasoning';
       if (isThinkingChunk && chunk.content) {
         state.thinkingContent += chunk.content;
         state.isThinking = true;
@@ -278,14 +283,51 @@ export function createStreamCallbacks(config: StreamingConfig): {
         state.isThinking = false;
       }
 
-      // Accumulate raw content and compute clean delta (think-tags stripped for DeepSeek/Google)
+      // Accumulate raw content. cleanContent strips CLOSED <think>...</think>
+      // blocks (DeepSeek/Google/MiniMax inline-tag style). We also trim any
+      // UNCLOSED <think> from the visible delta so the UI never sees raw
+      // "<think>..." mid-stream — the inner text is surfaced as thinkingDelta
+      // below.
       if (chunk.content) state.rawContent += chunk.content;
-      const cleanContent = state.rawContent.replace(THINK_TAG_REGEX, '');
+      let cleanContent = state.rawContent.replace(THINK_TAG_REGEX, '');
+      const openIdx = cleanContent.search(UNCLOSED_THINK_REGEX);
+      const openInner =
+        openIdx >= 0 ? cleanContent.slice(openIdx).replace(/^<(?:think|thinking)>/, '') : '';
+      if (openIdx >= 0) cleanContent = cleanContent.slice(0, openIdx);
       const cleanDelta = cleanContent.slice(state.sentContentLength) || undefined;
       state.sentContentLength = cleanContent.length;
       // For non-extended-thinking models, detect <think> tags
       if (!state.thinkingContent) {
         state.isThinking = UNCLOSED_THINK_REGEX.test(state.rawContent);
+      }
+
+      // Surface inline <think>...</think> inner text as thinkingDelta so the
+      // user sees the reasoning in the thinking panel rather than the message
+      // body. Tracked via sentThinkLength to avoid re-emitting the same text.
+      const allThinkInner: string[] = [];
+      for (const match of state.rawContent.matchAll(THINK_INNER_REGEX)) {
+        if (match[1]) allThinkInner.push(match[1]);
+      }
+      if (openInner) allThinkInner.push(openInner);
+      const newThinkText = allThinkInner.join('\n\n');
+      if (newThinkText.length > state.sentThinkLength) {
+        const thinkDelta = newThinkText.slice(state.sentThinkLength);
+        state.sentThinkLength = newThinkText.length;
+        state.thinkingContent = newThinkText;
+        try {
+          sseStream.writeSSE({
+            data: JSON.stringify({
+              id: chunk.id,
+              conversationId,
+              thinkingDelta: thinkDelta,
+              thinking: true,
+              done: false,
+            }),
+            event: 'chunk',
+          });
+        } catch {
+          /* client disconnected */
+        }
       }
 
       // streamedContent stores the CLEAN version (used for memory/suggestion extraction + persistence)
@@ -328,6 +370,18 @@ export function createStreamCallbacks(config: StreamingConfig): {
         };
 
       if (chunk.done) {
+        // Recovery: some reasoning models (e.g. MiniMax-M2) emit their entire
+        // final answer wrapped in <think>...</think>. THINK_TAG_REGEX strips
+        // it, leaving cleanContent empty and no delta ever reaches the UI —
+        // the user sees tool calls fire but no message. If that happened,
+        // lift the inner think text into the final delta + streamedContent.
+        if (!state.streamedContent && state.rawContent) {
+          const recovered = stripThinkOrRecover(state.rawContent);
+          if (recovered) {
+            data.delta = (data.delta ?? '') + recovered;
+            state.streamedContent = recovered;
+          }
+        }
         const { content: memStripped, memories } = extractMemoriesFromResponse(
           state.streamedContent
         );

@@ -768,6 +768,61 @@ describe('createStreamCallbacks', () => {
       // Should not throw
       expect(() => callbacks.onChunk!({ id: 'c1', content: 'x', done: false })).not.toThrow();
     });
+
+    it('routes reasoning chunks (DeepSeek/MiniMax reasoning_content) to thinkingDelta', () => {
+      const config = makeStreamingConfig();
+      const { callbacks, state } = createStreamCallbacks(config as never);
+      callbacks.onChunk!({
+        id: 'c1',
+        content: 'pondering...',
+        metadata: { type: 'reasoning' },
+        done: false,
+      });
+      const { data } = parseWrittenSSE(config.sseStream.writeSSE);
+      expect(data.thinkingDelta).toBe('pondering...');
+      expect(data.thinking).toBe(true);
+      expect(state.thinkingContent).toBe('pondering...');
+      // Reasoning chunks must NOT enter the main answer accumulator
+      expect(state.streamedContent).toBe('');
+    });
+
+    it('emits inline <think>...</think> inner text as thinkingDelta, not visible delta', () => {
+      const config = makeStreamingConfig();
+      const { callbacks, state } = createStreamCallbacks(config as never);
+      callbacks.onChunk!({
+        id: 'c1',
+        content: '<think>internal thought</think>final answer',
+        done: false,
+      });
+      const calls = (config.sseStream.writeSSE as ReturnType<typeof vi.fn>).mock.calls;
+      // Two SSE writes expected: one thinkingDelta + one visible chunk
+      const thinkPayloads = calls
+        .map((c) => JSON.parse((c[0] as { data: string }).data))
+        .filter((d) => d.thinkingDelta);
+      const visiblePayloads = calls
+        .map((c) => JSON.parse((c[0] as { data: string }).data))
+        .filter((d) => d.delta);
+      expect(thinkPayloads[0]?.thinkingDelta).toBe('internal thought');
+      expect(visiblePayloads[0]?.delta).toBe('final answer');
+      // Visible content is only the post-think part
+      expect(state.streamedContent).toBe('final answer');
+    });
+
+    it('hides unclosed <think> mid-stream and surfaces inner text as thinkingDelta', () => {
+      const config = makeStreamingConfig();
+      const { callbacks, state } = createStreamCallbacks(config as never);
+      callbacks.onChunk!({ id: 'c1', content: '<think>still re', done: false });
+      // Visible delta must NOT contain "<think>"
+      const calls1 = (config.sseStream.writeSSE as ReturnType<typeof vi.fn>).mock.calls;
+      const visibleDelta1 = JSON.parse((calls1[0]![0] as { data: string }).data).delta;
+      expect(visibleDelta1).toBeUndefined();
+      // Inner text "still re" emitted as thinkingDelta
+      const thinkDelta1 = calls1
+        .map((c) => JSON.parse((c[0] as { data: string }).data).thinkingDelta)
+        .filter(Boolean);
+      expect(thinkDelta1).toContain('still re');
+      expect(state.streamedContent).toBe('');
+    });
   });
 
   describe('onChunk — done chunk', () => {
@@ -1055,6 +1110,50 @@ describe('createStreamCallbacks', () => {
         totalTokens: 700,
         cachedTokens: undefined,
       });
+    });
+
+    it('recovers inner <think> content into final delta when whole answer was wrapped', () => {
+      mockExtractMemoriesFromResponse.mockImplementationOnce((s: string) => ({
+        content: s,
+        memories: [],
+      }));
+      mockExtractSuggestions.mockImplementationOnce(() => ({ suggestions: [] }));
+      const config = makeStreamingConfig();
+      const { callbacks, state } = createStreamCallbacks(config as never);
+      callbacks.onChunk!({
+        id: 'c1',
+        content: '<think>the answer is 42</think>',
+        done: false,
+      });
+      callbacks.onChunk!(makeDoneChunk());
+      const calls = (config.sseStream.writeSSE as ReturnType<typeof vi.fn>).mock.calls;
+      const doneCall = calls.find((c) => (c[0] as { event: string }).event === 'done');
+      const doneData = JSON.parse((doneCall![0] as { data: string }).data);
+      expect(doneData.delta).toBe('the answer is 42');
+      expect(state.streamedContent).toBe('the answer is 42');
+    });
+
+    it('does not double-recover when clean delta already flowed', () => {
+      mockExtractMemoriesFromResponse.mockImplementationOnce((s: string) => ({
+        content: s,
+        memories: [],
+      }));
+      mockExtractSuggestions.mockImplementationOnce(() => ({ suggestions: [] }));
+      const config = makeStreamingConfig();
+      const { callbacks, state } = createStreamCallbacks(config as never);
+      callbacks.onChunk!({
+        id: 'c1',
+        content: '<think>plan</think>real answer',
+        done: false,
+      });
+      callbacks.onChunk!(makeDoneChunk());
+      const calls = (config.sseStream.writeSSE as ReturnType<typeof vi.fn>).mock.calls;
+      const doneCall = calls.find((c) => (c[0] as { event: string }).event === 'done');
+      const doneData = JSON.parse((doneCall![0] as { data: string }).data);
+      // The done chunk itself has no new content, so its delta is undefined.
+      // The recovery branch only fires when streamedContent is empty.
+      expect(doneData.delta).toBeUndefined();
+      expect(state.streamedContent).toBe('real answer');
     });
   });
 

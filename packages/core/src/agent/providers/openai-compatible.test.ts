@@ -701,6 +701,31 @@ describe('OpenAICompatibleProvider', () => {
       expect(chunks[2].value.content).toBe('Answer');
     });
 
+    it('does not drop content/tool_calls/finish_reason when bundled with reasoning_content in same chunk (MiniMax)', async () => {
+      const provider = new OpenAICompatibleProvider(mockConfig);
+      // MiniMax-style: reasoning_content and content arrive in the SAME delta
+      const sseLines = [
+        'data: {"id":"x","choices":[{"delta":{"reasoning_content":"thinking...","content":"the answer","tool_calls":[{"index":0,"id":"t1","function":{"name":"foo","arguments":"{}"}}]},"finish_reason":"stop"}]}\n\n',
+        'data: [DONE]\n\n',
+      ];
+      vi.stubGlobal('fetch', mockFetchStream(sseLines));
+
+      const chunks: Array<Result<StreamChunk, InternalError>> = [];
+      for await (const chunk of provider.stream(makeRequest())) {
+        if (chunk.ok) chunks.push(chunk);
+      }
+
+      // First chunk: reasoning emitted with metadata.type='reasoning'
+      expect(chunks[0].value.content).toBe('thinking...');
+      expect(chunks[0].value.metadata).toEqual({ type: 'reasoning' });
+      // Second chunk: transition newline between reasoning and content
+      expect(chunks[1].value.content).toBe('\n\n');
+      // Third chunk: content + tool_calls + finish_reason (NOT dropped by `continue`)
+      expect(chunks[2].value.content).toBe('the answer');
+      expect(chunks[2].value.toolCalls?.[0].id).toBe('t1');
+      expect(chunks[2].value.finishReason).toBe('stop');
+    });
+
     it('handles tool_calls in delta', async () => {
       const provider = new OpenAICompatibleProvider(mockConfig);
       const sseLines = [
