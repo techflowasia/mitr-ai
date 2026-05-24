@@ -936,7 +936,7 @@ function generateInsights(
 /**
  * Update expense tool
  */
-export const updateExpenseTool: ToolDefinition = {
+const updateExpenseTool: ToolDefinition = {
   name: 'update_expense',
   brief: 'Update an expense entry',
   description: 'Update an existing expense entry. Only include the fields you want to change.',
@@ -999,7 +999,7 @@ export const updateExpenseTool: ToolDefinition = {
   },
 };
 
-export const updateExpenseExecutor: ToolExecutor = async (
+const updateExpenseExecutor: ToolExecutor = async (
   args,
   _context
 ): Promise<ToolExecutionResult> => {

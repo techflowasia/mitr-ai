@@ -306,7 +306,7 @@ export const writeFileExecutor: ToolExecutor = async (
 /**
  * List directory tool
  */
-export const listDirectoryTool: ToolDefinition = {
+const listDirectoryTool: ToolDefinition = {
   name: 'list_directory',
   brief: 'List files and subdirectories in a path',
   description: 'List files and directories in a path. Returns file names, sizes, and types.',
@@ -426,7 +426,7 @@ export const listDirectoryExecutor: ToolExecutor = async (
 /**
  * File search tool
  */
-export const searchFilesTool: ToolDefinition = {
+const searchFilesTool: ToolDefinition = {
   name: 'search_files',
   brief: 'Search for text content across files',
   description: 'Search for text content in files. Returns matching files and lines.',
@@ -570,7 +570,7 @@ export const searchFilesExecutor: ToolExecutor = async (
 /**
  * File download tool
  */
-export const downloadFileTool: ToolDefinition = {
+const downloadFileTool: ToolDefinition = {
   name: 'download_file',
   brief: 'Download a file from a URL to local disk',
   description: 'Download a file from a URL and save it locally.',
@@ -681,7 +681,7 @@ export const downloadFileExecutor: ToolExecutor = async (
 /**
  * File info tool
  */
-export const fileInfoTool: ToolDefinition = {
+const fileInfoTool: ToolDefinition = {
   name: 'get_file_info',
   brief: 'Get file size, type, and modification date',
   description: 'Get detailed information about a file or directory.',
@@ -735,7 +735,7 @@ export const fileInfoExecutor: ToolExecutor = async (
 /**
  * Delete file/directory tool
  */
-export const deleteFileTool: ToolDefinition = {
+const deleteFileTool: ToolDefinition = {
   name: 'delete_file',
   brief: 'Delete a file or directory',
   description: 'Delete a file or directory.',
@@ -796,7 +796,7 @@ export const deleteFileExecutor: ToolExecutor = async (
 /**
  * Copy/Move file tool
  */
-export const copyFileTool: ToolDefinition = {
+const copyFileTool: ToolDefinition = {
   name: 'copy_file',
   brief: 'Copy or move a file or directory',
   description: 'Copy or move a file or directory.',

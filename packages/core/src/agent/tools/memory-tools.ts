@@ -15,7 +15,7 @@ import type { ToolDefinition } from '../types.js';
 /**
  * Remember a fact, preference, or event
  */
-export const createMemoryTool: ToolDefinition = {
+const createMemoryTool: ToolDefinition = {
   name: 'create_memory',
   brief: 'Store a fact, preference, or event in persistent memory',
   description: `Store important information in persistent memory for future reference.
@@ -57,7 +57,7 @@ Memory persists across conversations. Be selective - only remember truly importa
 /**
  * Batch remember multiple facts, preferences, or events
  */
-export const batchCreateMemoriesTool: ToolDefinition = {
+const batchCreateMemoriesTool: ToolDefinition = {
   name: 'batch_create_memories',
   brief: 'Store multiple memories at once',
   description: `Store multiple pieces of information in persistent memory at once.
@@ -102,7 +102,7 @@ Useful for onboarding, importing user data, or storing multiple related facts.`,
 /**
  * Recall information from memory
  */
-export const searchMemoriesTool: ToolDefinition = {
+const searchMemoriesTool: ToolDefinition = {
   name: 'search_memories',
   brief: 'Search persistent memory by keyword or intent',
   description: `Search persistent memory for relevant information.
@@ -142,7 +142,7 @@ Returns matching memories sorted by relevance and importance.`,
 /**
  * Forget a specific memory
  */
-export const deleteMemoryTool: ToolDefinition = {
+const deleteMemoryTool: ToolDefinition = {
   name: 'delete_memory',
   brief: 'Remove a specific memory by ID',
   description: `Remove a specific memory. Use with caution.
@@ -165,7 +165,7 @@ Only use when:
 /**
  * List recent memories
  */
-export const listMemoriesTool: ToolDefinition = {
+const listMemoriesTool: ToolDefinition = {
   name: 'list_memories',
   brief: 'List recent memories, optionally filtered by type',
   description: `List recent memories, optionally filtered by type.
@@ -194,7 +194,7 @@ Use this to review what has been remembered about the user.`,
 /**
  * Update a memory's importance
  */
-export const updateMemoryImportanceTool: ToolDefinition = {
+const updateMemoryImportanceTool: ToolDefinition = {
   name: 'update_memory_importance',
   brief: 'Increase a memory importance score',
   description: `Increase a memory's importance when it becomes more relevant.
@@ -221,7 +221,7 @@ Use this when:
 /**
  * Get memory statistics
  */
-export const getMemoryStatsTool: ToolDefinition = {
+const getMemoryStatsTool: ToolDefinition = {
   name: 'get_memory_stats',
   brief: 'Get memory count, type breakdown, avg importance',
   description: `Get statistics about stored memories.

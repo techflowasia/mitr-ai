@@ -639,7 +639,7 @@ export const executeShellExecutor: ToolExecutor = async (
 // COMPILE CODE TOOL (Disabled - requires host access)
 // ============================================================================
 
-export const compileCodeTool: ToolDefinition = {
+const compileCodeTool: ToolDefinition = {
   name: 'compile_code',
   brief: 'Compile source code',
   description:
@@ -699,10 +699,7 @@ function sanitizeFilePath(filePath: string): string {
   return filePath;
 }
 
-export const compileCodeExecutor: ToolExecutor = async (
-  params,
-  context
-): Promise<ToolExecutionResult> => {
+const compileCodeExecutor: ToolExecutor = async (params, context): Promise<ToolExecutionResult> => {
   const filePath = params.filePath as string;
   const compiler = (params.compiler as string) || 'tsc';
   const extraArgs = (params.args as string) || '';
@@ -784,7 +781,7 @@ export const compileCodeExecutor: ToolExecutor = async (
 // NPM/PACKAGE MANAGER TOOL (Disabled - requires host access)
 // ============================================================================
 
-export const packageManagerTool: ToolDefinition = {
+const packageManagerTool: ToolDefinition = {
   name: 'package_manager',
   brief: 'Run package manager commands',
   description:
@@ -828,7 +825,7 @@ const BLOCKED_PM_SUBCOMMANDS = new Set([
   'access',
 ]);
 
-export const packageManagerExecutor: ToolExecutor = async (
+const packageManagerExecutor: ToolExecutor = async (
   params,
   context
 ): Promise<ToolExecutionResult> => {
