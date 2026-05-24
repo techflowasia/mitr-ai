@@ -44,7 +44,7 @@ const CLEANUP_METHODS: Record<string, () => Promise<number>> = {
  * Run retention cleanup for all enabled tables.
  * Called by the nightly retention cleanup job.
  */
-export async function runRetentionCleanup(): Promise<RetentionResult[]> {
+async function runRetentionCleanup(): Promise<RetentionResult[]> {
   const results: RetentionResult[] = [];
 
   for (const [table, cleanupFn] of Object.entries(CLEANUP_METHODS)) {
