@@ -19,13 +19,6 @@ import { createPersistenceMiddleware } from './persistence.js';
 import { createAuditMiddleware } from './audit.js';
 import { createRequestPreprocessorMiddleware } from './request-preprocessor.js';
 
-export { createContextInjectionMiddleware } from './context-injection.js';
-export { createAgentExecutionMiddleware } from './agent-execution.js';
-export { createPostProcessingMiddleware } from './post-processing.js';
-export { createPersistenceMiddleware } from './persistence.js';
-export { createAuditMiddleware } from './audit.js';
-export { createRequestPreprocessorMiddleware } from './request-preprocessor.js';
-
 /**
  * Register all pipeline middleware into the MessageBus.
  *
