@@ -30,7 +30,7 @@ vi.mock('fs', () => ({
   }),
 }));
 
-import { getToolSource, initToolSourceMappings } from './tool-source.js';
+import { getToolSource, initToolSourceMappings } from './source.js';
 
 // ---------------------------------------------------------------------------
 // Helpers

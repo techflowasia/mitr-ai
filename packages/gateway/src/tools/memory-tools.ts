@@ -13,7 +13,7 @@ import { getMemoryService } from '@ownpilot/core';
 import type { MemoryType } from '../db/repositories/memories.js';
 import { MemoryServiceError } from '../services/memory-service.js';
 import { sanitizeId, truncate, getErrorMessage } from '../utils/common.js';
-import type { ToolExecutionResult } from '../services/tool-executor.js';
+import type { ToolExecutionResult } from '../services/tool/executor.js';
 
 /**
  * Execute memory tool — delegates to MemoryService.

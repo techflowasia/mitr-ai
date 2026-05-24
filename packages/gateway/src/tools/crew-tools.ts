@@ -24,7 +24,7 @@ import { getAgentMessagesRepository } from '../db/repositories/agent-messages.js
 import { getCrewMemoryRepository } from '../db/repositories/crew-memory.js';
 import { getCrewTasksRepository } from '../db/repositories/crew-tasks.js';
 import { getHeartbeatContext } from '../services/heartbeat/context.js';
-import type { ToolExecutionResult } from '../services/tool-executor.js';
+import type { ToolExecutionResult } from '../services/tool/executor.js';
 
 // ============================================================
 // Tool Definitions

@@ -47,7 +47,7 @@ vi.mock('../services/mcp/server.js', () => ({
   handleMcpRequest: mockHandleMcpRequest,
 }));
 
-vi.mock('../services/tool-executor.js', () => ({
+vi.mock('../services/tool/executor.js', () => ({
   getSharedToolRegistry: () => mockToolRegistry,
 }));
 

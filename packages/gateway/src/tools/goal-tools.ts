@@ -13,7 +13,7 @@ import type { GoalStatus } from '../db/repositories/goals.js';
 import { GoalServiceError } from '../services/goal-service.js';
 import { sanitizeId, getErrorMessage } from '../utils/common.js';
 import { wsGateway } from '../ws/server.js';
-import type { ToolExecutionResult } from '../services/tool-executor.js';
+import type { ToolExecutionResult } from '../services/tool/executor.js';
 
 /**
  * Execute goal tool — delegates to GoalService.

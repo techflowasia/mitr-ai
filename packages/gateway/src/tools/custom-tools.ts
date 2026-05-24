@@ -28,7 +28,7 @@ import {
   unregisterToolFromRegistries,
 } from '../services/custom-tool-registry.js';
 import { sanitizeId, sanitizeText, getErrorMessage } from '../utils/common.js';
-import type { ToolExecutionResult as BaseToolExecutionResult } from '../services/tool-executor.js';
+import type { ToolExecutionResult as BaseToolExecutionResult } from '../services/tool/executor.js';
 
 /**
  * Result shape for the meta-tool executors. Extends the base shape with

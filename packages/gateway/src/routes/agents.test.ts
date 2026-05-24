@@ -149,7 +149,7 @@ vi.mock('../services/custom-tool-registry.js', () => ({
   unregisterToolFromRegistries: vi.fn(),
 }));
 
-vi.mock('../services/tool-executor.js', () => ({
+vi.mock('../services/tool/executor.js', () => ({
   getSharedToolRegistry: vi.fn(() => ({
     getToolsBySource: vi.fn(() => []),
   })),

@@ -14,7 +14,7 @@ import {
   type ConditionConfig,
   type EventConfig,
 } from '../db/repositories/triggers.js';
-import { executeTool, hasTool, waitForToolSync } from '../services/tool-executor.js';
+import { executeTool, hasTool, waitForToolSync } from '../services/tool/executor.js';
 import {
   getNextRunTime,
   getEventSystem,

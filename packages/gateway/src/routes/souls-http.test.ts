@@ -58,7 +58,7 @@ vi.mock('../db/repositories/heartbeat-log.js', () => ({
   getHeartbeatLogRepository: () => mockHbRepo,
 }));
 
-vi.mock('../services/tool-executor.js', () => ({
+vi.mock('../services/tool/executor.js', () => ({
   getSharedToolRegistry: mockGetSharedToolRegistry,
 }));
 

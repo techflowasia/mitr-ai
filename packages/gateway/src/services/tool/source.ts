@@ -11,7 +11,7 @@ import { dirname, resolve } from 'path';
 import {
   MAX_TOOL_SOURCE_FILE_CACHE,
   MAX_TOOL_SOURCE_EXTRACTION_CACHE,
-} from '../config/defaults.js';
+} from '../../config/defaults.js';
 
 // =============================================================================
 // Path Resolution

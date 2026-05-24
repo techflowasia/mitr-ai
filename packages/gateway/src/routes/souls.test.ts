@@ -69,7 +69,7 @@ vi.mock('../db/repositories/index.js', () => ({
   },
 }));
 
-vi.mock('../services/tool-executor.js', () => ({
+vi.mock('../services/tool/executor.js', () => ({
   getSharedToolRegistry: () => ({
     getAllTools: vi.fn(),
   }),

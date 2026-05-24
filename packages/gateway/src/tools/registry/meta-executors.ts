@@ -24,7 +24,7 @@ import {
   type ToolContext,
 } from '@ownpilot/core';
 import { createCustomToolsRepo } from '../../db/repositories/custom-tools.js';
-import { getToolSource } from '../../services/tool-source.js';
+import { getToolSource } from '../../services/tool/source.js';
 import { getErrorMessage, truncate } from '../../utils/common.js';
 import {
   TOOL_ARGS_MAX_SIZE,
@@ -32,7 +32,7 @@ import {
   AI_META_TOOL_NAMES,
 } from '../../config/defaults.js';
 import { getLog } from '../../services/log.js';
-import { checkToolPermission } from '../../services/tool-permission-service.js';
+import { checkToolPermission } from '../../services/tool/permission.js';
 import { resolveToolAlias } from './aliases.js';
 import { findSimilarTools } from './utils.js';
 

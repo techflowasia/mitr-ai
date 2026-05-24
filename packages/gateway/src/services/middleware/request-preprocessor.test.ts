@@ -39,7 +39,7 @@ const {
   },
 }));
 
-vi.mock('../tool-executor.js', () => ({
+vi.mock('../tool/executor.js', () => ({
   getSharedToolRegistry: vi.fn(() => mockToolRegistryInst),
 }));
 

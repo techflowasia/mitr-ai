@@ -72,7 +72,7 @@ import { RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS } from './config/defaults
 import { createSessionService } from './services/session-service-impl.js';
 import { createMessageBus } from './services/message-bus-impl.js';
 import { registerPipelineMiddleware } from './services/middleware/index.js';
-import { createToolService } from './services/tool-service-impl.js';
+import { createToolService } from './services/tool/service.js';
 import { createProviderService } from './services/provider/service.js';
 import { createAuditService } from './services/audit-service-impl.js';
 import { getCustomDataService } from './services/custom-data-service.js';

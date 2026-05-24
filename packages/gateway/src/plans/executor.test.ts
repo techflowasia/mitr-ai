@@ -46,7 +46,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
 });
 
-vi.mock('../services/tool-executor.js', () => ({
+vi.mock('../services/tool/executor.js', () => ({
   executeTool: vi.fn(async () => ({ success: true, result: 'tool output' })),
   hasTool: vi.fn(async () => true),
 }));
@@ -74,7 +74,7 @@ vi.mock('../services/app-settings.js', () => ({
 }));
 
 import { PlanExecutor } from './executor.js';
-import { executeTool, hasTool } from '../services/tool-executor.js';
+import { executeTool, hasTool } from '../services/tool/executor.js';
 
 // ---------------------------------------------------------------------------
 // Helpers

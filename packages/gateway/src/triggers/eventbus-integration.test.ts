@@ -49,7 +49,7 @@ const { mockExecuteTool, mockHasTool } = vi.hoisted(() => ({
   mockHasTool: vi.fn(async () => true),
 }));
 
-vi.mock('../services/tool-executor.js', () => ({
+vi.mock('../services/tool/executor.js', () => ({
   executeTool: mockExecuteTool,
   hasTool: mockHasTool,
   waitForToolSync: vi.fn(async () => {}),

@@ -25,8 +25,8 @@ import {
   batchExecuteToolsSchema,
 } from '../middleware/validation.js';
 import { getAgent } from './agents.js';
-import { getSharedToolRegistry } from '../services/tool-executor.js';
-import { initToolSourceMappings, getToolSource } from '../services/tool-source.js';
+import { getSharedToolRegistry } from '../services/tool/executor.js';
+import { initToolSourceMappings, getToolSource } from '../services/tool/source.js';
 import {
   TRIGGER_TOOLS,
   PLAN_TOOLS,

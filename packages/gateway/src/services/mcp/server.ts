@@ -23,7 +23,7 @@ import {
   batchUseToolDefinition,
   debugLog,
 } from '@ownpilot/core';
-import { getSharedToolRegistry } from '../tool-executor.js';
+import { getSharedToolRegistry } from '../tool/executor.js';
 import { getLog } from '../log.js';
 import { emitMcpToolEvent } from '../../mcp/mcp-events.js';
 

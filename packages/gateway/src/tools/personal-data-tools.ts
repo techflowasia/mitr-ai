@@ -13,7 +13,7 @@ import {
   ContactsRepository,
 } from '../db/repositories/index.js';
 import { sanitizeId, getErrorMessage } from '../utils/common.js';
-import type { ToolExecutionResult } from '../services/tool-executor.js';
+import type { ToolExecutionResult } from '../services/tool/executor.js';
 import { wsGateway } from '../ws/server.js';
 
 /** Maximum items allowed in a single batch operation. */

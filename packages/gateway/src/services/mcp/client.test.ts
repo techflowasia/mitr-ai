@@ -54,7 +54,7 @@ vi.mock('../../db/repositories/mcp-servers.js', () => ({
   getMcpServersRepo: () => mockRepo,
 }));
 
-vi.mock('../tool-executor.js', () => ({
+vi.mock('../tool/executor.js', () => ({
   getSharedToolRegistry: () => mockRegistry,
 }));
 

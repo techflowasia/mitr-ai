@@ -83,7 +83,7 @@ vi.mock('../ws/server.js', () => ({
   wsGateway: { broadcast: vi.fn() },
 }));
 
-vi.mock('../services/tool-executor.js', () => ({
+vi.mock('../services/tool/executor.js', () => ({
   executeTool: mockExecuteTool,
   hasTool: mockHasTool,
   waitForToolSync: vi.fn(async () => {}),

@@ -123,13 +123,13 @@ vi.mock('../services/custom-tool-registry.js', () => ({
 }));
 
 const mockGetToolSource = vi.fn();
-vi.mock('../services/tool-source.js', () => ({ getToolSource: mockGetToolSource }));
+vi.mock('../services/tool/source.js', () => ({ getToolSource: mockGetToolSource }));
 
 const mockSharedToolRegistry = {
   has: vi.fn().mockReturnValue(false),
   getToolsBySource: vi.fn().mockReturnValue([]),
 };
-vi.mock('../services/tool-executor.js', () => ({
+vi.mock('../services/tool/executor.js', () => ({
   getSharedToolRegistry: vi.fn(() => mockSharedToolRegistry),
 }));
 
@@ -211,7 +211,7 @@ vi.mock('../services/log.js', () => ({
 }));
 
 const mockCheckToolPermission = vi.fn().mockResolvedValue({ allowed: true });
-vi.mock('../services/tool-permission-service.js', () => ({
+vi.mock('../services/tool/permission.js', () => ({
   checkToolPermission: (...args: unknown[]) => mockCheckToolPermission(...args),
 }));
 

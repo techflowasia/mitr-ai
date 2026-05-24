@@ -21,7 +21,7 @@ export { MessageBus, createMessageBus } from './message-bus-impl.js';
 export { GatewayConfigCenter, gatewayConfigCenter } from './config-center-impl.js';
 
 // Tool Service
-export { ToolService, createToolService } from './tool-service-impl.js';
+export { ToolService, createToolService } from './tool/service.js';
 
 // Provider Service
 export { ProviderService, createProviderService } from './provider/service.js';

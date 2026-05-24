@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { ExecutionPermissions } from '@ownpilot/core';
 
 // Mock dependencies before importing the module under test
-vi.mock('./app-settings.js', () => ({
+vi.mock('../app-settings.js', () => ({
   getEnabledToolGroupIds: vi.fn(() => [
     'core',
     'filesystem',
@@ -15,19 +15,19 @@ vi.mock('./app-settings.js', () => ({
   ]),
 }));
 
-vi.mock('../db/repositories/cli-tool-policies.js', () => ({
+vi.mock('../../db/repositories/cli-tool-policies.js', () => ({
   cliToolPoliciesRepo: {
     getPolicy: vi.fn(() => null),
   },
 }));
 
-vi.mock('./custom-tool-registry.js', () => ({
+vi.mock('../custom-tool-registry.js', () => ({
   getCustomToolDynamicRegistry: vi.fn(() => ({
     tools: new Map(),
   })),
 }));
 
-vi.mock('./log.js', () => ({
+vi.mock('../log.js', () => ({
   getLog: () => ({
     info: vi.fn(),
     warn: vi.fn(),
@@ -40,12 +40,12 @@ import {
   checkToolPermission,
   filterAllowedTools,
   resetToolPermissionService,
-} from './tool-permission-service.js';
+} from './permission.js';
 
 // Access mocks
-const { getEnabledToolGroupIds } = await import('./app-settings.js');
-const { cliToolPoliciesRepo } = await import('../db/repositories/cli-tool-policies.js');
-const { getCustomToolDynamicRegistry } = await import('./custom-tool-registry.js');
+const { getEnabledToolGroupIds } = await import('../app-settings.js');
+const { cliToolPoliciesRepo } = await import('../../db/repositories/cli-tool-policies.js');
+const { getCustomToolDynamicRegistry } = await import('../custom-tool-registry.js');
 
 const mockGetEnabledToolGroupIds = getEnabledToolGroupIds as ReturnType<typeof vi.fn>;
 const mockGetPolicy = cliToolPoliciesRepo.getPolicy as ReturnType<typeof vi.fn>;

@@ -10,7 +10,7 @@
 
 import { getErrorMessage } from '@ownpilot/core';
 import { ExpensesRepository } from '../db/repositories/expenses.js';
-import type { ToolExecutionResult } from '../services/tool-executor.js';
+import type { ToolExecutionResult } from '../services/tool/executor.js';
 import { wsGateway } from '../ws/server.js';
 
 // ============================================================================

@@ -15,9 +15,9 @@
 
 import type { ExecutionPermissions } from '@ownpilot/core';
 import { getGroupForTool, getBaseName as coreGetBaseName } from '@ownpilot/core';
-import { getLog } from './log.js';
-import type { ToolExecContext } from './permission-utils.js';
-import { isNonInteractiveContext, downgradePromptToBlocked } from './permission-utils.js';
+import { getLog } from '../log.js';
+import type { ToolExecContext } from '../permission-utils.js';
+import { isNonInteractiveContext, downgradePromptToBlocked } from '../permission-utils.js';
 
 const log = getLog('ToolPermissionService');
 
@@ -61,7 +61,7 @@ let _dynamicRegistryGetter: (() => { tools: Map<string, { requiresApproval?: boo
 
 async function loadEnabledToolGroupIds(): Promise<string[]> {
   if (!_getEnabledToolGroupIds) {
-    const mod = await import('./app-settings.js');
+    const mod = await import('../app-settings.js');
     _getEnabledToolGroupIds = mod.getEnabledToolGroupIds;
   }
   return _getEnabledToolGroupIds();
@@ -70,7 +70,7 @@ async function loadEnabledToolGroupIds(): Promise<string[]> {
 async function loadCliToolPolicy(toolName: string, userId: string): Promise<string | null> {
   if (!_cliToolPoliciesRepo) {
     try {
-      const mod = await import('../db/repositories/cli-tool-policies.js');
+      const mod = await import('../../db/repositories/cli-tool-policies.js');
       _cliToolPoliciesRepo = mod.cliToolPoliciesRepo;
     } catch {
       return null;
@@ -82,7 +82,7 @@ async function loadCliToolPolicy(toolName: string, userId: string): Promise<stri
 async function loadCustomToolRequiresApproval(toolName: string): Promise<boolean> {
   if (!_dynamicRegistryGetter) {
     try {
-      const mod = await import('./custom-tool-registry.js');
+      const mod = await import('../custom-tool-registry.js');
       _dynamicRegistryGetter = mod.getCustomToolDynamicRegistry as NonNullable<
         typeof _dynamicRegistryGetter
       >;

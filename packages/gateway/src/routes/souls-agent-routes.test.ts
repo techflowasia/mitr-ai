@@ -62,7 +62,7 @@ vi.mock('../db/repositories/heartbeat-log.js', () => ({
 // Mock tool executor
 const mockGetAllTools = vi.fn();
 
-vi.mock('../services/tool-executor.js', () => ({
+vi.mock('../services/tool/executor.js', () => ({
   getSharedToolRegistry: vi.fn().mockReturnValue({
     getAllTools: mockGetAllTools,
   }),

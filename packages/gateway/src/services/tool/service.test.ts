@@ -17,7 +17,7 @@ const mockGetNames = vi.hoisted(() => vi.fn());
 const mockUse = vi.hoisted(() => vi.fn());
 const mockExecuteTool = vi.hoisted(() => vi.fn());
 
-vi.mock('./tool-executor.js', () => ({
+vi.mock('./executor.js', () => ({
   getSharedToolRegistry: () => ({
     executeToolCall: mockExecuteToolCall,
     getDefinition: mockGetDefinition,
@@ -34,7 +34,7 @@ vi.mock('./tool-executor.js', () => ({
 // SUT — must be imported after vi.mock declarations
 // ---------------------------------------------------------------------------
 
-const { ToolService, createToolService } = await import('./tool-service-impl.js');
+const { ToolService, createToolService } = await import('./service.js');
 
 // ---------------------------------------------------------------------------
 // Tests

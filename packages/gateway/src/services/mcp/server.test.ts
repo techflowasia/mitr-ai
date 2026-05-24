@@ -63,7 +63,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
 });
 
-vi.mock('../tool-executor.js', () => ({
+vi.mock('../tool/executor.js', () => ({
   getSharedToolRegistry: () => ({}),
 }));
 

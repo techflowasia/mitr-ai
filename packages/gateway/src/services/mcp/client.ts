@@ -19,7 +19,7 @@ import {
   type IMcpClientService,
 } from '@ownpilot/core';
 import { getMcpServersRepo, type McpServerRecord } from '../../db/repositories/mcp-servers.js';
-import { getSharedToolRegistry } from '../tool-executor.js';
+import { getSharedToolRegistry } from '../tool/executor.js';
 import { getLog } from '../log.js';
 
 const log = getLog('McpClient');

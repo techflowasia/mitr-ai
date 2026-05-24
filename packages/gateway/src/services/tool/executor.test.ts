@@ -116,7 +116,7 @@ const mockDynamicRegistry = {
   setCallableTools: vi.fn(),
 };
 
-vi.mock('./custom-tool-registry.js', () => ({
+vi.mock('../custom-tool-registry.js', () => ({
   getCustomToolDynamicRegistry: vi.fn(() => mockDynamicRegistry),
   setSharedRegistryForCustomTools: vi.fn(),
 }));
@@ -125,25 +125,31 @@ const mockCustomToolsRepo = {
   getActiveTools: vi.fn(async () => [] as unknown[]),
 };
 
-vi.mock('../db/repositories/custom-tools.js', () => ({
+vi.mock('../../db/repositories/custom-tools.js', () => ({
   createCustomToolsRepo: vi.fn(() => mockCustomToolsRepo),
 }));
 
-vi.mock('../tools/image-overrides.js', () => ({ registerImageOverrides: vi.fn(async () => {}) }));
-vi.mock('../tools/email-overrides.js', () => ({ registerEmailOverrides: vi.fn(async () => {}) }));
-vi.mock('../tools/audio-overrides.js', () => ({ registerAudioOverrides: vi.fn(async () => {}) }));
-vi.mock('../tools/expense-overrides.js', () => ({ registerExpenseOverrides: vi.fn() }));
+vi.mock('../../tools/image-overrides.js', () => ({
+  registerImageOverrides: vi.fn(async () => {}),
+}));
+vi.mock('../../tools/email-overrides.js', () => ({
+  registerEmailOverrides: vi.fn(async () => {}),
+}));
+vi.mock('../../tools/audio-overrides.js', () => ({
+  registerAudioOverrides: vi.fn(async () => {}),
+}));
+vi.mock('../../tools/expense-overrides.js', () => ({ registerExpenseOverrides: vi.fn() }));
 
 const mockIdempotencyRepo = {
   getRecord: vi.fn(async () => null),
   setRecord: vi.fn(async () => {}),
 };
 
-vi.mock('../db/repositories/idempotency-keys.js', () => ({
+vi.mock('../../db/repositories/idempotency-keys.js', () => ({
   getIdempotencyKeysRepository: vi.fn(() => mockIdempotencyRepo),
 }));
 
-vi.mock('../db/repositories/extensions.js', () => ({
+vi.mock('../../db/repositories/extensions.js', () => ({
   extensionsRepo: {
     getById: vi.fn(() => ({
       id: 'ext-default',
@@ -159,15 +165,15 @@ const mockSandbox = {
   setCallToolHandler: vi.fn(),
 };
 
-vi.mock('./extension/sandbox.js', () => ({
+vi.mock('../extension/sandbox.js', () => ({
   getExtensionSandbox: vi.fn(() => mockSandbox),
 }));
 
-vi.mock('./tool-permission-service.js', () => ({
+vi.mock('./permission.js', () => ({
   checkToolPermission: vi.fn(async () => ({ allowed: true, reason: '' })),
 }));
 
-vi.mock('./extension/permissions.js', () => ({
+vi.mock('../extension/permissions.js', () => ({
   checkPermission: vi.fn(() => true),
   getRequiredPermission: vi.fn(() => null),
   logPermissionDenied: vi.fn(),
@@ -188,7 +194,7 @@ const mockBrowserProvider = { name: 'browser', getTools: vi.fn(() => []) };
 const mockEdgeProvider = { name: 'edge', getTools: vi.fn(() => []) };
 const mockSkillProvider = { name: 'skill', getTools: vi.fn(() => []) };
 
-vi.mock('./tool-providers/index.js', async (importOriginal) => {
+vi.mock('../tool-providers/index.js', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
@@ -215,7 +221,7 @@ import {
   hasTool,
   resetSharedToolRegistry,
   waitForToolSync,
-} from './tool-executor.js';
+} from './executor.js';
 import { ToolRegistry, registerAllTools, registerCoreTools } from '@ownpilot/core';
 import {
   createMemoryToolProvider,
@@ -231,8 +237,8 @@ import {
   createBrowserToolProvider,
   createEdgeToolProvider,
   createSkillToolProvider,
-} from './tool-providers/index.js';
-import { checkToolPermission } from './tool-permission-service.js';
+} from '../tool-providers/index.js';
+import { checkToolPermission } from './permission.js';
 import {
   getServiceRegistry,
   hasServiceRegistry,
@@ -241,9 +247,9 @@ import {
   getExtensionService,
   hasExtensionService,
 } from '@ownpilot/core';
-import { registerImageOverrides } from '../tools/image-overrides.js';
-import { registerEmailOverrides } from '../tools/email-overrides.js';
-import { registerAudioOverrides } from '../tools/audio-overrides.js';
+import { registerImageOverrides } from '../../tools/image-overrides.js';
+import { registerEmailOverrides } from '../../tools/email-overrides.js';
+import { registerAudioOverrides } from '../../tools/audio-overrides.js';
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -985,7 +991,7 @@ describe('Tool Executor', () => {
       mockExtensionService.getToolDefinitions.mockReturnValue([extToolDef]);
       mockDynamicRegistry.has.mockReturnValue(true);
       mockDynamicRegistry.execute.mockResolvedValue({ content: 'ext result', isError: false });
-      const { extensionsRepo } = await import('../db/repositories/extensions.js');
+      const { extensionsRepo } = await import('../../db/repositories/extensions.js');
       vi.mocked(extensionsRepo.getById).mockReturnValue({
         id: 'ext-ns',
         userId: 'default',
@@ -1020,7 +1026,7 @@ describe('Tool Executor', () => {
       mockExtensionService.getToolDefinitions.mockReturnValue([extToolDef]);
       mockDynamicRegistry.has.mockReturnValue(true);
       mockSandbox.execute.mockResolvedValue({ success: true, result: 'sandbox result' });
-      const { extensionsRepo } = await import('../db/repositories/extensions.js');
+      const { extensionsRepo } = await import('../../db/repositories/extensions.js');
       vi.mocked(extensionsRepo.getById).mockReturnValue({
         id: 'ext-default-sandbox',
         userId: 'default',
@@ -1060,7 +1066,7 @@ describe('Tool Executor', () => {
       mockExtensionService.getToolDefinitions.mockReturnValue([extToolDef]);
       mockDynamicRegistry.has.mockReturnValue(true);
 
-      const { extensionsRepo } = await import('../db/repositories/extensions.js');
+      const { extensionsRepo } = await import('../../db/repositories/extensions.js');
       vi.mocked(extensionsRepo.getById).mockReturnValue({
         manifest: { runtime: { sandbox: 'worker', maxMemory: 128, maxExecutionTime: 5000 } },
         settings: { grantedPermissions: ['fs.read'] },
@@ -1101,7 +1107,7 @@ describe('Tool Executor', () => {
       mockExtensionService.getToolDefinitions.mockReturnValue([extToolDef]);
       mockDynamicRegistry.has.mockReturnValue(true);
 
-      const { extensionsRepo } = await import('../db/repositories/extensions.js');
+      const { extensionsRepo } = await import('../../db/repositories/extensions.js');
       vi.mocked(extensionsRepo.getById).mockReturnValue({
         manifest: { runtime: { sandbox: 'worker' } },
         settings: {},
@@ -1550,7 +1556,7 @@ describe('Tool Executor', () => {
       const sbxTool = makeToolDef('sandboxed_resync');
       mockExtensionService.getToolDefinitions.mockReturnValue([sbxTool]);
       mockDynamicRegistry.has.mockReturnValue(true); // skip dynamic register
-      const { extensionsRepo } = await import('../db/repositories/extensions.js');
+      const { extensionsRepo } = await import('../../db/repositories/extensions.js');
       vi.mocked(extensionsRepo.getById).mockReturnValue({
         manifest: { runtime: { sandbox: 'worker', maxMemory: 64, maxExecutionTime: 3000 } },
         settings: { grantedPermissions: ['net'] },
@@ -1586,7 +1592,7 @@ describe('Tool Executor', () => {
       mockExtensionService.getToolDefinitions.mockReturnValue([dynTool]);
       mockDynamicRegistry.has.mockReturnValue(true);
       mockDynamicRegistry.execute.mockResolvedValue({ content: 'dynamic output', isError: false });
-      const { extensionsRepo } = await import('../db/repositories/extensions.js');
+      const { extensionsRepo } = await import('../../db/repositories/extensions.js');
       vi.mocked(extensionsRepo.getById).mockReturnValue({
         id: dynTool.extensionId,
         manifest: { runtime: { sandbox: 'none' } },
