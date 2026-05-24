@@ -24,7 +24,7 @@ import {
 } from '@ownpilot/core';
 import type { AIProvider, ToolCall, ToolId } from '@ownpilot/core';
 import { getLog } from '../log.js';
-import { resolveForProcess } from '../model-routing.js';
+import { resolveForProcess } from '../llm/model-routing.js';
 import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from './cache.js';
 import { getLLMRouter, getConfigCenter } from '@ownpilot/core';
 import {
@@ -35,7 +35,7 @@ import {
   registerMcpTools,
 } from '../../tools/agent-tool-registry.js';
 import { AGENT_DEFAULT_MAX_TOKENS, AGENT_DEFAULT_TEMPERATURE } from '../../config/defaults.js';
-import { getLlmSemaphore } from '../llm-semaphore.js';
+import { getLlmSemaphore } from '../llm/semaphore.js';
 import type { ExtensionService } from '../extension/service.js';
 import { getProviderMetricsRepository } from '../../db/repositories/provider-metrics.js';
 

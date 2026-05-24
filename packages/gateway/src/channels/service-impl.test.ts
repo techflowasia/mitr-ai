@@ -203,7 +203,7 @@ vi.mock('../services/agent/service.js', () => ({
   isDemoMode: mockIsDemoMode,
 }));
 
-vi.mock('../services/model-routing.js', () => ({
+vi.mock('../services/llm/model-routing.js', () => ({
   resolveForProcess: mockResolveForProcess,
   resolveForChannel: mockResolveForProcess,
 }));

@@ -10,9 +10,9 @@
  *   3. First configured provider (existing fallback in getDefaultProvider)
  */
 
-import { settingsRepo } from '../db/repositories/index.js';
-import { getDefaultProvider, getDefaultModel } from './app-settings.js';
-import { getLog } from './log.js';
+import { settingsRepo } from '../../db/repositories/index.js';
+import { getDefaultProvider, getDefaultModel } from '../app-settings.js';
+import { getLog } from '../log.js';
 
 const log = getLog('ModelRouting');
 const PREFIX = 'model_routing:';

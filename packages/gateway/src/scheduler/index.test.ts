@@ -90,7 +90,7 @@ vi.mock('../services/agent/service.js', () => ({
   getOrCreateChatAgent: vi.fn(() => Promise.resolve(mockAgent)),
 }));
 
-vi.mock('../services/model-routing.js', () => ({
+vi.mock('../services/llm/model-routing.js', () => ({
   resolveForProcess: mockResolveForProcess,
 }));
 

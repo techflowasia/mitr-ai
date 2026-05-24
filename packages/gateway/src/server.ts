@@ -284,7 +284,7 @@ async function main() {
 
   // 5b. LLM Router (matches the channel + config pattern — capability lives in
   // core, gateway provides the impl during boot)
-  const { installLLMRouter } = await import('./services/llm-router.js');
+  const { installLLMRouter } = await import('./services/llm/router.js');
   installLLMRouter();
 
   // 5c. Permission Gate (unified tool-call authorization — covers the

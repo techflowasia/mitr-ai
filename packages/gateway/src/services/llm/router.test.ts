@@ -16,18 +16,18 @@ const mockCtx = vi.fn();
 const mockMaxOut = vi.fn();
 const mockMemBudget = vi.fn();
 
-vi.mock('./agent/runner-utils.js', () => ({
+vi.mock('../agent/runner-utils.js', () => ({
   resolveProviderAndModel: mockResolve,
   calculateExecutionCost: mockCost,
 }));
 
-vi.mock('./agent/cache.js', () => ({
+vi.mock('../agent/cache.js', () => ({
   resolveContextWindow: mockCtx,
   resolveMaxOutput: mockMaxOut,
   computeMemoryMaxTokens: mockMemBudget,
 }));
 
-const { installLLMRouter } = await import('./llm-router.js');
+const { installLLMRouter } = await import('./router.js');
 const { getLLMRouter } = await import('@ownpilot/core');
 
 describe('LLMRouter facade', () => {

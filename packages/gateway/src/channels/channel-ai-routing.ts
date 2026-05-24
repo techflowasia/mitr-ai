@@ -46,7 +46,7 @@ export async function processViaBus(
   progress?: { update(text: string): void }
 ): Promise<string> {
   const { getOrCreateChatAgent, isDemoMode } = await import('../services/agent/service.js');
-  const { resolveForChannel } = await import('../services/model-routing.js');
+  const { resolveForChannel } = await import('../services/llm/model-routing.js');
 
   // Demo mode short-circuit (bus isn't needed for demo)
   if (await isDemoMode()) {
@@ -209,7 +209,7 @@ export async function processViaBus(
  */
 export async function processDirectAgent(message: ChannelIncomingMessage): Promise<string> {
   const { getOrCreateChatAgent, isDemoMode } = await import('../services/agent/service.js');
-  const { resolveForChannel } = await import('../services/model-routing.js');
+  const { resolveForChannel } = await import('../services/llm/model-routing.js');
 
   if (await isDemoMode()) {
     return demoModeReply(message.text);

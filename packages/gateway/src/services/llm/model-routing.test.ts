@@ -15,22 +15,22 @@ const mockSettingsRepo = {
   deleteByPrefix: vi.fn(async () => 0),
 };
 
-vi.mock('../db/repositories/index.js', () => ({
+vi.mock('../../db/repositories/index.js', () => ({
   settingsRepo: null as unknown,
 }));
 
-import * as repoModule from '../db/repositories/index.js';
+import * as repoModule from '../../db/repositories/index.js';
 (repoModule as Record<string, unknown>).settingsRepo = mockSettingsRepo;
 
 const mockGetDefaultProvider = vi.fn(async () => 'openai' as string | null);
 const mockGetDefaultModel = vi.fn(async (_provider?: string) => 'gpt-4o' as string | null);
 
-vi.mock('./app-settings.js', () => ({
+vi.mock('../app-settings.js', () => ({
   getDefaultProvider: () => mockGetDefaultProvider(),
   getDefaultModel: (provider?: string) => mockGetDefaultModel(provider),
 }));
 
-vi.mock('./log.js', () => ({
+vi.mock('../log.js', () => ({
   getLog: () => ({
     info: vi.fn(),
     warn: vi.fn(),

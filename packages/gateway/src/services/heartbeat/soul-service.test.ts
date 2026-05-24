@@ -229,7 +229,7 @@ vi.mock('../agent/service.js', () => ({
   getOrCreateChatAgent: mockGetOrCreateChatAgent,
 }));
 
-vi.mock('../model-routing.js', () => ({
+vi.mock('../llm/model-routing.js', () => ({
   resolveForProcess: mockResolveForProcess,
 }));
 

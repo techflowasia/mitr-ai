@@ -33,7 +33,7 @@ const mockResolveForProcess = vi.fn(async () => ({
 const mockSetProcessRouting = vi.fn(async () => {});
 const mockClearProcessRouting = vi.fn(async () => {});
 
-vi.mock('../services/model-routing.js', () => ({
+vi.mock('../services/llm/model-routing.js', () => ({
   getAllRouting: (...args: unknown[]) => mockGetAllRouting(...args),
   getProcessRouting: (...args: unknown[]) => mockGetProcessRouting(...args),
   resolveForProcess: (...args: unknown[]) => mockResolveForProcess(...args),

@@ -164,7 +164,7 @@ const mockResolveForProcess = vi.hoisted(() =>
   }))
 );
 
-vi.mock('../services/model-routing.js', () => ({
+vi.mock('../services/llm/model-routing.js', () => ({
   resolveForProcess: mockResolveForProcess,
 }));
 
@@ -421,7 +421,7 @@ import {
 } from './agents.js';
 import { tryGetMessageBus } from '../services/chat/prompt.js';
 import { promptInitializedConversations } from '../services/chat/state.js';
-import { resolveForProcess } from '../services/model-routing.js';
+import { resolveForProcess } from '../services/llm/model-routing.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────
 

@@ -93,7 +93,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => ({
   getConfigCenter: () => mockGatewayConfigCenter,
 }));
 
-vi.mock('../model-routing.js', () => ({
+vi.mock('../llm/model-routing.js', () => ({
   resolveForProcess: mockResolveForProcess,
 }));
 

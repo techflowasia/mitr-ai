@@ -22,7 +22,7 @@ import {
   VALID_PROCESSES,
   type ChannelRoutingKind,
   type RoutingProcess,
-} from '../services/model-routing.js';
+} from '../services/llm/model-routing.js';
 
 export const modelRoutingRoutes = new Hono();
 

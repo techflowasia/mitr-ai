@@ -21,7 +21,7 @@ import type {
   UpdateClawInput,
 } from '@ownpilot/core';
 import { getClawService } from '../services/claw/service.js';
-import { getLlmSemaphore } from '../services/llm-semaphore.js';
+import { getLlmSemaphore } from '../services/llm/semaphore.js';
 import {
   getUserId,
   apiResponse,

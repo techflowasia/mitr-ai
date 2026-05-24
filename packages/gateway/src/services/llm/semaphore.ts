@@ -12,8 +12,8 @@
  * at startup and exposes `setMaxSlots()` for runtime reconfiguration.
  */
 
-import { settingsRepo } from '../db/repositories/settings.js';
-import { getLog } from './log.js';
+import { settingsRepo } from '../../db/repositories/settings.js';
+import { getLog } from '../log.js';
 import { getEventSystem } from '@ownpilot/core';
 
 const log = getLog('LlmSemaphore');

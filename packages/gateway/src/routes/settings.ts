@@ -32,7 +32,7 @@ import {
 } from '@ownpilot/core';
 import { getDataDirectoryInfo } from '../paths/index.js';
 import { getMigrationStatus } from '../paths/migration.js';
-import { getLlmSemaphore } from '../services/llm-semaphore.js';
+import { getLlmSemaphore } from '../services/llm/semaphore.js';
 import { DEFAULT_MAX_LLM_CONCURRENCY } from '../config/defaults.js';
 import {
   API_KEY_PREFIX,

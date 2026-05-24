@@ -146,7 +146,7 @@ vi.mock('../agent/cache.js', () => ({
   computeMemoryMaxTokens: vi.fn().mockReturnValue(96000),
 }));
 
-vi.mock('../model-routing.js', () => ({
+vi.mock('../llm/model-routing.js', () => ({
   resolveForProcess: vi.fn().mockResolvedValue({ provider: 'openai', model: 'gpt-4o-mini' }),
 }));
 
