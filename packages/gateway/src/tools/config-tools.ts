@@ -12,7 +12,7 @@ import { maskSecret, getErrorMessage } from '../utils/common.js';
 import {
   hasConfiguredData,
   normalizeAndValidateEntryData,
-} from '../services/config-entry-validation.js';
+} from '../services/config/entry-validation.js';
 
 // =============================================================================
 // Tool Definitions

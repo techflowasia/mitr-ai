@@ -11,8 +11,8 @@ import type {
   ConfigServiceDefinition,
   ConfigEntry,
 } from '@ownpilot/core';
-import { configServicesRepo } from '../db/repositories/config-services.js';
-import { getLog } from './log.js';
+import { configServicesRepo } from '../../db/repositories/config-services.js';
+import { getLog } from '../log.js';
 
 const log = getLog('ConfigCenter');
 

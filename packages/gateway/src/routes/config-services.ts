@@ -33,7 +33,7 @@ import { wsGateway } from '../ws/server.js';
 import {
   normalizeAndValidateEntryData,
   validateRequiredFields,
-} from '../services/config-entry-validation.js';
+} from '../services/config/entry-validation.js';
 import {
   validateBody,
   createConfigServiceSchema,

@@ -50,7 +50,7 @@ import { initializePluginsRepo } from './db/repositories/plugins.js';
 import { initializeLocalProvidersRepo } from './db/repositories/local-providers.js';
 import { initializeUISessionsRepo } from './db/repositories/ui-sessions.js';
 import { seedConfigServices } from './db/seeds/config-services-seed.js';
-import { gatewayConfigCenter } from './services/config-center-impl.js';
+import { gatewayConfigCenter } from './services/config/center.js';
 import {
   startTriggerEngine,
   stopTriggerEngine,

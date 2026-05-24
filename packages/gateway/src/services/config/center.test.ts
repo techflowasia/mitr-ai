@@ -17,11 +17,11 @@ const mockConfigServicesRepo = vi.hoisted(() => ({
   refreshCache: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('../db/repositories/config-services.js', () => ({
+vi.mock('../../db/repositories/config-services.js', () => ({
   configServicesRepo: mockConfigServicesRepo,
 }));
 
-import { GatewayConfigCenter, gatewayConfigCenter } from './config-center-impl.js';
+import { GatewayConfigCenter, gatewayConfigCenter } from './center.js';
 
 const mockServiceDefinition = {
   name: 'openai',

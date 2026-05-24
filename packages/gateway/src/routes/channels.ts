@@ -31,7 +31,7 @@ import { getLog } from '../services/log.js';
 import {
   normalizeAndValidateEntryData,
   validateRequiredFields,
-} from '../services/config-entry-validation.js';
+} from '../services/config/entry-validation.js';
 
 // Import sub-routes
 import { channelInboxRoutes } from './channels-inbox.js';
