@@ -1,434 +1,67 @@
 /**
  * Database Repositories Index
  *
- * All repositories now use PostgreSQL with async initialization.
- * Use the factory functions to create repository instances.
+ * Re-exports only the symbols other gateway modules actually consume. Each
+ * repository file remains the canonical source — for the full surface
+ * (factory functions, instance helpers, less-common types), import the
+ * submodule directly. This barrel exists to keep the common entry points
+ * one import away.
  */
 
 // Core repositories — chat
+export { ChatRepository } from './chat/index.js';
 export type { Conversation } from './chat/conversations.js';
 export type { Message } from './chat/messages.js';
 
-export {
-  ChannelMessagesRepository,
-  createChannelMessagesRepository,
-  type ChannelMessage,
-} from './channels/messages.js';
+// Agents
+export { agentsRepo, type AgentRecord } from './agents/index.js';
 
+// Settings + local AI providers + model configs
+export { settingsRepo } from './settings/index.js';
+export { localProvidersRepo } from './local-providers.js';
 export {
-  ChannelAssetsRepository,
-  createChannelAssetsRepository,
-  channelAssetsRepo,
-  type ChannelAssetRecord,
-} from './channels/assets.js';
+  modelConfigsRepo,
+  type CreateModelConfigInput,
+  type UpdateModelConfigInput,
+  type CreateProviderInput,
+  type UpdateProviderInput,
+} from './model-configs.js';
 
-export {
-  CostsRepository,
-  createCostsRepository,
-  type Cost,
-  type CostSummary,
-  type DailyCost,
-} from './costs/index.js';
-
-export {
-  AgentsRepository,
-  createAgentsRepository,
-  agentsRepo,
-  type AgentRecord,
-} from './agents/index.js';
-
-export {
-  SettingsRepository,
-  createSettingsRepository,
-  settingsRepo,
-  type Setting,
-} from './settings/index.js';
-
-// Personal data repositories
-export {
-  TasksRepository,
-  createTasksRepository,
-  type Task,
-  type CreateTaskInput,
-  type UpdateTaskInput,
-  type TaskQuery,
-} from './tasks.js';
-
-export {
-  BookmarksRepository,
-  createBookmarksRepository,
-  type Bookmark,
-  type CreateBookmarkInput,
-  type UpdateBookmarkInput,
-  type BookmarkQuery,
-} from './bookmarks.js';
-
-export {
-  NotesRepository,
-  createNotesRepository,
-  type Note,
-  type CreateNoteInput,
-  type UpdateNoteInput,
-  type NoteQuery,
-} from './notes.js';
-
+// Personal data
+export { TasksRepository, type Task, type TaskQuery } from './tasks.js';
+export { BookmarksRepository, type BookmarkQuery } from './bookmarks.js';
+export { NotesRepository, type Note, type NoteQuery } from './notes.js';
 export {
   CalendarRepository,
-  createCalendarRepository,
   type CalendarEvent,
   type CreateEventInput,
   type UpdateEventInput,
   type EventQuery,
 } from './calendar.js';
-
-export {
-  ContactsRepository,
-  createContactsRepository,
-  type Contact,
-  type CreateContactInput,
-  type UpdateContactInput,
-  type ContactQuery,
-} from './contacts.js';
+export { ContactsRepository, type ContactQuery } from './contacts.js';
 
 // Autonomous AI repositories
-export {
-  MemoriesRepository,
-  createMemoriesRepository,
-  type Memory,
-  type MemoryType,
-  type CreateMemoryInput,
-  type UpdateMemoryInput,
-  type MemoryQuery,
-} from './memories.js';
+export { MemoriesRepository } from './memories.js';
+export { GoalsRepository, type Goal, type GoalStep } from './goals.js';
+export { createTriggersRepository, type Trigger, type TriggerHistory } from './triggers.js';
+export type { Plan } from './plans.js';
 
-export {
-  GoalsRepository,
-  createGoalsRepository,
-  type Goal,
-  type GoalStep,
-  type GoalStatus,
-  type StepStatus,
-  type CreateGoalInput,
-  type UpdateGoalInput,
-  type CreateStepInput,
-  type UpdateStepInput,
-  type GoalQuery,
-} from './goals.js';
+// Productivity
+export { HabitsRepository } from './habits.js';
+export { ExpensesRepository } from './expenses.js';
 
-export {
-  TriggersRepository,
-  createTriggersRepository,
-  type Trigger,
-  type TriggerHistory,
-  type TriggerType,
-  type TriggerStatus,
-  type TriggerConfig,
-  type TriggerAction,
-  type ScheduleConfig,
-  type EventConfig,
-  type ConditionConfig,
-  type WebhookConfig,
-  type CreateTriggerInput,
-  type UpdateTriggerInput,
-  type TriggerQuery,
-} from './triggers.js';
+// Costs
+export { CostsRepository } from './costs/index.js';
 
-export {
-  PlansRepository,
-  createPlansRepository,
-  type Plan,
-  type PlanStep,
-  type PlanHistory,
-  type PlanStatus,
-  type StepType,
-  type StepStatus as PlanStepStatus,
-  type StepConfig,
-  type PlanEventType,
-  type CreatePlanInput,
-  type CreateStepInput as CreatePlanStepInput,
-  type UpdatePlanInput,
-  type UpdateStepInput as UpdatePlanStepInput,
-} from './plans.js';
+// Logs
+export { LogsRepository } from './logs.js';
 
-// Productivity plugin repositories
-export {
-  PomodoroRepository,
-  createPomodoroRepository,
-  type PomodoroSession,
-  type PomodoroSettings,
-  type PomodoroDailyStats,
-  type SessionType,
-  type SessionStatus,
-  type CreateSessionInput,
-  type UpdateSettingsInput,
-} from './pomodoro.js';
+// Custom data + tools
+export { CustomDataRepository } from './custom/data.js';
+export { createCustomToolsRepo } from './custom/tools.js';
 
-export {
-  HabitsRepository,
-  createHabitsRepository,
-  type Habit,
-  type HabitLog,
-  type HabitFrequency,
-  type HabitWithTodayStatus,
-  type CreateHabitInput,
-  type UpdateHabitInput,
-  type HabitQuery,
-} from './habits.js';
+// Workflows
+export { createWorkflowsRepository } from './workflows/index.js';
 
-export {
-  ExpensesRepository,
-  type Expense,
-  type CreateExpenseInput,
-  type UpdateExpenseInput,
-  type ExpenseQuery,
-  type ExpenseCategory,
-} from './expenses.js';
-
-export {
-  CapturesRepository,
-  createCapturesRepository,
-  type Capture,
-  type CaptureType,
-  type ProcessedAsType,
-  type CreateCaptureInput,
-  type ProcessCaptureInput,
-  type CaptureQuery,
-} from './captures.js';
-
-// AI Model Configs repository
-export {
-  ModelConfigsRepository,
-  createModelConfigsRepository,
-  modelConfigsRepo,
-  type UserModelConfig,
-  type CustomProvider,
-  type UserProviderConfig,
-  type CreateModelConfigInput,
-  type UpdateModelConfigInput,
-  type CreateProviderInput,
-  type UpdateProviderInput,
-  type CreateUserProviderConfigInput,
-  type UpdateUserProviderConfigInput,
-} from './model-configs.js';
-
-// Chat History repository (enhanced conversations + messages)
-export {
-  ChatRepository,
-  createChatRepository,
-  type Conversation as ChatConversation,
-  type Message as ChatMessage,
-  type CreateConversationInput,
-  type CreateMessageInput,
-  type ConversationQuery,
-} from './chat/index.js';
-
-// Request Logs repository (for debugging)
-export {
-  LogsRepository,
-  createLogsRepository,
-  type RequestLog,
-  type CreateLogInput,
-  type LogQuery,
-  type LogStats,
-} from './logs.js';
-
-// Custom Data repository
-export {
-  CustomDataRepository,
-  createCustomDataRepository,
-  type CustomTableSchema,
-  type CustomDataRecord,
-  type ColumnDefinition,
-} from './custom/data.js';
-
-// Custom Tools repository
-export {
-  CustomToolsRepository,
-  createCustomToolsRepo,
-  type CustomToolRecord,
-  type ToolPermission,
-  type ToolStatus,
-} from './custom/tools.js';
-
-// Plugins repository
-export {
-  PluginsRepository,
-  pluginsRepo,
-  initializePluginsRepo,
-  type PluginRecord,
-  type UpsertPluginInput,
-} from './plugins.js';
-
-// Local AI Providers repository
-export {
-  LocalProvidersRepository,
-  localProvidersRepo,
-  initializeLocalProvidersRepo,
-  type LocalProvider,
-  type LocalModel,
-  type LocalProviderType,
-  type CreateLocalProviderInput,
-  type CreateLocalModelInput,
-} from './local-providers.js';
-
-// Execution permissions repository
-export { executionPermissionsRepo } from './execution-permissions.js';
-
-// Embedding cache repository
-export {
-  EmbeddingCacheRepository,
-  embeddingCacheRepo,
-  type EmbeddingCacheEntry,
-} from './embedding-cache.js';
-
-// Heartbeats repository
-export {
-  HeartbeatsRepository,
-  createHeartbeatsRepository,
-  type Heartbeat,
-  type CreateHeartbeatInput,
-  type UpdateHeartbeatInput,
-  type HeartbeatQuery,
-} from './heartbeats/index.js';
-
-// Extensions repository
-export {
-  ExtensionsRepository,
-  extensionsRepo,
-  initializeExtensionsRepo,
-  type ExtensionRecord,
-  type UpsertExtensionInput,
-} from './extensions.js';
-
-// Workflows repository
-export {
-  WorkflowsRepository,
-  createWorkflowsRepository,
-  type Workflow,
-  type WorkflowLog,
-  type WorkflowNode,
-  type WorkflowEdge,
-  type WorkflowNodeData,
-  type ToolNodeData as WorkflowToolNodeData,
-  type TriggerNodeData as WorkflowTriggerNodeData,
-  type LlmNodeData as WorkflowLlmNodeData,
-  type ConditionNodeData as WorkflowConditionNodeData,
-  type CodeNodeData as WorkflowCodeNodeData,
-  type TransformerNodeData as WorkflowTransformerNodeData,
-  type NodeResult,
-  type WorkflowStatus,
-  type WorkflowLogStatus,
-  type NodeExecutionStatus,
-  type CreateWorkflowInput,
-  type UpdateWorkflowInput,
-} from './workflows/index.js';
-
-// Workflow Approvals repository
-export {
-  WorkflowApprovalsRepository,
-  createWorkflowApprovalsRepository,
-  type WorkflowApproval,
-  type ApprovalStatus,
-  type CreateApprovalInput,
-} from './workflows/approvals.js';
-
-// Workspaces repository
-export {
-  WorkspacesRepository,
-  createWorkspacesRepository,
-  type UserWorkspace,
-  type CodeExecution,
-  type WorkspaceStatus,
-  type ContainerStatus,
-  type ExecutionStatus,
-  type CreateWorkspaceInput as CreateWorkspaceRepoInput,
-  type UpdateWorkspaceInput as UpdateWorkspaceRepoInput,
-} from './workspaces.js';
-
-// Coding agent results repository
-export {
-  CodingAgentResultsRepository,
-  codingAgentResultsRepo,
-  createCodingAgentResultsRepository,
-  type CodingAgentResultRecord,
-  type SaveResultInput,
-} from './coding-agent/results.js';
-
-// CLI providers repository
-export {
-  CliProvidersRepository,
-  cliProvidersRepo,
-  createCliProvidersRepository,
-  type CliProviderRecord,
-  type CliAuthMethod,
-  type CliOutputFormat,
-  type CreateCliProviderInput,
-  type UpdateCliProviderInput,
-} from './cli/providers.js';
-
-// Coding agent permissions repository
-export {
-  CodingAgentPermissionsRepository,
-  codingAgentPermissionsRepo,
-  createCodingAgentPermissionsRepository,
-  type CodingAgentPermissionRecord,
-  type UpsertPermissionInput,
-  type IoFormat,
-  type FsAccess,
-  type Autonomy,
-} from './coding-agent/permissions.js';
-
-// Coding agent skill attachments repository
-export {
-  CodingAgentSkillAttachmentsRepository,
-  codingAgentSkillAttachmentsRepo,
-  createCodingAgentSkillAttachmentsRepository,
-  type SkillAttachmentRecord,
-  type CreateSkillAttachmentInput,
-  type UpdateSkillAttachmentInput,
-  type SkillAttachmentType,
-} from './coding-agent/skill-attachments.js';
-
-// Coding agent subscriptions repository
-export {
-  CodingAgentSubscriptionsRepository,
-  codingAgentSubscriptionsRepo,
-  createCodingAgentSubscriptionsRepository,
-  type CodingAgentSubscriptionRecord,
-  type UpsertSubscriptionInput,
-} from './coding-agent/subscriptions.js';
-
-// Orchestration runs repository
-export {
-  OrchestrationRunsRepository,
-  orchestrationRunsRepo,
-  createOrchestrationRunsRepository,
-  type OrchestrationRunRecord,
-  type CreateRunInput,
-} from './orchestration-runs.js';
-
-// CLI tool policies repository
-export {
-  CliToolPoliciesRepository,
-  cliToolPoliciesRepo,
-  createCliToolPoliciesRepository,
-  type ToolPolicyRecord,
-} from './cli/tool-policies.js';
-
-// Artifacts repository
-export { ArtifactsRepository, createArtifactsRepository } from './artifacts.js';
-
-// Soul system repositories
-export { SoulsRepository, getSoulsRepository } from './souls.js';
-export { CrewsRepository, getCrewsRepository } from './crew/index.js';
-export { AgentMessagesRepository, getAgentMessagesRepository } from './agents/messages.js';
-export { HeartbeatLogRepository, getHeartbeatLogRepository } from './heartbeats/log.js';
-
-// UI Sessions repository
-export {
-  UISessionsRepository,
-  uiSessionsRepo,
-  createUISessionsRepository,
-  initializeUISessionsRepo,
-  type UISession,
-} from './ui-sessions.js';
+// CLI
+export { cliToolPoliciesRepo } from './cli/tool-policies.js';

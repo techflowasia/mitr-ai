@@ -5,22 +5,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ---------------------------------------------------------------------------
-// Mocks
+// Mocks — vi.hoisted lets the vi.mock factory below reference these vars
+// without the temporal-dead-zone problem hoisting normally creates.
 // ---------------------------------------------------------------------------
 
-const mockSettingsRepo = {
-  get: vi.fn((_: string) => null as string | null),
-  set: vi.fn(async () => {}),
-  delete: vi.fn(async () => true),
-  deleteByPrefix: vi.fn(async () => 0),
-};
-
-vi.mock('../../db/repositories/index.js', () => ({
-  settingsRepo: null as unknown,
+const { mockSettingsRepo } = vi.hoisted(() => ({
+  mockSettingsRepo: {
+    get: vi.fn((_: string) => null as string | null),
+    set: vi.fn(async () => {}),
+    delete: vi.fn(async () => true),
+    deleteByPrefix: vi.fn(async () => 0),
+  },
 }));
 
-import * as repoModule from '../../db/repositories/index.js';
-(repoModule as Record<string, unknown>).settingsRepo = mockSettingsRepo;
+vi.mock('../../db/repositories/index.js', () => ({
+  settingsRepo: mockSettingsRepo,
+}));
 
 const mockGetDefaultProvider = vi.fn(async () => 'openai' as string | null);
 const mockGetDefaultModel = vi.fn(async (_provider?: string) => 'gpt-4o' as string | null);

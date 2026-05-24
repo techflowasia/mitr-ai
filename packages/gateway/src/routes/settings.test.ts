@@ -11,32 +11,29 @@ import { requestId } from '../middleware/request-id.js';
 import { errorHandler } from '../middleware/error-handler.js';
 
 // ---------------------------------------------------------------------------
-// Mocks
+// Mocks — vi.hoisted lets the vi.mock factory below reference these vars
+// without the temporal-dead-zone problem hoisting normally creates.
 // ---------------------------------------------------------------------------
 
-const mockSettingsRepo = {
-  get: vi.fn(),
-  set: vi.fn(),
-  has: vi.fn(),
-  delete: vi.fn(),
-  getByPrefix: vi.fn(async () => []),
-};
-
-const mockLocalProvidersRepo = {
-  listProviders: vi.fn(async () => []),
-  getProvider: vi.fn(),
-  getDefault: vi.fn(),
-};
-
-vi.mock('../db/repositories/index.js', () => ({
-  settingsRepo: null as unknown, // replaced in beforeEach
-  localProvidersRepo: null as unknown,
+const { mockSettingsRepo, mockLocalProvidersRepo } = vi.hoisted(() => ({
+  mockSettingsRepo: {
+    get: vi.fn(),
+    set: vi.fn(),
+    has: vi.fn(),
+    delete: vi.fn(),
+    getByPrefix: vi.fn(async () => []),
+  },
+  mockLocalProvidersRepo: {
+    listProviders: vi.fn(async () => []),
+    getProvider: vi.fn(),
+    getDefault: vi.fn(),
+  },
 }));
 
-// Patch mock objects onto the module
-import * as repoModule from '../db/repositories/index.js';
-(repoModule as Record<string, unknown>).settingsRepo = mockSettingsRepo;
-(repoModule as Record<string, unknown>).localProvidersRepo = mockLocalProvidersRepo;
+vi.mock('../db/repositories/index.js', () => ({
+  settingsRepo: mockSettingsRepo,
+  localProvidersRepo: mockLocalProvidersRepo,
+}));
 
 vi.mock('@ownpilot/core', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
