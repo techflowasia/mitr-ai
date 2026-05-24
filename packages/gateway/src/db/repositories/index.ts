@@ -10,8 +10,6 @@
 
 // Core repositories — chat
 export { ChatRepository } from './chat/index.js';
-export type { Conversation } from './chat/conversations.js';
-export type { Message } from './chat/messages.js';
 
 // Agents
 export { agentsRepo, type AgentRecord } from './agents/index.js';
