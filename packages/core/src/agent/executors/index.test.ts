@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { CORE_EXECUTORS } from './core-tool-executors.js';
+import { CORE_EXECUTORS } from './index.js';
 import type { ToolContext } from './types.js';
 
 // Helper to invoke an executor with minimal boilerplate.

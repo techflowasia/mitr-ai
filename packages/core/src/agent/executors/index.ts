@@ -2,7 +2,7 @@
  * Core Tool Executors — Barrel
  *
  * Imports all category executor objects and combines them into a single
- * CORE_EXECUTORS export. Definitions (schemas) are in core-tool-defs.ts.
+ * CORE_EXECUTORS export. Definitions (schemas) are in tool-defs/.
  */
 
 import type { ToolExecutor } from '../types.js';

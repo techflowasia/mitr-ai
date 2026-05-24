@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { CORE_TOOLS } from './core-tool-defs.js';
+import { CORE_TOOLS } from './index.js';
 
 describe('CORE_TOOLS', () => {
   it('exports a non-empty array', () => {
