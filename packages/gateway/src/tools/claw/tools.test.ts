@@ -18,7 +18,7 @@ const { mockGetClawContext, mockGetClawManager, mockGetArtifactService, mockGetC
     };
   });
 
-vi.mock('../services/claw/context.js', () => ({
+vi.mock('../../services/claw/context.js', () => ({
   getClawContext: mockGetClawContext,
 }));
 
@@ -30,25 +30,25 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
 });
 
-vi.mock('../services/claw/manager.js', () => ({
+vi.mock('../../services/claw/manager.js', () => ({
   getClawManager: mockGetClawManager,
 }));
 
-vi.mock('../services/artifact/service.js', () => ({
+vi.mock('../../services/artifact/service.js', () => ({
   getArtifactService: mockGetArtifactService,
 }));
 
-vi.mock('../db/repositories/claws.js', () => ({
+vi.mock('../../db/repositories/claws.js', () => ({
   getClawsRepository: mockGetClawsRepository,
 }));
 
-vi.mock('../workspace/file-workspace.js', () => ({
+vi.mock('../../workspace/file-workspace.js', () => ({
   getSessionWorkspacePath: vi.fn().mockReturnValue('/tmp/workspace/ws-1'),
   writeSessionWorkspaceFile: vi.fn(),
 }));
 
 const { executeClawTool, CLAW_TOOLS, CLAW_TOOL_NAMES, buildSandboxEnv } =
-  await import('./claw-tools.js');
+  await import('./tools.js');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -202,7 +202,7 @@ describe('Claw Tools', () => {
 
     it('writes scripts with unique names so concurrent calls do not collide', async () => {
       setClawContext();
-      const fileWorkspace = await import('../workspace/file-workspace.js');
+      const fileWorkspace = await import('../../workspace/file-workspace.js');
       const writeMock = fileWorkspace.writeSessionWorkspaceFile as ReturnType<typeof vi.fn>;
       writeMock.mockClear();
 

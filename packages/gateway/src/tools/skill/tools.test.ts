@@ -5,13 +5,13 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { executeSkillTool, SKILL_TOOLS } from './skill-tools.js';
+import { executeSkillTool, SKILL_TOOLS } from './tools.js';
 
 // =============================================================================
 // Mocks - Must be defined inline inside vi.mock factories due to hoisting
 // =============================================================================
 
-vi.mock('../services/skill/npm-installer.js', () => ({
+vi.mock('../../services/skill/npm-installer.js', () => ({
   getNpmInstaller: () => ({
     search: vi.fn(),
     install: vi.fn(),
@@ -19,7 +19,7 @@ vi.mock('../services/skill/npm-installer.js', () => ({
   }),
 }));
 
-vi.mock('../services/extension/service.js', () => ({
+vi.mock('../../services/extension/service.js', () => ({
   getExtensionService: () => ({
     getAll: vi.fn(),
     getById: vi.fn(),
@@ -29,14 +29,14 @@ vi.mock('../services/extension/service.js', () => ({
   }),
 }));
 
-vi.mock('../db/repositories/extensions.js', () => ({
+vi.mock('../../db/repositories/extensions.js', () => ({
   extensionsRepo: {
     getAll: vi.fn(),
     getById: vi.fn(),
   },
 }));
 
-vi.mock('../services/skill/agentskills-parser.js', () => ({
+vi.mock('../../services/skill/agentskills-parser.js', () => ({
   parseAgentSkillsMd: vi.fn(),
   parseSkillMdFrontmatter: vi.fn(),
   scanSkillDirectory: vi.fn(),
@@ -535,19 +535,19 @@ const stableMocks = vi.hoisted(() => {
   return { mockInstaller, mockService, mockExtensionsRepo, mockAdapter };
 });
 
-vi.mock('../services/skill/npm-installer.js', () => ({
+vi.mock('../../services/skill/npm-installer.js', () => ({
   getNpmInstaller: () => stableMocks.mockInstaller,
 }));
 
-vi.mock('../services/extension/service.js', () => ({
+vi.mock('../../services/extension/service.js', () => ({
   getExtensionService: () => stableMocks.mockService,
 }));
 
-vi.mock('../db/repositories/extensions.js', () => ({
+vi.mock('../../db/repositories/extensions.js', () => ({
   extensionsRepo: stableMocks.mockExtensionsRepo,
 }));
 
-vi.mock('../db/adapters/index.js', () => ({
+vi.mock('../../db/adapters/index.js', () => ({
   getAdapter: vi.fn().mockResolvedValue(stableMocks.mockAdapter),
 }));
 
@@ -608,7 +608,7 @@ const happyOwnpilotExtension = {
 };
 
 // Import the mocked getAdapter so we can restore its implementation after clearAllMocks
-import { getAdapter as mockedGetAdapter } from '../db/adapters/index.js';
+import { getAdapter as mockedGetAdapter } from '../../db/adapters/index.js';
 
 describe('Happy Path Tests', () => {
   beforeEach(() => {
@@ -1333,7 +1333,8 @@ describe('Happy Path Tests', () => {
   describe('skill_read_reference happy path', () => {
     it('reads a reference file when sourcePath resolves', async () => {
       const { existsSync: mockExistsSync, readFileSync: mockReadFileSync } = await import('fs');
-      const { getExtensionService: _getService } = await import('../services/extension/service.js');
+      const { getExtensionService: _getService } =
+        await import('../../services/extension/service.js');
 
       const extWithSourcePath = {
         ...happyExtension,
@@ -1432,7 +1433,7 @@ describe('Happy Path Tests', () => {
 
       const result = await executeSkillTool(
         'skill_read_script',
-        { skillId: 'ext-123', scriptPath: '../weather-evil/steal.js' },
+        { skillId: 'ext-123', scriptPath: '../../weather-evil/steal.js' },
         'user-1'
       );
 
@@ -1450,7 +1451,7 @@ describe('Happy Path Tests', () => {
     it('lists resources in skill directory via sourcePath', async () => {
       const { existsSync: mockExistsSync } = await import('fs');
       const { scanSkillDirectory: mockScanSkillDirectory } =
-        await import('../services/skill/agentskills-parser.js');
+        await import('../../services/skill/agentskills-parser.js');
 
       const extWithSourcePath = {
         ...happyExtension,

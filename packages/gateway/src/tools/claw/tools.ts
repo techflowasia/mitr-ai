@@ -20,32 +20,32 @@
  */
 
 import { getErrorMessage } from '@ownpilot/core';
-import { CLAW_TOOLS, CLAW_TOOL_NAMES } from './claw/definitions.js';
-import { buildSandboxEnv } from './claw/sandbox-env.js';
+import { CLAW_TOOLS, CLAW_TOOL_NAMES } from './definitions.js';
+import { buildSandboxEnv } from './sandbox-env.js';
 import {
   executeInstallPackage,
   executeRunScript,
   executeCreateTool,
-} from './claw/lifecycle-executors.js';
+} from './lifecycle-executors.js';
 import {
   executeSpawnSubclaw,
   executeListSubclaws,
   executeStopSubclaw,
   executeSendAgentMessage,
-} from './claw/delegation-executors.js';
+} from './delegation-executors.js';
 import {
   executePublishArtifact,
   executeRequestEscalation,
   executeSendOutput,
   executeCompleteReport,
   executeEmitEvent,
-} from './claw/output-executors.js';
+} from './output-executors.js';
 import {
   executeSetContext,
   executeGetContext,
   executeReflect,
   executeUpdateConfig,
-} from './claw/context-executors.js';
+} from './context-executors.js';
 
 // Public interface — re-exported so existing importers
 // (`@ownpilot/gateway` → tools/index.ts, agent-tool-registry.ts) keep working.

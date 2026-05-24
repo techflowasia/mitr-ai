@@ -14,7 +14,7 @@
  *   helpers.ts                 — resolveSkillDirectory + node_modules walker
  */
 
-import { SKILL_TOOLS } from './skill/definitions.js';
+import { SKILL_TOOLS } from './definitions.js';
 import {
   executeSearch,
   executeInstall,
@@ -22,19 +22,19 @@ import {
   executeGetInfo,
   executeToggle,
   executeCheckUpdates,
-} from './skill/lifecycle-executors.js';
+} from './lifecycle-executors.js';
 import {
   executeParseContent,
   executeReadReference,
   executeReadScript,
   executeListResources,
-} from './skill/introspection-executors.js';
+} from './introspection-executors.js';
 import {
   executeRecordUsage,
   executeGetLearningStats,
   executeCompare,
   executeSuggestLearning,
-} from './skill/learning-executors.js';
+} from './learning-executors.js';
 
 export { SKILL_TOOLS };
 
