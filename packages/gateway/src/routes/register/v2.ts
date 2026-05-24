@@ -73,7 +73,7 @@ import {
   skillsRoutes,
   webhookRoutes,
   notificationRoutes,
-} from './index.js';
+} from '../index.js';
 
 export function registerV2Routes(app: Hono): void {
   // Health (no version prefix — shared with v1)

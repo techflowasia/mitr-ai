@@ -25,13 +25,13 @@ import {
   auditMiddleware,
   uiSessionMiddleware,
 } from './middleware/index.js';
-import { registerPlatformRoutes } from './routes/register-platform-routes.js';
-import { registerAgentRoutes } from './routes/register-agent-routes.js';
-import { registerDataRoutes } from './routes/register-data-routes.js';
-import { registerAutomationRoutes } from './routes/register-automation-routes.js';
-import { registerIntegrationRoutes } from './routes/register-integration-routes.js';
+import { registerPlatformRoutes } from './routes/register/platform.js';
+import { registerAgentRoutes } from './routes/register/agent.js';
+import { registerDataRoutes } from './routes/register/data.js';
+import { registerAutomationRoutes } from './routes/register/automation.js';
+import { registerIntegrationRoutes } from './routes/register/integration.js';
 import { registerOpenApiRoutes } from './routes/openapi.js';
-import { registerV2Routes } from './routes/register-v2-routes.js';
+import { registerV2Routes } from './routes/register/v2.js';
 import {
   RATE_LIMIT_WINDOW_MS,
   RATE_LIMIT_MAX_REQUESTS,

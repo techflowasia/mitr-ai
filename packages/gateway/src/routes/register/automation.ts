@@ -13,7 +13,7 @@ import {
   autonomyRoutes,
   executionPermissionsRoutes,
   pulseRoutes,
-} from './index.js';
+} from '../index.js';
 
 export function registerAutomationRoutes(app: Hono): void {
   // Triggers routes (proactive automation)

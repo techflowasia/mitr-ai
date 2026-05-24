@@ -18,7 +18,7 @@ import {
   auditRoutes,
   heartbeatsRoutes,
   clawRoutes,
-} from './index.js';
+} from '../index.js';
 
 export function registerAgentRoutes(app: Hono): void {
   app.route('/api/v1/agents', agentRoutes);

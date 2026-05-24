@@ -15,7 +15,7 @@ import {
   costRoutes,
   artifactsRoutes,
   productivityRoutes,
-} from './index.js';
+} from '../index.js';
 
 export function registerDataRoutes(app: Hono): void {
   // Personal data routes (tasks, bookmarks, notes, calendar, contacts, summary)

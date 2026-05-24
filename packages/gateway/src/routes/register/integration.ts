@@ -26,7 +26,7 @@ import {
   webhookRoutes,
   notificationRoutes,
   tunnelRoutes,
-} from './index.js';
+} from '../index.js';
 
 export function registerIntegrationRoutes(app: Hono): void {
   // Webhooks - mounted outside /api/v1 since external services cannot send API keys.
