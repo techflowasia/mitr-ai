@@ -12,11 +12,11 @@ import {
   buildBriefingPrompt,
   parseAIResponse,
   generateFallbackBriefing,
-} from './dashboard-briefing.js';
-import type { DailyBriefingData } from './dashboard-types.js';
+} from './briefing.js';
+import type { DailyBriefingData } from './types.js';
 
 // Mock the log module
-vi.mock('./log.js', () => ({
+vi.mock('../log.js', () => ({
   getLog: vi.fn().mockReturnValue({
     info: vi.fn(),
     error: vi.fn(),

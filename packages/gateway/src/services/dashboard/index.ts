@@ -10,7 +10,7 @@
  * - dashboard.ts:          DashboardService class (this file)
  */
 
-import { MS_PER_DAY } from '../config/defaults.js';
+import { MS_PER_DAY } from '../../config/defaults.js';
 import {
   TasksRepository,
   CalendarRepository,
@@ -25,8 +25,8 @@ import {
   type TriggerHistory,
   type Note,
   type Plan,
-} from '../db/repositories/index.js';
-import { type CustomTableSchema } from '../db/repositories/custom-data.js';
+} from '../../db/repositories/index.js';
+import { type CustomTableSchema } from '../../db/repositories/custom-data.js';
 import {
   getMemoryService,
   getGoalService,
@@ -36,7 +36,7 @@ import {
   type IDatabaseService,
   type ServiceMemoryEntry,
 } from '@ownpilot/core';
-import { getLog } from './log.js';
+import { getLog } from '../log.js';
 
 // Re-export types and briefing utilities for backward compatibility
 export type {
@@ -57,14 +57,14 @@ export type {
   DailyBriefingData,
   AIBriefing,
   BriefingResponse,
-} from './dashboard-types.js';
+} from './types.js';
 export {
   calculateDataHash,
   briefingCache,
   generateFallbackBriefing,
   parseAIResponse,
   buildBriefingPrompt,
-} from './dashboard-briefing.js';
+} from './briefing.js';
 
 import type {
   DailyBriefingData,
@@ -74,12 +74,8 @@ import type {
   CostSummaryData,
   CustomDataSummary,
   CustomTableSummaryItem,
-} from './dashboard-types.js';
-import {
-  generateAIBriefing,
-  generateAIBriefingStreaming,
-  briefingCache,
-} from './dashboard-briefing.js';
+} from './types.js';
+import { generateAIBriefing, generateAIBriefingStreaming, briefingCache } from './briefing.js';
 
 const log = getLog('DashboardService');
 

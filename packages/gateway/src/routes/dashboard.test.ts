@@ -68,7 +68,7 @@ const mockBriefingCache = {
   invalidate: vi.fn(),
 };
 
-vi.mock('../services/dashboard.js', () => ({
+vi.mock('../services/dashboard/index.js', () => ({
   DashboardService: vi.fn(function () {
     return mockDashboardService;
   }),

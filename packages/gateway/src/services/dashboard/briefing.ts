@@ -5,8 +5,8 @@
  * for the daily briefing feature.
  */
 
-import type { DailyBriefingData, AIBriefing } from './dashboard-types.js';
-import { getLog } from './log.js';
+import type { DailyBriefingData, AIBriefing } from './types.js';
+import { getLog } from '../log.js';
 
 const log = getLog('DashboardBriefing');
 
@@ -119,12 +119,12 @@ export async function generateAIBriefing(
 
   const prompt = buildBriefingPrompt(data);
 
-  const { getDefaultProvider, getDefaultModel } = await import('./app-settings.js');
+  const { getDefaultProvider, getDefaultModel } = await import('../app-settings.js');
   const provider = options?.provider ?? (await getDefaultProvider()) ?? 'openai';
   const model = options?.model ?? (await getDefaultModel(provider)) ?? 'gpt-4o-mini';
 
   try {
-    const { getOrCreateChatAgent } = await import('./agent/service.js');
+    const { getOrCreateChatAgent } = await import('../agent/service.js');
     const agent = await getOrCreateChatAgent(provider, model);
     const result = await agent.chat(prompt, { stream: false });
 
@@ -153,11 +153,11 @@ export async function generateAIBriefingStreaming(
   const dataHash = calculateDataHash(data);
   const prompt = buildBriefingPrompt(data);
 
-  const { getDefaultModel } = await import('./app-settings.js');
+  const { getDefaultModel } = await import('../app-settings.js');
   const model = options.model ?? (await getDefaultModel(options.provider)) ?? 'default';
 
   try {
-    const { getOrCreateChatAgent } = await import('./agent/service.js');
+    const { getOrCreateChatAgent } = await import('../agent/service.js');
     const agent = await getOrCreateChatAgent(options.provider, model);
 
     let fullContent = '';

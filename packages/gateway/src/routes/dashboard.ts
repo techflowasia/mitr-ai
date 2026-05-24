@@ -5,7 +5,7 @@
  */
 
 import { Hono } from 'hono';
-import { DashboardService, briefingCache, type AIBriefing } from '../services/dashboard.js';
+import { DashboardService, briefingCache, type AIBriefing } from '../services/dashboard/index.js';
 import { getLog } from '../services/log.js';
 import {
   getUserId,

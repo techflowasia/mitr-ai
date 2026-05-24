@@ -18,8 +18,13 @@ import {
   type DailyBriefingData,
   type AIBriefing,
   type HabitProgressItem,
-} from './dashboard.js';
-import { type Plan, type CalendarEvent, type Goal, type Task } from '../db/repositories/index.js';
+} from './index.js';
+import {
+  type Plan,
+  type CalendarEvent,
+  type Goal,
+  type Task,
+} from '../../db/repositories/index.js';
 
 // ---------------------------------------------------------------------------
 // Mocks for aggregateDailyData / generateAIBriefing
@@ -37,7 +42,7 @@ const mockCostsGetDailyCosts = vi.fn(async () => []);
 const mockNotesPinned = vi.fn(async () => []);
 const mockNotesRecent = vi.fn(async () => []);
 
-vi.mock('../db/repositories/index.js', async (importOriginal) => {
+vi.mock('../../db/repositories/index.js', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,
@@ -115,11 +120,11 @@ const mockGetOrCreateChatAgent = vi.fn();
 const mockGetDefaultProvider = vi.fn(async () => 'openai');
 const mockGetDefaultModel = vi.fn(async () => 'gpt-4o-mini');
 
-vi.mock('./agent/service.js', () => ({
+vi.mock('../agent/service.js', () => ({
   getOrCreateChatAgent: (...args: unknown[]) => mockGetOrCreateChatAgent(...args),
 }));
 
-vi.mock('./app-settings.js', () => ({
+vi.mock('../app-settings.js', () => ({
   getDefaultProvider: (...args: unknown[]) => mockGetDefaultProvider(...args),
   getDefaultModel: (...args: unknown[]) => mockGetDefaultModel(...args),
 }));

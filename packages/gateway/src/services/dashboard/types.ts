@@ -13,7 +13,7 @@ import type {
   TriggerHistory,
   Note,
   Plan,
-} from '../db/repositories/index.js';
+} from '../../db/repositories/index.js';
 import type { ServiceMemoryEntry } from '@ownpilot/core';
 
 export interface TasksSummary {
