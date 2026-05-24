@@ -5,8 +5,8 @@ import { requestId } from '../middleware/request-id.js';
 import { errorHandler } from '../middleware/error-handler.js';
 
 // Mock getAgent to avoid DB dependency in CI
-vi.mock('./agents.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('./agents.js')>();
+vi.mock('./agents/index.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./agents/index.js')>();
   return {
     ...actual,
     getAgent: vi.fn().mockResolvedValue(undefined),
