@@ -159,7 +159,7 @@ const mockSandbox = {
   setCallToolHandler: vi.fn(),
 };
 
-vi.mock('./extension-sandbox.js', () => ({
+vi.mock('./extension/sandbox.js', () => ({
   getExtensionSandbox: vi.fn(() => mockSandbox),
 }));
 
@@ -167,7 +167,7 @@ vi.mock('./tool-permission-service.js', () => ({
   checkToolPermission: vi.fn(async () => ({ allowed: true, reason: '' })),
 }));
 
-vi.mock('./extension-permissions.js', () => ({
+vi.mock('./extension/permissions.js', () => ({
   checkPermission: vi.fn(() => true),
   getRequiredPermission: vi.fn(() => null),
   logPermissionDenied: vi.fn(),

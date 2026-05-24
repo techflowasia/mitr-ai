@@ -5,7 +5,7 @@
  */
 
 import { type ToolDefinition, getErrorMessage } from '@ownpilot/core';
-import { getExtensionService } from '../services/extension-service.js';
+import { getExtensionService } from '../services/extension/service.js';
 
 // =============================================================================
 // Tool Definitions

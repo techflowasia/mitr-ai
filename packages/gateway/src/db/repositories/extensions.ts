@@ -8,7 +8,7 @@
 
 import { BaseRepository, parseJsonField } from './base.js';
 import { getLog } from '../../services/log.js';
-import type { ExtensionManifest, ExtensionFormat } from '../../services/extension-types.js';
+import type { ExtensionManifest, ExtensionFormat } from '../../services/extension/types.js';
 
 const log = getLog('ExtRepo');
 

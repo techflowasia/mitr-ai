@@ -20,7 +20,7 @@ import { join, dirname, basename } from 'node:path';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { getExtensionService } from '@ownpilot/core';
-import type { ExtensionService } from '../../services/extension-service.js';
+import type { ExtensionService } from '../../services/extension/service.js';
 import {
   getUserId,
   apiResponse,

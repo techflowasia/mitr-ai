@@ -100,7 +100,7 @@ vi.mock('node:vm', () => ({
   Script: MockScript,
 }));
 
-vi.mock('./log.js', () => ({
+vi.mock('../log.js', () => ({
   getLog: vi.fn(() => ({
     info: vi.fn(),
     warn: vi.fn(),
@@ -118,7 +118,7 @@ vi.mock('@ownpilot/core', () => ({
 // Import after mocks
 // =============================================================================
 
-const { ExtensionSandboxManager, getExtensionSandbox } = await import('./extension-sandbox.js');
+const { ExtensionSandboxManager, getExtensionSandbox } = await import('./sandbox.js');
 
 // =============================================================================
 // Helpers

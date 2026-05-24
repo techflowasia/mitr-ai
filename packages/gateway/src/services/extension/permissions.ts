@@ -5,8 +5,8 @@
  * whether a tool call is allowed by an extension's granted permissions.
  */
 
-import type { SkillPermission } from './extension-types.js';
-import { getLog } from './log.js';
+import type { SkillPermission } from './types.js';
+import { getLog } from '../log.js';
 
 const log = getLog('ExtPerms');
 

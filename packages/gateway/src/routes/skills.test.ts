@@ -62,7 +62,7 @@ vi.mock('../db/repositories/extensions.js', () => ({
   extensionsRepo: mockExtensionsRepo,
 }));
 
-vi.mock('../services/extension-permissions.js', () => ({
+vi.mock('../services/extension/permissions.js', () => ({
   getAllPermissions: vi.fn(() => ['network', 'filesystem']),
   getPermissionDescription: vi.fn((p: string) => `${p} access`),
   getPermissionSensitivity: vi.fn(() => 'medium'),

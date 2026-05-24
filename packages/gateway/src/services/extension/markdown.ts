@@ -15,7 +15,7 @@ import type {
   ExtensionTriggerDefinition,
   ExtensionRequiredService,
   ExtensionConfigField,
-} from './extension-types.js';
+} from './types.js';
 
 // =============================================================================
 // Public API

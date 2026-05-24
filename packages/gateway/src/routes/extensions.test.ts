@@ -78,7 +78,7 @@ const mockService = {
 
 const mockComplete = vi.fn();
 
-vi.mock('../services/extension-service.js', () => ({
+vi.mock('../services/extension/service.js', () => ({
   getExtensionService: () => mockService,
   ExtensionError: class ExtensionError extends Error {
     code: string;
@@ -90,7 +90,7 @@ vi.mock('../services/extension-service.js', () => ({
   },
 }));
 
-vi.mock('../services/extension-types.js', () => ({
+vi.mock('../services/extension/types.js', () => ({
   validateManifest: vi.fn(() => ({ valid: true, errors: [] })),
 }));
 
@@ -261,7 +261,7 @@ describe('Extensions Routes', () => {
     });
 
     it('returns 400 when service throws ExtensionError', async () => {
-      const { ExtensionError } = await import('../services/extension-service.js');
+      const { ExtensionError } = await import('../services/extension/service.js');
       mockService.installFromManifest.mockRejectedValue(
         new ExtensionError('Invalid', 'VALIDATION_ERROR')
       );
@@ -631,7 +631,7 @@ describe('Extensions Routes', () => {
     });
 
     it('returns 400 for ExtensionError', async () => {
-      const { ExtensionError } = await import('../services/extension-service.js');
+      const { ExtensionError } = await import('../services/extension/service.js');
       mockService.reload.mockRejectedValue(new ExtensionError('No source path', 'IO_ERROR'));
 
       const res = await app.request('/extensions/test-ext/reload', { method: 'POST' });

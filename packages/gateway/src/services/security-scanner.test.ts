@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock dependencies before imports
-vi.mock('./extension-service.js', () => ({
+vi.mock('./extension/service.js', () => ({
   getExtensionService: vi.fn(),
 }));
 
@@ -63,7 +63,7 @@ vi.mock('./log.js', () => ({
   getLog: () => ({ info: vi.fn(), error: vi.fn(), debug: vi.fn(), warn: vi.fn() }),
 }));
 
-import { getExtensionService } from './extension-service.js';
+import { getExtensionService } from './extension/service.js';
 import { auditSkillSecurity } from './skill-security-audit.js';
 import { analyzeToolCode, calculateSecurityScore } from '@ownpilot/core';
 import {

@@ -177,7 +177,7 @@ vi.mock('./config-tools.js', () => ({
   CONFIG_TOOLS: [],
   executeConfigTool: vi.fn(),
 }));
-vi.mock('../services/extension-service.js', () => ({
+vi.mock('../services/extension/service.js', () => ({
   getExtensionService: vi.fn(),
 }));
 

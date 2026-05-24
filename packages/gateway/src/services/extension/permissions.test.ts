@@ -10,7 +10,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const { mockWarn } = vi.hoisted(() => ({ mockWarn: vi.fn() }));
 
-vi.mock('./log.js', () => ({
+vi.mock('../log.js', () => ({
   getLog: vi.fn(() => ({ warn: mockWarn, info: vi.fn(), error: vi.fn(), debug: vi.fn() })),
 }));
 
@@ -21,7 +21,7 @@ import {
   getPermissionSensitivity,
   getAllPermissions,
   logPermissionDenied,
-} from './extension-permissions.js';
+} from './permissions.js';
 
 beforeEach(() => {
   vi.clearAllMocks();

@@ -11,9 +11,9 @@
  */
 
 import { getTriggerService } from '@ownpilot/core';
-import type { ExtensionManifest } from './extension-types.js';
-import { extensionsRepo } from '../db/repositories/extensions.js';
-import { getLog } from './log.js';
+import type { ExtensionManifest } from './types.js';
+import { extensionsRepo } from '../../db/repositories/extensions.js';
+import { getLog } from '../log.js';
 
 const log = getLog('ExtTriggerManager');
 

@@ -328,7 +328,7 @@ async function main() {
     const { initializeExtensionsRepo } = await import('./db/repositories/extensions.js');
     await initializeExtensionsRepo();
 
-    const { getExtensionService } = await import('./services/extension-service.js');
+    const { getExtensionService } = await import('./services/extension/service.js');
     const extService = getExtensionService();
     const scanResult = await extService.scanDirectory(undefined, 'default');
     const totalExtensions = extService.getAll().length;

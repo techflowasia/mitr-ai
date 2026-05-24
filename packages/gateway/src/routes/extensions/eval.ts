@@ -13,7 +13,7 @@ import {
   getExtensionService,
   type AIProvider,
 } from '@ownpilot/core';
-import type { ExtensionService } from '../../services/extension-service.js';
+import type { ExtensionService } from '../../services/extension/service.js';
 import {
   getUserId,
   apiResponse,

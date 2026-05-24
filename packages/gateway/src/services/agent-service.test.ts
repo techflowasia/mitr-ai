@@ -155,7 +155,7 @@ vi.mock('./cli/chat-provider.js', () => ({
   getCliChatProviderDefinition: vi.fn(() => null),
 }));
 
-vi.mock('./extension-service.js', () => ({
+vi.mock('./extension/service.js', () => ({
   getExtensionService: vi.fn(() => ({
     getSystemPromptSections: vi.fn(() => []),
   })),

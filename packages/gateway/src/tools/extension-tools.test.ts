@@ -18,7 +18,7 @@ const mockService = {
   disable: vi.fn(),
 };
 
-vi.mock('../services/extension-service.js', () => ({
+vi.mock('../services/extension/service.js', () => ({
   getExtensionService: () => mockService,
 }));
 

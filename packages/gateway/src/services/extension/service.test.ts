@@ -81,11 +81,11 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
 });
 
-vi.mock('../db/repositories/extensions.js', () => ({
+vi.mock('../../db/repositories/extensions.js', () => ({
   extensionsRepo: mockRepo,
 }));
 
-vi.mock('./extension-types.js', async (importOriginal) => {
+vi.mock('./types.js', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
@@ -94,28 +94,28 @@ vi.mock('./extension-types.js', async (importOriginal) => {
   };
 });
 
-vi.mock('./extension-markdown.js', () => ({
+vi.mock('./markdown.js', () => ({
   parseExtensionMarkdown: mockParseMd,
 }));
 
-vi.mock('./agentskills-parser.js', () => ({
+vi.mock('../agentskills-parser.js', () => ({
   parseAgentSkillsMd: mockParseSkill,
 }));
 
-vi.mock('./skill-security-audit.js', () => ({
+vi.mock('../skill-security-audit.js', () => ({
   auditSkillSecurity: mockAudit,
 }));
 
-vi.mock('./api-service-registrar.js', () => ({
+vi.mock('../api-service-registrar.js', () => ({
   registerToolConfigRequirements: mockRegReqs,
   unregisterDependencies: mockUnregDeps,
 }));
 
-vi.mock('../paths/index.js', () => ({
+vi.mock('../../paths/index.js', () => ({
   getDataDirectoryInfo: () => ({ root: '/data' }),
 }));
 
-vi.mock('./log.js', () => ({
+vi.mock('../log.js', () => ({
   getLog: () => ({
     info: vi.fn(),
     warn: vi.fn(),
@@ -128,8 +128,8 @@ vi.mock('./log.js', () => ({
 // Import SUT after mocks
 // =============================================================================
 
-import { ExtensionService, ExtensionError, getExtensionService } from './extension-service.js';
-import type { ExtensionManifest } from './extension-types.js';
+import { ExtensionService, ExtensionError, getExtensionService } from './service.js';
+import type { ExtensionManifest } from './types.js';
 
 // =============================================================================
 // Helpers

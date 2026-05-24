@@ -52,14 +52,14 @@ import {
 } from '@ownpilot/core';
 import { checkToolPermission } from './tool-permission-service.js';
 import type { ToolExecContext } from './permission-utils.js';
-import { getExtensionSandbox } from './extension-sandbox.js';
-import type { SkillPermission } from './extension-types.js';
+import { getExtensionSandbox } from './extension/sandbox.js';
+import type { SkillPermission } from './extension/types.js';
 import { extensionsRepo } from '../db/repositories/extensions.js';
 import {
   checkPermission,
   getRequiredPermission,
   logPermissionDenied,
-} from './extension-permissions.js';
+} from './extension/permissions.js';
 import { createHash } from 'node:crypto';
 import { getIdempotencyKeysRepository } from '../db/repositories/idempotency-keys.js';
 
@@ -268,7 +268,7 @@ function syncCustomToolsIntoRegistry(registry: ToolRegistry, userId: string): vo
  * Shared by initial sync and event-driven re-sync to eliminate duplication.
  */
 function registerSingleExtensionTool(
-  def: import('./extension-service.js').ToolDefinitionForRegistry,
+  def: import('./extension/service.js').ToolDefinitionForRegistry,
   registry: ToolRegistry,
   dynamicRegistry: ReturnType<typeof getCustomToolDynamicRegistry>
 ): boolean {
@@ -368,7 +368,7 @@ function syncExtensionToolsIntoRegistry(registry: ToolRegistry): void {
 
   try {
     const service =
-      getExtensionService() as unknown as import('./extension-service.js').ExtensionService;
+      getExtensionService() as unknown as import('./extension/service.js').ExtensionService;
     const dynamicRegistry = getCustomToolDynamicRegistry();
     const extToolDefs = service.getToolDefinitions();
 

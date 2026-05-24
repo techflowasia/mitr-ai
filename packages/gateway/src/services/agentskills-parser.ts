@@ -17,8 +17,8 @@
 
 import { readdirSync, existsSync } from 'fs';
 import { join } from 'path';
-import type { ExtensionManifest } from './extension-types.js';
-import { validateAgentSkillsFrontmatter, type AgentSkillsFrontmatter } from './extension-types.js';
+import type { ExtensionManifest } from './extension/types.js';
+import { validateAgentSkillsFrontmatter, type AgentSkillsFrontmatter } from './extension/types.js';
 import { getLog } from './log.js';
 
 const log = getLog('AgentSkillsParser');

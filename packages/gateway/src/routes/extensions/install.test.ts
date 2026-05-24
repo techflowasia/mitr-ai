@@ -10,7 +10,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
 import { errorHandler } from '../../middleware/error-handler.js';
-import { ExtensionError } from '../../services/extension-service.js';
+import { ExtensionError } from '../../services/extension/service.js';
 
 // ---------------------------------------------------------------------------
 // Mocks

@@ -17,18 +17,18 @@ vi.mock('@ownpilot/core', async (importOriginal) => ({
   Services: { Trigger: 'trigger' },
 }));
 
-vi.mock('../db/repositories/extensions.js', () => ({
+vi.mock('../../db/repositories/extensions.js', () => ({
   extensionsRepo: {
     getAll: vi.fn(() => [{ id: 'ext-1' }, { id: 'ext-2' }]),
   },
 }));
 
-vi.mock('./log.js', () => ({
+vi.mock('../log.js', () => ({
   getLog: () => ({ info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn() }),
 }));
 
 const { activateExtensionTriggers, deactivateExtensionTriggers, cleanupOrphanTriggers } =
-  await import('./extension-trigger-manager.js');
+  await import('./trigger-manager.js');
 
 // ── Tests ──
 

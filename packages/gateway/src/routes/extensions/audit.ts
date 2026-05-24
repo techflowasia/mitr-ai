@@ -15,8 +15,8 @@ import {
   getExtensionService,
   type AIProvider,
 } from '@ownpilot/core';
-import type { ExtensionService } from '../../services/extension-service.js';
-import type { ExtensionManifest } from '../../services/extension-types.js';
+import type { ExtensionService } from '../../services/extension/service.js';
+import type { ExtensionManifest } from '../../services/extension/types.js';
 import {
   auditSkillSecurity,
   buildLlmAuditPrompt,

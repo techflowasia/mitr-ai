@@ -14,8 +14,8 @@ import {
   getAllPermissions,
   getPermissionDescription,
   getPermissionSensitivity,
-} from '../services/extension-permissions.js';
-import type { SkillPermission } from '../services/extension-types.js';
+} from '../services/extension/permissions.js';
+import type { SkillPermission } from '../services/extension/types.js';
 import { extensionsRepo } from '../db/repositories/extensions.js';
 import { validateBody } from '../middleware/validation.js';
 import { wsGateway } from '../ws/server.js';

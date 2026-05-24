@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { parseExtensionMarkdown, serializeExtensionMarkdown } from './extension-markdown.js';
-import { validateManifest, type ExtensionManifest } from './extension-types.js';
+import { parseExtensionMarkdown, serializeExtensionMarkdown } from './markdown.js';
+import { validateManifest, type ExtensionManifest } from './types.js';
 
 // =============================================================================
 // Fixtures

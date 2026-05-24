@@ -7,7 +7,7 @@
 
 import { Hono, type Context } from 'hono';
 import { getExtensionService } from '@ownpilot/core';
-import { type ExtensionService, ExtensionError } from '../../services/extension-service.js';
+import { type ExtensionService, ExtensionError } from '../../services/extension/service.js';
 import {
   getUserId,
   apiResponse,

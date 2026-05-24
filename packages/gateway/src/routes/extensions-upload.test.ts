@@ -48,7 +48,7 @@ const mockService = {
   scanDirectory: vi.fn(async () => ({ installed: 0, errors: [] })),
 };
 
-vi.mock('../services/extension-service.js', () => ({
+vi.mock('../services/extension/service.js', () => ({
   getExtensionService: () => mockService,
   ExtensionError: class ExtensionError extends Error {
     code: string;
@@ -60,11 +60,11 @@ vi.mock('../services/extension-service.js', () => ({
   },
 }));
 
-vi.mock('../services/extension-types.js', () => ({
+vi.mock('../services/extension/types.js', () => ({
   validateManifest: vi.fn(() => ({ valid: true, errors: [] })),
 }));
 
-vi.mock('../services/extension-markdown.js', () => ({
+vi.mock('../services/extension/markdown.js', () => ({
   serializeExtensionMarkdown: vi.fn(() => '# Extension'),
 }));
 
@@ -269,7 +269,7 @@ describe('POST /extensions/upload', () => {
 
   it('handles ExtensionError from service.install', async () => {
     // Import the mock ExtensionError class
-    const { ExtensionError } = await import('../services/extension-service.js');
+    const { ExtensionError } = await import('../services/extension/service.js');
     mockService.install.mockRejectedValueOnce(
       new ExtensionError('Invalid manifest: missing tools', 'VALIDATION_ERROR')
     );

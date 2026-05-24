@@ -12,8 +12,8 @@
 import { existsSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { getDataDirectoryInfo } from '../paths/index.js';
-import { getLog } from './log.js';
+import { getDataDirectoryInfo } from '../../paths/index.js';
+import { getLog } from '../log.js';
 
 const log = getLog('ExtScanner');
 

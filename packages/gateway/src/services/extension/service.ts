@@ -8,29 +8,28 @@
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { getEventSystem, type IExtensionService } from '@ownpilot/core';
-import { extensionsRepo, type ExtensionRecord } from '../db/repositories/extensions.js';
+import { extensionsRepo, type ExtensionRecord } from '../../db/repositories/extensions.js';
 import {
   validateManifest,
   validateAgentSkillsFrontmatter,
   type ExtensionManifest,
   type ExtensionToolDefinition,
-} from './extension-types.js';
-import { parseExtensionMarkdown } from './extension-markdown.js';
-import { parseAgentSkillsMd } from './agentskills-parser.js';
-import { auditSkillSecurity } from './skill-security-audit.js';
-import { registerToolConfigRequirements, unregisterDependencies } from './api-service-registrar.js';
-import { getLog } from './log.js';
+} from './types.js';
+import { parseExtensionMarkdown } from './markdown.js';
+import { parseAgentSkillsMd } from '../agentskills-parser.js';
+import { auditSkillSecurity } from '../skill-security-audit.js';
+import {
+  registerToolConfigRequirements,
+  unregisterDependencies,
+} from '../api-service-registrar.js';
+import { getLog } from '../log.js';
 import {
   activateExtensionTriggers,
   deactivateExtensionTriggers,
   cleanupOrphanTriggers as cleanupOrphanTriggersImpl,
-} from './extension-trigger-manager.js';
-import {
-  getAllScanDirectories,
-  scanSingleDirectory,
-  type ScanResult,
-} from './extension-scanner.js';
-import { isWithinDirectory } from '../utils/file-safety.js';
+} from './trigger-manager.js';
+import { getAllScanDirectories, scanSingleDirectory, type ScanResult } from './scanner.js';
+import { isWithinDirectory } from '../../utils/file-safety.js';
 
 const log = getLog('ExtService');
 

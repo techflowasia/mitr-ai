@@ -4,7 +4,7 @@ import {
   buildLlmAuditPrompt,
   parseLlmAuditResponse,
 } from './skill-security-audit.js';
-import type { ExtensionManifest } from './extension-types.js';
+import type { ExtensionManifest } from './extension/types.js';
 
 function makeManifest(overrides: Partial<ExtensionManifest> = {}): ExtensionManifest {
   return {

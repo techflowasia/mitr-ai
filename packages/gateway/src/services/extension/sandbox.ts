@@ -8,7 +8,7 @@
 
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import { createContext, Script } from 'node:vm';
-import { getLog } from './log.js';
+import { getLog } from '../log.js';
 import { getErrorMessage, validateToolCode } from '@ownpilot/core';
 
 const log = getLog('ExtSandbox');

@@ -9,11 +9,11 @@ vi.mock('url', () => ({
   fileURLToPath: vi.fn(() => '/fake/gateway/src/services'),
 }));
 
-vi.mock('../paths/index.js', () => ({
+vi.mock('../../paths/index.js', () => ({
   getDataDirectoryInfo: vi.fn(() => ({ root: '/data' })),
 }));
 
-vi.mock('./log.js', () => ({
+vi.mock('../log.js', () => ({
   getLog: () => ({ info: vi.fn(), warn: vi.fn(), debug: vi.fn() }),
 }));
 
@@ -24,7 +24,7 @@ const {
   getWorkspaceSkillsDirectory,
   getAllScanDirectories,
   scanSingleDirectory,
-} = await import('./extension-scanner.js');
+} = await import('./scanner.js');
 
 beforeEach(() => {
   vi.clearAllMocks();

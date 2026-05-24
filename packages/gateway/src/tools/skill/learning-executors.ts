@@ -11,7 +11,7 @@
  */
 
 import { getErrorMessage } from '@ownpilot/core';
-import { getExtensionService } from '../../services/extension-service.js';
+import { getExtensionService } from '../../services/extension/service.js';
 import { getAdapter } from '../../db/adapters/index.js';
 
 type ExecResult = { success: boolean; result?: unknown; error?: string };

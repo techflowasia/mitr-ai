@@ -63,12 +63,12 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
 });
 
 const mockValidateManifest = vi.fn(() => ({ valid: true, errors: [] }));
-vi.mock('../../services/extension-types.js', () => ({
+vi.mock('../../services/extension/types.js', () => ({
   validateManifest: (...args: unknown[]) => mockValidateManifest(...(args as [unknown])),
 }));
 
 const mockSerializeExtensionMarkdown = vi.fn(() => '# Extension\nSome markdown');
-vi.mock('../../services/extension-markdown.js', () => ({
+vi.mock('../../services/extension/markdown.js', () => ({
   serializeExtensionMarkdown: (...args: unknown[]) =>
     mockSerializeExtensionMarkdown(...(args as [unknown])),
 }));

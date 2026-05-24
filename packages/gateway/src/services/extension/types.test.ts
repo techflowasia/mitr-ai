@@ -5,11 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  validateManifest,
-  normalizeSkillName,
-  validateAgentSkillsFrontmatter,
-} from './extension-types.js';
+import { validateManifest, normalizeSkillName, validateAgentSkillsFrontmatter } from './types.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
