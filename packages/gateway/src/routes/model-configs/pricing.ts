@@ -153,11 +153,12 @@ pricingRoutes.post('/sync/apply', async (c) => {
 
     wsGateway.broadcast('data:changed', { entity: 'model_config', action: 'updated' });
     return apiResponse(c, {
-      message: `Synced ${result.synced.length} providers from models.dev`,
+      message: `Synced ${result.synced.length} providers (${result.totalModels} models) from models.dev`,
       stats: {
         providers: result.synced.length,
         failed: result.failed.length,
         total: result.total,
+        totalModels: result.totalModels,
         syncedProviders: result.synced,
         failedProviders: result.failed,
       },

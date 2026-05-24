@@ -441,10 +441,12 @@ export async function syncAllProviders(outputDir?: string): Promise<{
   synced: string[];
   failed: string[];
   total: number;
+  totalModels: number;
 }> {
   const data = await fetchModelsDevApi();
   const synced: string[] = [];
   const failed: string[] = [];
+  let totalModels = 0;
 
   for (const [providerId, providerData] of Object.entries(data)) {
     try {
@@ -455,6 +457,7 @@ export async function syncAllProviders(outputDir?: string): Promise<{
 
       syncProvider(providerId, providerData, outputDir);
       synced.push(providerId);
+      totalModels += Object.keys(providerData.models).length;
     } catch (error) {
       console.error(`Failed to sync provider ${providerId}:`, error);
       failed.push(providerId);
@@ -465,6 +468,7 @@ export async function syncAllProviders(outputDir?: string): Promise<{
     synced,
     failed,
     total: Object.keys(data).length,
+    totalModels,
   };
 }
 
@@ -478,11 +482,13 @@ export async function syncProviders(
   synced: string[];
   failed: string[];
   notFound: string[];
+  totalModels: number;
 }> {
   const data = await fetchModelsDevApi();
   const synced: string[] = [];
   const failed: string[] = [];
   const notFound: string[] = [];
+  let totalModels = 0;
 
   for (const providerId of providerIds) {
     const providerData = data[providerId];
@@ -494,13 +500,14 @@ export async function syncProviders(
     try {
       syncProvider(providerId, providerData, outputDir);
       synced.push(providerId);
+      totalModels += Object.keys(providerData.models ?? {}).length;
     } catch (error) {
       console.error(`Failed to sync provider ${providerId}:`, error);
       failed.push(providerId);
     }
   }
 
-  return { synced, failed, notFound };
+  return { synced, failed, notFound, totalModels };
 }
 
 /**
