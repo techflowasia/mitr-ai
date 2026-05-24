@@ -11,7 +11,7 @@ import { executeSkillTool, SKILL_TOOLS } from './skill-tools.js';
 // Mocks - Must be defined inline inside vi.mock factories due to hoisting
 // =============================================================================
 
-vi.mock('../services/skill-npm-installer.js', () => ({
+vi.mock('../services/skill/npm-installer.js', () => ({
   getNpmInstaller: () => ({
     search: vi.fn(),
     install: vi.fn(),
@@ -36,7 +36,7 @@ vi.mock('../db/repositories/extensions.js', () => ({
   },
 }));
 
-vi.mock('../services/agentskills-parser.js', () => ({
+vi.mock('../services/skill/agentskills-parser.js', () => ({
   parseAgentSkillsMd: vi.fn(),
   parseSkillMdFrontmatter: vi.fn(),
   scanSkillDirectory: vi.fn(),
@@ -535,7 +535,7 @@ const stableMocks = vi.hoisted(() => {
   return { mockInstaller, mockService, mockExtensionsRepo, mockAdapter };
 });
 
-vi.mock('../services/skill-npm-installer.js', () => ({
+vi.mock('../services/skill/npm-installer.js', () => ({
   getNpmInstaller: () => stableMocks.mockInstaller,
 }));
 
@@ -1450,7 +1450,7 @@ describe('Happy Path Tests', () => {
     it('lists resources in skill directory via sourcePath', async () => {
       const { existsSync: mockExistsSync } = await import('fs');
       const { scanSkillDirectory: mockScanSkillDirectory } =
-        await import('../services/agentskills-parser.js');
+        await import('../services/skill/agentskills-parser.js');
 
       const extWithSourcePath = {
         ...happyExtension,

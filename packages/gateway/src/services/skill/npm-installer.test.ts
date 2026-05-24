@@ -67,7 +67,7 @@ vi.mock('node:util', () => ({
   promisify: vi.fn(() => mockExecAsync),
 }));
 
-vi.mock('./log.js', () => ({
+vi.mock('../log.js', () => ({
   getLog: () => ({
     info: vi.fn(),
     warn: vi.fn(),
@@ -88,7 +88,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
 // Import under test (AFTER all mocks are registered)
 // =============================================================================
 
-import { NpmSkillInstaller, getNpmInstaller } from './skill-npm-installer.js';
+import { NpmSkillInstaller, getNpmInstaller } from './npm-installer.js';
 
 // =============================================================================
 // Response factory helpers

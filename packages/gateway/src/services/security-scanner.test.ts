@@ -50,7 +50,7 @@ vi.mock('../db/repositories/index.js', () => ({
   },
 }));
 
-vi.mock('./skill-security-audit.js', () => ({
+vi.mock('./skill/security-audit.js', () => ({
   auditSkillSecurity: vi.fn(),
 }));
 
@@ -64,7 +64,7 @@ vi.mock('./log.js', () => ({
 }));
 
 import { getExtensionService } from './extension/service.js';
-import { auditSkillSecurity } from './skill-security-audit.js';
+import { auditSkillSecurity } from './skill/security-audit.js';
 import { analyzeToolCode, calculateSecurityScore } from '@ownpilot/core';
 import {
   createCustomToolsRepo,

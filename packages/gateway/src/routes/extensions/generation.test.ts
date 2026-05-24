@@ -74,7 +74,7 @@ vi.mock('../../services/extension/markdown.js', () => ({
 }));
 
 const mockParseAgentSkillsMd = vi.fn(() => ({ name: 'Code Review Assistant' }));
-vi.mock('../../services/agentskills-parser.js', () => ({
+vi.mock('../../services/skill/agentskills-parser.js', () => ({
   parseAgentSkillsMd: (...args: unknown[]) => mockParseAgentSkillsMd(...(args as [string])),
 }));
 

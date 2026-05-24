@@ -22,7 +22,7 @@ import {
   buildLlmAuditPrompt,
   parseLlmAuditResponse,
   type SkillLlmAuditResult,
-} from '../../services/skill-security-audit.js';
+} from '../../services/skill/security-audit.js';
 import {
   getUserId,
   apiResponse,

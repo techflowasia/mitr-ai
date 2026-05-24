@@ -12,7 +12,7 @@ import { get as httpsGet } from 'node:https';
 import { createWriteStream } from 'node:fs';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
-import { getLog } from './log.js';
+import { getLog } from '../log.js';
 import { getErrorMessage } from '@ownpilot/core';
 
 const execAsync = promisify(exec);

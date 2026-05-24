@@ -98,11 +98,11 @@ vi.mock('./markdown.js', () => ({
   parseExtensionMarkdown: mockParseMd,
 }));
 
-vi.mock('../agentskills-parser.js', () => ({
+vi.mock('../skill/agentskills-parser.js', () => ({
   parseAgentSkillsMd: mockParseSkill,
 }));
 
-vi.mock('../skill-security-audit.js', () => ({
+vi.mock('../skill/security-audit.js', () => ({
   auditSkillSecurity: mockAudit,
 }));
 

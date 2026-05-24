@@ -12,7 +12,7 @@ import {
 } from '@ownpilot/core';
 import { validateManifest, type ExtensionManifest } from '../../services/extension/types.js';
 import { serializeExtensionMarkdown } from '../../services/extension/markdown.js';
-import { parseAgentSkillsMd } from '../../services/agentskills-parser.js';
+import { parseAgentSkillsMd } from '../../services/skill/agentskills-parser.js';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from '../helpers.js';
 import { resolveDefaultProviderAndModel, getApiKey } from '../settings.js';
 import { localProvidersRepo } from '../../db/repositories/index.js';

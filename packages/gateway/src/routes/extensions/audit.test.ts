@@ -54,7 +54,7 @@ vi.mock('../../db/repositories/index.js', () => ({
   localProvidersRepo: { getProvider: vi.fn(async () => null) },
 }));
 
-vi.mock('../../services/skill-security-audit.js', () => ({
+vi.mock('../../services/skill/security-audit.js', () => ({
   auditSkillSecurity: vi.fn(() => ({ riskLevel: 'low', findings: [] })),
   buildLlmAuditPrompt: vi.fn(() => 'audit prompt text'),
   parseLlmAuditResponse: vi.fn(() => ({
@@ -79,7 +79,7 @@ const { auditRoutes } = await import('./audit.js');
 const { getServiceRegistry, createProvider, getExtensionService } = await import('@ownpilot/core');
 const { resolveDefaultProviderAndModel, getApiKey } = await import('../settings.js');
 const { localProvidersRepo } = await import('../../db/repositories/index.js');
-const { parseLlmAuditResponse } = await import('../../services/skill-security-audit.js');
+const { parseLlmAuditResponse } = await import('../../services/skill/security-audit.js');
 
 // ---------------------------------------------------------------------------
 // Helpers

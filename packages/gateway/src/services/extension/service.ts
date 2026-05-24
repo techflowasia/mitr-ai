@@ -16,8 +16,8 @@ import {
   type ExtensionToolDefinition,
 } from './types.js';
 import { parseExtensionMarkdown } from './markdown.js';
-import { parseAgentSkillsMd } from '../agentskills-parser.js';
-import { auditSkillSecurity } from '../skill-security-audit.js';
+import { parseAgentSkillsMd } from '../skill/agentskills-parser.js';
+import { auditSkillSecurity } from '../skill/security-audit.js';
 import {
   registerToolConfigRequirements,
   unregisterDependencies,

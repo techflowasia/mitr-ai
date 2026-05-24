@@ -14,7 +14,10 @@ import { readFileSync, existsSync } from 'fs';
 import { join, resolve } from 'path';
 import { getErrorMessage } from '@ownpilot/core';
 import { getExtensionService } from '../../services/extension/service.js';
-import { parseSkillMdFrontmatter, scanSkillDirectory } from '../../services/agentskills-parser.js';
+import {
+  parseSkillMdFrontmatter,
+  scanSkillDirectory,
+} from '../../services/skill/agentskills-parser.js';
 import { isWithinDirectory } from '../../utils/file-safety.js';
 import { resolveSkillDirectory } from './helpers.js';
 

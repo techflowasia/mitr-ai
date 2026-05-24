@@ -11,8 +11,8 @@
  *   - `parseLlmAuditResponse()` — parses structured JSON from LLM output.
  */
 
-import type { ExtensionManifest } from './extension/types.js';
-import { getLog } from './log.js';
+import type { ExtensionManifest } from '../extension/types.js';
+import { getLog } from '../log.js';
 
 const log = getLog('SkillSecurityAudit');
 

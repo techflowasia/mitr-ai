@@ -9,7 +9,7 @@ import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import { getUserId, apiResponse, apiError, ERROR_CODES, getIntParam } from './helpers.js';
 import { getErrorMessage, getExtensionService } from '@ownpilot/core';
-import { getNpmInstaller } from '../services/skill-npm-installer.js';
+import { getNpmInstaller } from '../services/skill/npm-installer.js';
 import {
   getAllPermissions,
   getPermissionDescription,

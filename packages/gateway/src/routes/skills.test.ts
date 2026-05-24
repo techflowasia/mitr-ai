@@ -26,7 +26,7 @@ vi.mock('../ws/server.js', () => ({
   wsGateway: { broadcast: vi.fn() },
 }));
 
-vi.mock('../services/skill-npm-installer.js', () => ({
+vi.mock('../services/skill/npm-installer.js', () => ({
   getNpmInstaller: vi.fn(() => ({
     search: mockSearch,
     install: mockInstall,

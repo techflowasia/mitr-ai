@@ -12,7 +12,7 @@
  */
 
 import { getErrorMessage } from '@ownpilot/core';
-import { getNpmInstaller } from '../../services/skill-npm-installer.js';
+import { getNpmInstaller } from '../../services/skill/npm-installer.js';
 import { getExtensionService } from '../../services/extension/service.js';
 import { extensionsRepo } from '../../db/repositories/extensions.js';
 
