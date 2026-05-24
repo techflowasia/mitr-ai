@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mocks
 // ---------------------------------------------------------------------------
 
-vi.mock('./app-settings.js', () => ({
+vi.mock('../app-settings.js', () => ({
   resolveDefaultProviderAndModel: vi.fn(async (provider: string, model: string) => ({
     provider: provider === 'default' ? 'openai' : provider,
     model: model === 'default' ? 'gpt-4o-mini' : model,
@@ -24,13 +24,13 @@ vi.mock('./app-settings.js', () => ({
 // SUT
 // ---------------------------------------------------------------------------
 
-import { ProviderService, createProviderService } from './provider-service-impl.js';
+import { ProviderService, createProviderService } from './service.js';
 import {
   resolveDefaultProviderAndModel,
   getDefaultProvider,
   setDefaultProvider,
   setDefaultModel,
-} from './app-settings.js';
+} from '../app-settings.js';
 
 // ---------------------------------------------------------------------------
 // Tests

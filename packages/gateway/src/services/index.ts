@@ -24,7 +24,7 @@ export { GatewayConfigCenter, gatewayConfigCenter } from './config-center-impl.j
 export { ToolService, createToolService } from './tool-service-impl.js';
 
 // Provider Service
-export { ProviderService, createProviderService } from './provider-service-impl.js';
+export { ProviderService, createProviderService } from './provider/service.js';
 
 // Audit Service
 export { AuditService, createAuditService } from './audit-service-impl.js';

@@ -73,7 +73,7 @@ import { createSessionService } from './services/session-service-impl.js';
 import { createMessageBus } from './services/message-bus-impl.js';
 import { registerPipelineMiddleware } from './services/middleware/index.js';
 import { createToolService } from './services/tool-service-impl.js';
-import { createProviderService } from './services/provider-service-impl.js';
+import { createProviderService } from './services/provider/service.js';
 import { createAuditService } from './services/audit-service-impl.js';
 import { getCustomDataService } from './services/custom-data-service.js';
 import { createPluginService } from './services/plugin-service-impl.js';
@@ -251,7 +251,7 @@ async function main() {
 
   // Run provider health checks at boot to detect unavailable providers early
   log.info('Running provider health checks...');
-  const { runProviderHealthChecks } = await import('./services/provider-health-service.js');
+  const { runProviderHealthChecks } = await import('./services/provider/health.js');
   await runProviderHealthChecks();
 
   // Start metrics service for Prometheus endpoint
