@@ -104,27 +104,6 @@ CREATE TABLE IF NOT EXISTS heartbeat_log (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Subagent history: ephemeral task execution audit log
-CREATE TABLE IF NOT EXISTS subagent_history (
-  id TEXT PRIMARY KEY,
-  parent_id TEXT NOT NULL,
-  parent_type TEXT NOT NULL CHECK (parent_type IN ('chat', 'claw', 'subagent')),
-  user_id TEXT NOT NULL DEFAULT 'default',
-  name TEXT NOT NULL,
-  task TEXT NOT NULL,
-  state TEXT NOT NULL CHECK (state IN ('completed', 'failed', 'cancelled', 'timeout')),
-  result TEXT,
-  error TEXT,
-  tool_calls JSONB NOT NULL DEFAULT '[]',
-  turns_used INTEGER NOT NULL DEFAULT 0,
-  tool_calls_used INTEGER NOT NULL DEFAULT 0,
-  tokens_used JSONB,
-  duration_ms INTEGER,
-  provider TEXT NOT NULL,
-  model TEXT NOT NULL,
-  spawned_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  completed_at TIMESTAMPTZ
-);
 `;
 
 export const SOULS_MIGRATIONS_SQL = `
@@ -169,8 +148,4 @@ CREATE INDEX IF NOT EXISTS idx_agent_messages_from ON agent_messages(from_agent_
 -- Heartbeat log indexes
 CREATE INDEX IF NOT EXISTS idx_heartbeat_log_agent ON heartbeat_log(agent_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_heartbeat_log_cost ON heartbeat_log(agent_id, created_at) WHERE cost > 0;
-
--- Subagent history indexes
-CREATE INDEX IF NOT EXISTS idx_subagent_history_parent ON subagent_history(parent_id, spawned_at DESC);
-CREATE INDEX IF NOT EXISTS idx_subagent_history_user ON subagent_history(user_id, spawned_at DESC);
 `;

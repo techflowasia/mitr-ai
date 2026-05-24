@@ -208,10 +208,6 @@ CREATE INDEX IF NOT EXISTS idx_coding_agent_subs_provider ON coding_agent_subscr
 CREATE INDEX IF NOT EXISTS idx_orchestration_runs_user ON orchestration_runs(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_orchestration_runs_status ON orchestration_runs(user_id, status);
 
--- Orchestra indexes
-CREATE INDEX IF NOT EXISTS idx_orchestra_executions_parent ON orchestra_executions(parent_id, started_at DESC);
-CREATE INDEX IF NOT EXISTS idx_orchestra_executions_user ON orchestra_executions(user_id, started_at DESC);
-
 -- Artifact indexes
 CREATE INDEX IF NOT EXISTS idx_artifacts_user ON artifacts(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_artifacts_conversation ON artifacts(conversation_id, created_at DESC);
