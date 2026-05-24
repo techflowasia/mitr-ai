@@ -13,7 +13,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mocks — must come before dynamic import
 // ---------------------------------------------------------------------------
 
-vi.mock('../db/repositories/workflows/index.js', () => ({
+vi.mock('../../db/repositories/workflows/index.js', () => ({
   createWorkflowsRepository: vi.fn(),
 }));
 
@@ -32,13 +32,13 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
 });
 
-vi.mock('../routes/helpers.js', () => ({
+vi.mock('../../routes/helpers.js', () => ({
   getErrorMessage: vi.fn((err: unknown, fallback: string) =>
     err instanceof Error ? err.message : fallback
   ),
 }));
 
-vi.mock('./log.js', () => ({
+vi.mock('../log.js', () => ({
   getLog: () => ({
     info: vi.fn(),
     warn: vi.fn(),
@@ -51,7 +51,7 @@ vi.mock('./log.js', () => ({
 // Import under test (dynamic to respect mocks)
 // ---------------------------------------------------------------------------
 
-const { topologicalSort, resolveTemplates, WorkflowService } = await import('./workflow/index.js');
+const { topologicalSort, resolveTemplates, WorkflowService } = await import('./index.js');
 
 // ---------------------------------------------------------------------------
 // Helpers
