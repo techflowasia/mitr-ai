@@ -34,7 +34,7 @@ const mockLogsRepo = {
 
 // ─── Mock Dependencies ───────────────────────────────────────────
 
-vi.mock('../db/repositories/index.js', () => ({
+vi.mock('../../db/repositories/index.js', () => ({
   ChatRepository: vi.fn(function () {
     return mockChatRepo;
   }),
@@ -68,7 +68,7 @@ const mockAgent = {
   getAllToolDefinitions: vi.fn(() => []),
 };
 
-vi.mock('./agents.js', () => ({
+vi.mock('../agents.js', () => ({
   getAgent: vi.fn(),
   getOrCreateDefaultAgent: vi.fn(async () => mockAgent),
   getOrCreateChatAgent: vi.fn(async () => mockAgent),
@@ -90,57 +90,57 @@ vi.mock('./agents.js', () => ({
   clearAllChatAgentCaches: vi.fn(() => 3),
 }));
 
-vi.mock('../services/usage-tracking.js', () => ({
+vi.mock('../../services/usage-tracking.js', () => ({
   usageTracker: {
     record: vi.fn(),
   },
 }));
 
-vi.mock('../audit/index.js', () => ({
+vi.mock('../../audit/index.js', () => ({
   logChatEvent: vi.fn(async () => {}),
 }));
 
-vi.mock('../workspace/file-workspace.js', () => ({
+vi.mock('../../workspace/file-workspace.js', () => ({
   getOrCreateSessionWorkspace: vi.fn(() => ({ id: 'session-1', path: '/tmp/ws/session-1' })),
   getSessionWorkspace: vi.fn(),
 }));
 
-vi.mock('../utils/index.js', () => ({
+vi.mock('../../utils/index.js', () => ({
   extractSuggestions: vi.fn((content: string) => ({ content, suggestions: [] })),
   extractMemoriesFromResponse: vi.fn((content: string) => ({ content, memories: [] })),
   normalizeChatWidgets: vi.fn((content: string) => content),
 }));
 
-vi.mock('../ws/server.js', () => ({
+vi.mock('../../ws/server.js', () => ({
   wsGateway: {
     broadcast: vi.fn(),
   },
 }));
 
 // Mock transitive dependencies that get loaded by non-mocked modules
-vi.mock('./custom-tools.js', () => ({
+vi.mock('../custom-tools.js', () => ({
   executeCustomToolTool: vi.fn(),
   executeActiveCustomTool: vi.fn(),
   getActiveCustomToolDefinitions: vi.fn(async () => []),
 }));
 
-vi.mock('./memories.js', () => ({
+vi.mock('../memories.js', () => ({
   executeMemoryTool: vi.fn(),
 }));
 
-vi.mock('./goals.js', () => ({
+vi.mock('../goals.js', () => ({
   executeGoalTool: vi.fn(),
 }));
 
-vi.mock('./custom-data.js', () => ({
+vi.mock('../custom-data.js', () => ({
   executeCustomDataTool: vi.fn(),
 }));
 
-vi.mock('../tools/personal-data-tools.js', () => ({
+vi.mock('../../tools/personal-data-tools.js', () => ({
   executePersonalDataTool: vi.fn(),
 }));
 
-vi.mock('../tools/index.js', () => ({
+vi.mock('../../tools/index.js', () => ({
   TRIGGER_TOOLS: [],
   executeTriggerTool: vi.fn(),
   PLAN_TOOLS: [],
@@ -149,7 +149,7 @@ vi.mock('../tools/index.js', () => ({
   executeSoulCommunicationTool: vi.fn(),
 }));
 
-vi.mock('../tools/config-tools.js', () => ({
+vi.mock('../../tools/config-tools.js', () => ({
   CONFIG_TOOLS: [],
   executeConfigTool: vi.fn(),
 }));
@@ -164,11 +164,11 @@ const mockResolveForProcess = vi.hoisted(() =>
   }))
 );
 
-vi.mock('../services/llm/model-routing.js', () => ({
+vi.mock('../../services/llm/model-routing.js', () => ({
   resolveForProcess: mockResolveForProcess,
 }));
 
-vi.mock('./settings.js', () => ({
+vi.mock('../settings.js', () => ({
   hasApiKey: vi.fn(() => true),
   getApiKey: vi.fn(() => 'test-key'),
   resolveDefaultProviderAndModel: vi.fn(async (p: string, m: string) => ({
@@ -179,7 +179,7 @@ vi.mock('./settings.js', () => ({
   getDefaultModel: vi.fn(() => 'gpt-4'),
 }));
 
-vi.mock('../db/seeds/default-agents.js', () => ({
+vi.mock('../../db/seeds/default-agents.js', () => ({
   getDefaultAgents: vi.fn(() => []),
 }));
 
@@ -256,19 +256,19 @@ vi.mock('@ownpilot/core', () => ({
   }),
 }));
 
-vi.mock('../services/memory-service.js', () => ({
+vi.mock('../../services/memory-service.js', () => ({
   getMemoryService: vi.fn(() => ({
     extractMemories: vi.fn(async () => []),
   })),
 }));
 
-vi.mock('../services/goal-service.js', () => ({
+vi.mock('../../services/goal-service.js', () => ({
   getGoalService: vi.fn(() => ({
     updateProgress: vi.fn(async () => {}),
   })),
 }));
 
-vi.mock('../tracing/index.js', () => ({
+vi.mock('../../tracing/index.js', () => ({
   traceToolCallStart: vi.fn(() => Date.now()),
   traceToolCallEnd: vi.fn(),
   traceMemoryOp: vi.fn(),
@@ -308,7 +308,7 @@ vi.mock('../tracing/index.js', () => ({
   })),
 }));
 
-vi.mock('../db/repositories/model-configs.js', () => ({
+vi.mock('../../db/repositories/model-configs.js', () => ({
   modelConfigsRepo: {
     getModel: vi.fn(async () => null),
   },
@@ -326,11 +326,11 @@ const mockExecPermRepo = vi.hoisted(() => ({
   })),
 }));
 
-vi.mock('../db/repositories/execution-permissions.js', () => ({
+vi.mock('../../db/repositories/execution-permissions.js', () => ({
   executionPermissionsRepo: mockExecPermRepo,
 }));
 
-vi.mock('../services/log.js', () => ({
+vi.mock('../../services/log.js', () => ({
   getLog: vi.fn(() => ({
     info: vi.fn(),
     warn: vi.fn(),
@@ -339,7 +339,7 @@ vi.mock('../services/log.js', () => ({
   })),
 }));
 
-vi.mock('../assistant/index.js', () => ({
+vi.mock('../../assistant/index.js', () => ({
   buildEnhancedSystemPrompt: vi.fn(async (prompt: string) => ({
     prompt,
     stats: { memoriesUsed: 0, goalsUsed: 0 },
@@ -354,7 +354,7 @@ const mockSaveChatToDatabase = vi.fn(async () => {});
 const mockSaveStreamingChat = vi.fn(async () => {});
 const mockRunPostChatProcessing = vi.fn();
 
-vi.mock('../services/conversation-service.js', () => ({
+vi.mock('../../services/conversation-service.js', () => ({
   ConversationService: vi.fn(function () {
     return {
       saveChat: (...args: unknown[]) => mockSaveChatToDatabase(...args),
@@ -373,21 +373,21 @@ vi.mock('../services/conversation-service.js', () => ({
     })),
 }));
 
-vi.mock('../services/chat/prompt.js', () => ({
+vi.mock('../../services/chat/prompt.js', () => ({
   buildExecutionSystemPrompt: vi.fn(() => '\n\n## Code Execution\nCode execution is DISABLED.'),
   buildToolCatalog: vi.fn(async () => null),
   generateDemoResponse: vi.fn((_msg: string, _p: string, _m: string) => 'This is a demo response.'),
   tryGetMessageBus: vi.fn(() => null),
 }));
 
-vi.mock('../services/chat/streaming.js', () => ({
+vi.mock('../../services/chat/streaming.js', () => ({
   createStreamCallbacks: vi.fn(),
   recordStreamUsage: vi.fn(),
   processStreamingViaBus: vi.fn(),
   wireStreamApproval: vi.fn(),
 }));
 
-vi.mock('../services/chat/state.js', () => ({
+vi.mock('../../services/chat/state.js', () => ({
   promptInitializedConversations: new Set(),
   lastExecPermHash: new Map(),
   execPermHash: vi.fn(() => 'hash-1'),
@@ -401,7 +401,7 @@ const mockIsPrivateUrlAsync = vi.hoisted(() => vi.fn(async () => false));
 // before the actual fetch. Same default as isPrivateUrlAsync.
 const mockIsPrivateUrlAsyncFresh = vi.hoisted(() => vi.fn(async () => false));
 
-vi.mock('../utils/ssrf.js', () => ({
+vi.mock('../../utils/ssrf.js', () => ({
   isBlockedUrl: (...args: unknown[]) => mockIsBlockedUrl(...args),
   isPrivateUrlAsync: (...args: unknown[]) => mockIsPrivateUrlAsync(...args),
   isPrivateUrlAsyncFresh: (...args: unknown[]) => mockIsPrivateUrlAsyncFresh(...args),
@@ -409,8 +409,8 @@ vi.mock('../utils/ssrf.js', () => ({
 
 // ─── Import route + mocked modules ──────────────────────────────
 
-import { chatRoutes } from './chat.js';
-import { errorHandler } from '../middleware/error-handler.js';
+import { chatRoutes } from './index.js';
+import { errorHandler } from '../../middleware/error-handler.js';
 import {
   getAgent,
   getOrCreateChatAgent,
@@ -418,10 +418,10 @@ import {
   getDefaultModel,
   resetChatAgentContext,
   clearAllChatAgentCaches,
-} from './agents.js';
-import { tryGetMessageBus } from '../services/chat/prompt.js';
-import { promptInitializedConversations } from '../services/chat/state.js';
-import { resolveForProcess } from '../services/llm/model-routing.js';
+} from '../agents.js';
+import { tryGetMessageBus } from '../../services/chat/prompt.js';
+import { promptInitializedConversations } from '../../services/chat/state.js';
+import { resolveForProcess } from '../../services/llm/model-routing.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────
 

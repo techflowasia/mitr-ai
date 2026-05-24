@@ -6,14 +6,14 @@
  */
 
 import type { Context } from 'hono';
-import type { ChatRequest } from '../types/index.js';
+import type { ChatRequest } from '../../types/index.js';
 import type { AIProvider } from '@ownpilot/core';
-import { apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
-import { getSessionInfo } from './agents.js';
-import { usageTracker } from '../services/usage-tracking.js';
-import { logChatEvent } from '../audit/index.js';
-import { LogsRepository } from '../db/repositories/index.js';
-import { buildEnhancedSystemPrompt, checkToolCallApproval } from '../assistant/index.js';
+import { apiError, ERROR_CODES, getErrorMessage } from '../helpers.js';
+import { getSessionInfo } from '../agents.js';
+import { usageTracker } from '../../services/usage-tracking.js';
+import { logChatEvent } from '../../audit/index.js';
+import { LogsRepository } from '../../db/repositories/index.js';
+import { buildEnhancedSystemPrompt, checkToolCallApproval } from '../../assistant/index.js';
 import {
   createTraceContext,
   withTraceContextAsync,
@@ -24,25 +24,25 @@ import {
   traceInfo as recordTraceInfo,
   traceError as recordTraceError,
   getTraceSummary,
-} from '../tracing/index.js';
+} from '../../tracing/index.js';
 import { debugLog } from '@ownpilot/core';
 import {
   extractSuggestions,
   extractMemoriesFromResponse,
   normalizeChatWidgets,
-} from '../utils/index.js';
+} from '../../utils/index.js';
 import {
   ConversationService,
   runPostChatProcessing,
   toAttachmentMeta,
-} from '../services/conversation-service.js';
-import { getLog } from '../services/log.js';
+} from '../../services/conversation-service.js';
+import { getLog } from '../../services/log.js';
 
 const log = getLog('ChatLegacySend');
 
 export interface LegacySendParams {
   c: Context;
-  agent: NonNullable<Awaited<ReturnType<typeof import('./agents.js').getAgent>>>;
+  agent: NonNullable<Awaited<ReturnType<typeof import('../agents.js').getAgent>>>;
   body: ChatRequest & { provider?: string; model?: string; workspaceId?: string };
   chatMessage: string;
   provider: string;

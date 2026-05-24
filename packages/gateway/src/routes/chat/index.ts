@@ -13,7 +13,7 @@
 
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
-import type { ChatRequest } from '../types/index.js';
+import type { ChatRequest } from '../../types/index.js';
 import {
   apiResponse,
   apiError,
@@ -23,8 +23,8 @@ import {
   getErrorMessage,
   parseJsonBody,
   truncate,
-} from './helpers.js';
-import { wsGateway } from '../ws/server.js';
+} from '../helpers.js';
+import { wsGateway } from '../../ws/server.js';
 import {
   getAgent,
   getOrCreateDefaultAgent,
@@ -34,24 +34,24 @@ import {
   getWorkspaceContext,
   getSessionInfo,
   getCliCorrelationId,
-} from './agents.js';
-import { onMcpToolEvents } from '../mcp/mcp-events.js';
+} from '../agents.js';
+import { onMcpToolEvents } from '../../mcp/mcp-events.js';
 import { getLLMRouter } from '@ownpilot/core';
-import { ChatRepository } from '../db/repositories/index.js';
-import { modelConfigsRepo } from '../db/repositories/model-configs.js';
+import { ChatRepository } from '../../db/repositories/index.js';
+import { modelConfigsRepo } from '../../db/repositories/model-configs.js';
 import type { NormalizedMessage, MessageProcessingResult } from '@ownpilot/core';
 import { DEFAULT_EXECUTION_PERMISSIONS, type ExecutionPermissions } from '@ownpilot/core';
-import { getOrCreateSessionWorkspace } from '../workspace/file-workspace.js';
-import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
+import { getOrCreateSessionWorkspace } from '../../workspace/file-workspace.js';
+import { executionPermissionsRepo } from '../../db/repositories/execution-permissions.js';
 import {
   extractSuggestions,
   extractMemoriesFromResponse,
   normalizeChatWidgets,
-} from '../utils/index.js';
-import { getLog } from '../services/log.js';
-import { PUBLIC_BASE_URL, MS_PER_MINUTE } from '../config/defaults.js';
-import { createLoginThrottle } from '../utils/login-throttle.js';
-import { getClientIp } from '../utils/client-ip.js';
+} from '../../utils/index.js';
+import { getLog } from '../../services/log.js';
+import { PUBLIC_BASE_URL, MS_PER_MINUTE } from '../../config/defaults.js';
+import { createLoginThrottle } from '../../utils/login-throttle.js';
+import { getClientIp } from '../../utils/client-ip.js';
 
 // RATE-003: per-IP throttle for the chat endpoint. /chat is the single
 // most expensive endpoint — every request hits a paid LLM provider
@@ -80,26 +80,26 @@ import {
   execPermHash,
   boundedSetAdd,
   boundedMapSet,
-} from '../services/chat/state.js';
+} from '../../services/chat/state.js';
 import {
   createStreamCallbacks,
   recordStreamUsage,
   processStreamingViaBus,
   wireStreamApproval,
-} from '../services/chat/streaming.js';
+} from '../../services/chat/streaming.js';
 import {
   buildExecutionSystemPrompt,
   buildToolCatalog,
   generateDemoResponse,
   tryGetMessageBus,
-} from '../services/chat/prompt.js';
+} from '../../services/chat/prompt.js';
 import {
   ConversationService,
   runPostChatProcessing,
   toAttachmentMeta,
-} from '../services/conversation-service.js';
-import { handleLegacySend } from './chat-legacy-send.js';
-import type { McpToolEvent } from '../mcp/mcp-events.js';
+} from '../../services/conversation-service.js';
+import { handleLegacySend } from './legacy-send.js';
+import type { McpToolEvent } from '../../mcp/mcp-events.js';
 
 const log = getLog('Chat');
 
@@ -122,8 +122,8 @@ function toMcpTraceEvent(event: McpToolEvent): {
 // =============================================================================
 // Backward compatibility re-export
 // =============================================================================
-// chat-history.ts imports promptInitializedConversations from './chat.js'
-export { promptInitializedConversations } from '../services/chat/state.js';
+// chat-history.ts imports promptInitializedConversations from './index.js'
+export { promptInitializedConversations } from '../../services/chat/state.js';
 
 // =============================================================================
 // Routes
@@ -132,11 +132,11 @@ export { promptInitializedConversations } from '../services/chat/state.js';
 export const chatRoutes = new Hono();
 
 // Mount history, logs, and context reset sub-routes (extracted for maintainability)
-import { chatHistoryRoutes } from './chat-history.js';
+import { chatHistoryRoutes } from './history.js';
 chatRoutes.route('/', chatHistoryRoutes);
 
 // Mount fetch-url sub-route
-import { chatFetchUrlRoutes } from './chat-fetch-url.js';
+import { chatFetchUrlRoutes } from './fetch-url.js';
 chatRoutes.route('/', chatFetchUrlRoutes);
 
 /**
@@ -223,7 +223,7 @@ chatRoutes.post('/', async (c) => {
   }
 
   const rawBody = await parseJsonBody(c);
-  const { validateBody, chatMessageSchema } = await import('../middleware/validation.js');
+  const { validateBody, chatMessageSchema } = await import('../../middleware/validation.js');
   const body = validateBody(chatMessageSchema, rawBody) as ChatRequest & {
     provider?: string;
     model?: string;
@@ -238,7 +238,7 @@ chatRoutes.post('/', async (c) => {
   if (idempotencyKey) {
     try {
       const idempotencyRepo = (
-        await import('../db/repositories/idempotency-keys.js')
+        await import('../../db/repositories/idempotency-keys.js')
       ).getIdempotencyKeysRepository();
       const cached = await idempotencyRepo.getRecord(idempotencyUserId, idempotencyKey);
       if (cached) {
@@ -901,7 +901,7 @@ chatRoutes.post('/', async (c) => {
     // Store idempotency result before returning (fire-and-forget)
     if (idempotencyKey) {
       const idempotencyRepo = (
-        await import('../db/repositories/idempotency-keys.js')
+        await import('../../db/repositories/idempotency-keys.js')
       ).getIdempotencyKeysRepository();
       idempotencyRepo
         .setRecord(idempotencyUserId, idempotencyKey, responseObj)

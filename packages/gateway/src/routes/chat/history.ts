@@ -17,29 +17,29 @@ import {
   getErrorMessage,
   validateQueryEnum,
   parseJsonBody,
-} from './helpers.js';
-import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
+} from '../helpers.js';
+import { MAX_DAYS_LOOKBACK } from '../../config/defaults.js';
 import {
   resetChatAgentContext,
   clearAllChatAgentCaches,
   getDefaultModel,
   getContextBreakdown,
   compactContext,
-} from './agents.js';
-import { promptInitializedConversations } from '../services/chat/state.js';
-import { clearInjectionCache } from '../services/middleware/context-injection.js';
-import { getDefaultProvider } from './settings.js';
-import { ChatRepository, LogsRepository } from '../db/repositories/index.js';
-import { modelConfigsRepo } from '../db/repositories/model-configs.js';
-import { channelSessionsRepo } from '../db/repositories/channel-sessions.js';
-import { channelMessagesRepo } from '../db/repositories/channel-messages.js';
-import { channelUsersRepo } from '../db/repositories/channel-users.js';
+} from '../agents.js';
+import { promptInitializedConversations } from '../../services/chat/state.js';
+import { clearInjectionCache } from '../../services/middleware/context-injection.js';
+import { getDefaultProvider } from '../settings.js';
+import { ChatRepository, LogsRepository } from '../../db/repositories/index.js';
+import { modelConfigsRepo } from '../../db/repositories/model-configs.js';
+import { channelSessionsRepo } from '../../db/repositories/channel-sessions.js';
+import { channelMessagesRepo } from '../../db/repositories/channel-messages.js';
+import { channelUsersRepo } from '../../db/repositories/channel-users.js';
 import { getChannelService, hasChannelService } from '@ownpilot/core';
-import { wsGateway } from '../ws/server.js';
+import { wsGateway } from '../../ws/server.js';
 import { randomUUID } from 'node:crypto';
-import { getOwnerUserId, getOwnerChatId } from '../services/pairing-service.js';
-import { getLog } from '../services/log.js';
-import { stripInternalTags } from '../channels/normalizers/base.js';
+import { getOwnerUserId, getOwnerChatId } from '../../services/pairing-service.js';
+import { getLog } from '../../services/log.js';
+import { stripInternalTags } from '../../channels/normalizers/base.js';
 import type { ChannelIncomingMessage } from '@ownpilot/core';
 
 const log = getLog('ChatHistory');

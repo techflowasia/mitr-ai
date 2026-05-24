@@ -7,8 +7,8 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Hono } from 'hono';
-import { requestId } from '../middleware/request-id.js';
-import { errorHandler } from '../middleware/error-handler.js';
+import { requestId } from '../../middleware/request-id.js';
+import { errorHandler } from '../../middleware/error-handler.js';
 
 // Mock SSRF utils. isPrivateUrlAsyncFresh is the uncached variant added by
 // the H-S4 DNS-rebinding fix; mock the same way as isPrivateUrlAsync.
@@ -16,14 +16,14 @@ const mockIsBlockedUrl = vi.fn();
 const mockIsPrivateUrlAsync = vi.fn();
 const mockIsPrivateUrlAsyncFresh = vi.fn();
 
-vi.mock('../utils/ssrf.js', () => ({
+vi.mock('../../utils/ssrf.js', () => ({
   isBlockedUrl: mockIsBlockedUrl,
   isPrivateUrlAsync: mockIsPrivateUrlAsync,
   isPrivateUrlAsyncFresh: mockIsPrivateUrlAsyncFresh,
 }));
 
 // Import after mocks
-const { chatFetchUrlRoutes } = await import('./chat-fetch-url.js');
+const { chatFetchUrlRoutes } = await import('./fetch-url.js');
 
 function createApp() {
   const app = new Hono();

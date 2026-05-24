@@ -4,7 +4,7 @@
 
 export { healthRoutes } from './health.js';
 export { agentRoutes, getAgent, getOrCreateDefaultAgent } from './agents.js';
-export { chatRoutes } from './chat.js';
+export { chatRoutes } from './chat/index.js';
 export { toolsRoutes } from './tools.js';
 export { settingsRoutes } from './settings.js';
 export { channelRoutes } from './channels/index.js';
