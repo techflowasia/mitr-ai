@@ -23,17 +23,6 @@ import { SECURITY_TEMPLATES } from './security.js';
 import type { WorkflowTemplateIdea } from './types.js';
 
 export type { WorkflowTemplateIdea } from './types.js';
-export {
-  API_TEMPLATES,
-  BUSINESS_TEMPLATES,
-  CONTENT_TEMPLATES,
-  DATA_TEMPLATES,
-  DEVOPS_TEMPLATES,
-  MONITORING_TEMPLATES,
-  PERSONAL_TEMPLATES,
-  RESEARCH_TEMPLATES,
-  SECURITY_TEMPLATES,
-};
 
 export const WORKFLOW_TEMPLATE_IDEAS: WorkflowTemplateIdea[] = [
   ...CONTENT_TEMPLATES,

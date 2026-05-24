@@ -1,31 +1,11 @@
 /**
  * Workflow module — DAG-based workflow execution engine.
  *
- * Re-exports all public types, utilities, and the WorkflowService class.
+ * Only the surface other gateway modules consume lives here. The rest of
+ * the workflow utilities (template resolver, node executors, foreach
+ * executor) are imported directly from their submodule files.
  */
 
-export type { WorkflowProgressEvent, ToolExecutionResult } from './types.js';
-export {
-  topologicalSort,
-  getDownstreamNodes,
-  getDownstreamNodesByHandle,
-  getForEachBodyNodes,
-} from './dag-utils.js';
-export {
-  resolveTemplates,
-  deepResolve,
-  resolveStringTemplates,
-  resolveTemplatePath,
-  getNestedValue,
-} from './template-resolver.js';
-export {
-  toToolExecResult,
-  resolveWorkflowToolName,
-  executeNode,
-  executeLlmNode,
-  executeConditionNode,
-  executeCodeNode,
-  executeTransformerNode,
-} from './node-executors.js';
-export { executeForEachNode } from './foreach-executor.js';
+export { topologicalSort } from './dag-utils.js';
+export { resolveTemplates } from './template-resolver.js';
 export { WorkflowService, getWorkflowService } from './workflow-service.js';
