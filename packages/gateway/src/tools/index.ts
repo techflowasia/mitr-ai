@@ -22,12 +22,8 @@ export {
 } from './soul-communication-tools.js';
 export { SKILL_TOOLS, executeSkillTool } from './skill/tools.js';
 export { CREW_TOOLS, executeCrewTool } from './crew-tools.js';
-export { HABIT_TOOLS, HABIT_TOOL_NAMES, executeHabitTool } from './habit-tools.js';
-export { CLAW_TOOLS, CLAW_TOOL_NAMES, executeClawTool } from './claw/tools.js';
-export {
-  CLAW_MANAGEMENT_TOOLS,
-  CLAW_MANAGEMENT_TOOL_NAMES,
-  executeClawManagementTool,
-} from './claw/management-tools.js';
+export { HABIT_TOOLS, executeHabitTool } from './habit-tools.js';
+export { CLAW_TOOLS, executeClawTool } from './claw/tools.js';
+export { CLAW_MANAGEMENT_TOOLS, executeClawManagementTool } from './claw/management-tools.js';
 export { INTERACTIVE_TOOLS, executeInteractiveTool } from './interactive-tools.js';
-export { CHANNEL_TOOLS, CHANNEL_TOOL_NAMES, executeChannelTool } from './channel-tools.js';
+export { CHANNEL_TOOLS, executeChannelTool } from './channel-tools.js';

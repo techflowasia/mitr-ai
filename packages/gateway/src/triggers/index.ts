@@ -1,27 +1,11 @@
 /**
  * Triggers Module
  *
- * Proactive automation for the autonomous AI assistant.
+ * Proactive automation for the autonomous AI assistant. Only the four
+ * symbols consumed elsewhere (server lifecycle + routes) are re-exported;
+ * everything else (TriggerEngine class, engine types, per-feature
+ * proactive toggles) lives in the submodule files.
  */
 
-export {
-  TriggerEngine,
-  getTriggerEngine,
-  startTriggerEngine,
-  stopTriggerEngine,
-  type TriggerEngineConfig,
-  type ActionResult,
-  type EventHandler,
-  type TriggerEvent,
-  type ChatHandler,
-} from './engine.js';
-
-export {
-  DEFAULT_TRIGGERS,
-  initializeDefaultTriggers,
-  getProactiveStatus,
-  enableProactiveFeature,
-  disableProactiveFeature,
-  enableAllProactive,
-  disableAllProactive,
-} from './proactive.js';
+export { getTriggerEngine, startTriggerEngine, stopTriggerEngine } from './engine.js';
+export { initializeDefaultTriggers } from './proactive.js';
