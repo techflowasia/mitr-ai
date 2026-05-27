@@ -239,6 +239,11 @@ export async function createConfiguredAgent(opts: CreateAgentOptions): Promise<A
     async (older: readonly Message[]): Promise<string | null> => {
       const transcript = renderTranscriptForSummary(older);
       if (!transcript.trim()) return null;
+      // This is an autonomous, otherwise-invisible behavior that spends tokens,
+      // so log when it fires / succeeds / fails for operator visibility.
+      log.info(
+        `[${opts.name}] Headless compaction: summarizing ${older.length} older messages (${opts.provider}/${opts.model})`
+      );
       const result = await providerInstance.complete({
         messages: [
           { role: 'system', content: HEADLESS_COMPACTION_INSTRUCTIONS },
@@ -246,9 +251,21 @@ export async function createConfiguredAgent(opts: CreateAgentOptions): Promise<A
         ],
         model: { model: opts.model, maxTokens: 700, temperature: 0.2 },
       });
-      if (!result.ok) return null;
+      if (!result.ok) {
+        log.warn(
+          `[${opts.name}] Headless compaction failed (${getErrorMessage(result.error)}) — falling back to window truncation`
+        );
+        return null;
+      }
       const summary = result.value.content.trim();
-      return summary.length > 0 ? summary : null;
+      if (summary.length === 0) {
+        log.warn(`[${opts.name}] Headless compaction produced an empty summary — skipping`);
+        return null;
+      }
+      log.info(
+        `[${opts.name}] Headless compaction done: ${older.length} messages -> ${summary.length}-char summary`
+      );
+      return summary;
     },
     { threshold: 0.75, keepRecent: 6 }
   );
