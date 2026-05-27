@@ -49,6 +49,7 @@ export { cliToolsRoutes } from './cli/tools.js';
 export { securityRoutes } from './security.js';
 export { bridgeRoutes } from './bridges.js';
 export { artifactsRoutes } from './artifacts.js';
+export { canvasRoutes } from './canvas.js';
 export { voiceRoutes } from './voice.js';
 export { browserRoutes } from './browser.js';
 export { skillsRoutes } from './skills.js';

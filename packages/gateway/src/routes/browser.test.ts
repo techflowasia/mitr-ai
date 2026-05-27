@@ -33,6 +33,18 @@ vi.mock('../services/browser-service.js', () => ({
 }));
 
 // ---------------------------------------------------------------------------
+// Mock: TriggerService singleton factory
+// ---------------------------------------------------------------------------
+
+const mockTriggerService = {
+  deleteTrigger: vi.fn(),
+};
+
+vi.mock('../services/index.js', () => ({
+  getTriggerService: vi.fn(() => mockTriggerService),
+}));
+
+// ---------------------------------------------------------------------------
 // Mock: BrowserWorkflowsRepository (class-based, instantiated per-request)
 // ---------------------------------------------------------------------------
 
@@ -642,7 +654,8 @@ describe('Browser Routes', () => {
 
   describe('DELETE /browser/workflows/:id', () => {
     it('deletes a workflow and returns success message', async () => {
-      mockWorkflowRepo.delete.mockResolvedValue(true);
+      mockWorkflowRepo.getById.mockResolvedValueOnce({ id: 'bwf-1', triggerId: null });
+      mockWorkflowRepo.delete.mockResolvedValueOnce(true);
 
       const res = await app.request('/browser/workflows/bwf-1', { method: 'DELETE' });
 
@@ -650,11 +663,12 @@ describe('Browser Routes', () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       expect(json.data.message).toContain('bwf-1 deleted');
+      expect(mockWorkflowRepo.getById).toHaveBeenCalledWith('bwf-1', 'default');
       expect(mockWorkflowRepo.delete).toHaveBeenCalledWith('bwf-1', 'default');
     });
 
     it('returns 404 when workflow not found', async () => {
-      mockWorkflowRepo.delete.mockResolvedValue(false);
+      mockWorkflowRepo.getById.mockResolvedValueOnce(null);
 
       const res = await app.request('/browser/workflows/nonexistent', { method: 'DELETE' });
 
@@ -662,6 +676,17 @@ describe('Browser Routes', () => {
       const json = await res.json();
       expect(json.error.code).toBe('NOT_FOUND');
       expect(json.error.message).toContain('Workflow nonexistent not found');
+    });
+
+    it('deletes associated trigger when triggerId is set', async () => {
+      mockWorkflowRepo.getById.mockResolvedValueOnce({ id: 'bwf-1', triggerId: 'trigger-1' });
+      mockWorkflowRepo.delete.mockResolvedValueOnce(true);
+
+      const res = await app.request('/browser/workflows/bwf-1', { method: 'DELETE' });
+
+      expect(res.status).toBe(200);
+      expect(mockTriggerService.deleteTrigger).toHaveBeenCalledWith('default', 'trigger-1');
+      expect(mockWorkflowRepo.delete).toHaveBeenCalledWith('bwf-1', 'default');
     });
 
     it('returns 500 on repository error', async () => {

@@ -17,6 +17,7 @@ import type { ToolDefinition } from '@ownpilot/core';
 import { getErrorMessage, getChannelService, hasChannelService } from '@ownpilot/core';
 import type { ChannelOutgoingMessage } from '@ownpilot/core';
 import { channelMessagesRepo } from '../db/repositories/channels/messages.js';
+import { ChatRepository } from '../db/repositories/chat/index.js';
 import type { ToolExecutionResult } from '../services/tool/executor.js';
 import { getLog } from '../services/log.js';
 
@@ -120,6 +121,26 @@ export const CHANNEL_TOOLS: ToolDefinition[] = [
       required: [],
     },
   },
+  {
+    name: 'search_conversations',
+    description:
+      'Search conversation history using natural language. Returns matching conversations ranked by relevance. Use this to find past discussions — e.g. "did we discuss X last week?"',
+    category: 'channels',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Search query (natural language)',
+        },
+        limit: {
+          type: 'number',
+          description: 'Max results to return (default 20, max 100)',
+        },
+      },
+      required: ['query'],
+    },
+  },
 ];
 
 export const CHANNEL_TOOL_NAMES = CHANNEL_TOOLS.map((t) => t.name);
@@ -143,6 +164,8 @@ export async function executeChannelTool(
         return await handleList(args);
       case 'get_channel_inbox':
         return await handleInbox(args);
+      case 'search_conversations':
+        return await handleSearch(args, userId);
       default:
         return { success: false, error: `Unknown channel tool: ${toolName}` };
     }
@@ -286,6 +309,42 @@ async function handleInbox(args: Record<string, unknown>): Promise<ToolExecution
           conversationId: m.conversationId,
           createdAt: m.createdAt.toISOString(),
         })),
+    },
+  };
+}
+
+async function handleSearch(
+  args: Record<string, unknown>,
+  userId?: string
+): Promise<ToolExecutionResult> {
+  const query = String(args.query ?? '').trim();
+  const rawLimit = args.limit ? Number(args.limit) : 20;
+  const limit = Math.max(1, Math.min(100, Number.isFinite(rawLimit) ? rawLimit : 20));
+
+  if (!query) {
+    return { success: false, error: 'query is required' };
+  }
+
+  const chatRepo = new ChatRepository(userId ?? 'default');
+  const results = await chatRepo.searchConversations(query, { limit });
+
+  return {
+    success: true,
+    result: {
+      count: results.length,
+      query,
+      conversations: results.map((conv) => ({
+        id: conv.id,
+        title: conv.title,
+        agentName: conv.agentName,
+        provider: conv.provider,
+        model: conv.model,
+        messageCount: conv.messageCount,
+        isArchived: conv.isArchived,
+        createdAt: conv.createdAt.toISOString(),
+        updatedAt: conv.updatedAt.toISOString(),
+        ftsRank: conv.ftsRank,
+      })),
     },
   };
 }

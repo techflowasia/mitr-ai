@@ -470,6 +470,26 @@ export const channelsApi = {
     apiClient.post<{ pluginId: string; platform: string; newKey: string }>(
       `/channels/${channelId}/revoke-owner`
     ),
+  approvePairing: (platform: string, code: string) =>
+    apiClient.post<{ success: boolean; message?: string }>(`/dm-pairing/approve`, {
+      platform,
+      code,
+    }),
+  denyPairing: (platform: string, platformUserId: string) =>
+    apiClient.post<{ success: boolean; message?: string }>(`/dm-pairing/deny`, {
+      platform,
+      platformUserId,
+    }),
+  getPendingPairingSenders: (platform: string) =>
+    apiClient.get<{
+      pending: Array<{
+        platformUserId: string;
+        displayName?: string;
+        code: string;
+        expiresAt: string;
+      }>;
+      count: number;
+    }>(`/dm-pairing/pending/${platform}`),
 };
 
 // ---- Expenses ----

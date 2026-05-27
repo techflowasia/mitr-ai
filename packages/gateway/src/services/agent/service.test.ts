@@ -2134,7 +2134,7 @@ describe('compactContext', () => {
 
     expect(mockProvider.complete).toHaveBeenCalledWith({
       messages: [
-        { role: 'system', content: expect.stringContaining('compacting a conversation') },
+        { role: 'system', content: expect.stringContaining('compacting a multi-turn') },
         { role: 'user', content: expect.any(String) },
       ],
       model: { model: 'gpt-4o', maxTokens: 700, temperature: 0.2 },

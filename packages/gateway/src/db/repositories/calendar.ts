@@ -14,8 +14,8 @@ export interface CalendarEvent {
   title: string;
   description?: string;
   location?: string;
-  startTime: Date;
-  endTime?: Date;
+  startTime: string; // ISO string — matches API response format for UI consumption
+  endTime?: string; // ISO string — matches API response format for UI consumption
   allDay: boolean;
   timezone: string;
   recurrence?: string;
@@ -102,8 +102,8 @@ function rowToEvent(row: EventRow): CalendarEvent {
     title: row.title,
     description: row.description ?? undefined,
     location: row.location ?? undefined,
-    startTime: new Date(row.start_time),
-    endTime: row.end_time ? new Date(row.end_time) : undefined,
+    startTime: row.start_time, // ISO string from DB — do not convert to Date
+    endTime: row.end_time ?? undefined, // ISO string from DB — do not convert to Date
     allDay: row.all_day === true,
     timezone: row.timezone,
     recurrence: row.recurrence ?? undefined,

@@ -7,6 +7,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { getBrowserService } from '../services/browser-service.js';
+import { getTriggerService } from '../services/index.js';
 import { BrowserWorkflowsRepository } from '../db/repositories/browser-workflows.js';
 import { getUserId, apiResponse, apiError, ERROR_CODES, getPaginationParams } from './helpers.js';
 import { getErrorMessage } from '@ownpilot/core';
@@ -282,8 +283,20 @@ browserRoutes.delete('/workflows/:id', async (c) => {
     const userId = getUserId(c);
     const id = c.req.param('id');
     const repo = getWorkflowRepo();
-    const deleted = await repo.delete(id, userId);
 
+    // Fetch to get triggerId before deleting (heartbeat pattern)
+    const existing = await repo.getById(id, userId);
+    if (!existing) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Workflow ${id} not found` }, 404);
+    }
+
+    // Delete associated trigger if present
+    if (existing.triggerId) {
+      const triggerService = getTriggerService();
+      await triggerService.deleteTrigger(userId, existing.triggerId);
+    }
+
+    const deleted = await repo.delete(id, userId);
     if (!deleted) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Workflow ${id} not found` }, 404);
     }

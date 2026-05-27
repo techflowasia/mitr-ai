@@ -13,6 +13,9 @@ const mockBroadcast = vi.fn();
 const mockBroadcastAll = vi.fn();
 const mockListChannels = vi.fn();
 const mockHasChannelService = vi.fn(() => true);
+const mockGetByChannel = vi.fn();
+const mockGetInbox = vi.fn();
+const mockSearchConversations = vi.fn();
 
 vi.mock('@ownpilot/core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@ownpilot/core')>();
@@ -28,14 +31,17 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
 });
 
-const mockGetByChannel = vi.fn();
-const mockGetInbox = vi.fn();
-
 vi.mock('../db/repositories/channels/messages.js', () => ({
   channelMessagesRepo: {
     getByChannel: mockGetByChannel,
     getInbox: mockGetInbox,
   },
+}));
+
+vi.mock('../db/repositories/chat/index.js', () => ({
+  ChatRepository: vi.fn().mockImplementation(function () {
+    return { searchConversations: mockSearchConversations };
+  }),
 }));
 
 const { CHANNEL_TOOLS, CHANNEL_TOOL_NAMES, executeChannelTool } =
@@ -48,12 +54,13 @@ describe('channel-tools', () => {
 
   describe('definitions', () => {
     it('exports four channel tools', () => {
-      expect(CHANNEL_TOOLS).toHaveLength(4);
+      expect(CHANNEL_TOOLS).toHaveLength(5);
       expect(CHANNEL_TOOL_NAMES).toEqual([
         'send_channel_message',
         'broadcast_channel_message',
         'list_channels',
         'get_channel_inbox',
+        'search_conversations',
       ]);
     });
 
@@ -225,6 +232,41 @@ describe('channel-tools', () => {
       mockGetByChannel.mockResolvedValueOnce([]);
       await executeChannelTool('get_channel_inbox', { channel: 'telegram', limit: 500 }, 'user_a');
       expect(mockGetByChannel).toHaveBeenCalledWith('telegram', 100);
+    });
+  });
+
+  describe('search_conversations', () => {
+    it('calls ChatRepository.searchConversations and returns formatted results', async () => {
+      mockSearchConversations.mockResolvedValueOnce([
+        {
+          id: 'conv-1',
+          title: 'Project Discussion',
+          agentName: 'Soul',
+          provider: 'openai',
+          model: 'gpt-4o',
+          messageCount: 42,
+          isArchived: false,
+          createdAt: new Date('2026-01-01T00:00:00Z'),
+          updatedAt: new Date('2026-01-15T00:00:00Z'),
+          ftsRank: 0.9,
+        },
+      ]);
+
+      const result = await executeChannelTool(
+        'search_conversations',
+        { query: 'project', limit: 20 },
+        'user_a'
+      );
+      expect(mockSearchConversations).toHaveBeenCalledWith('project', { limit: 20 });
+      const payload = result.result as { count: number; conversations: Array<{ id: string }> };
+      expect(payload.count).toBe(1);
+      expect(payload.conversations[0].id).toBe('conv-1');
+    });
+
+    it('rejects missing query', async () => {
+      const result = await executeChannelTool('search_conversations', {}, 'user_a');
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/required/i);
     });
   });
 

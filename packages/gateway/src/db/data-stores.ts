@@ -322,6 +322,10 @@ export class TaskStore implements DataStore<Task> {
 /**
  * PostgreSQL-backed Calendar Store
  */
+function isDateWithToISO(v: unknown): v is Date {
+  return v instanceof Date && typeof v.toISOString === 'function';
+}
+
 export class CalendarStore implements DataStore<PersonalCalendarEvent> {
   private repo: CalendarRepository;
 
@@ -405,8 +409,12 @@ export class CalendarStore implements DataStore<PersonalCalendarEvent> {
       title: event.title,
       description: event.description,
       location: event.location,
-      startTime: event.startTime.toISOString(),
-      endTime: event.endTime?.toISOString(),
+      startTime: isDateWithToISO(event.startTime) ? event.startTime.toISOString() : event.startTime,
+      endTime: event.endTime
+        ? isDateWithToISO(event.endTime)
+          ? event.endTime.toISOString()
+          : event.endTime
+        : undefined,
       allDay: event.allDay,
       timezone: event.timezone,
       recurrence: event.recurrence,

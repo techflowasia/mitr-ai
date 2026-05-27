@@ -97,6 +97,8 @@ export type {
 } from './cli-tools';
 export { workflowsApi } from './workflows';
 export { artifactsApi } from './artifacts';
+export { canvasApi } from './canvas';
+export type { CanvasElement, CanvasElementType } from './canvas';
 export { voiceApi } from './voice';
 export type {
   VoiceConfig,

@@ -1,6 +1,6 @@
 # OwnPilot Architecture
 
-**Version:** 1.1 | **Date:** 2026-05-22 | **Stack:** TypeScript Monorepo · pnpm · Turborepo
+**Version:** 1.2 | **Date:** 2026-05-25 | **Stack:** TypeScript Monorepo · pnpm · Turborepo
 
 ---
 
@@ -298,7 +298,7 @@ Tool Call Request
 
 ## 4. Database Schema
 
-PostgreSQL via `pg` adapter. **15 domain schema files** in `packages/gateway/src/db/schema/`.
+PostgreSQL via `pg` adapter. **14 domain schema files** in `packages/gateway/src/db/schema/`.
 
 ### Schema Files & Tables
 
@@ -331,15 +331,13 @@ packages/gateway/src/db/schema/
 │                         # cli_tool_policies, coding_agent_permissions,
 │                         # coding_agent_skill_attachments,
 │                         # coding_agent_subscriptions, orchestration_runs,
-│                         # orchestra_executions, artifacts, artifact_versions
+│                         # artifacts, artifact_versions
 ├── souls.ts              # agent_souls, agent_soul_versions, skill_usage,
 │                         # agent_messages, agent_crews, agent_crew_members,
-│                         # heartbeat_log, subagent_history
+│                         # heartbeat_log
 ├── channels.ts           # channel_users, channel_sessions,
 │                         # channel_verification_tokens, channel_assets,
 │                         # user_extensions, user_extension_removals
-├── fleet.ts              # fleets, fleet_sessions, fleet_tasks,
-│                         # fleet_worker_history
 ├── claw.ts               # claws, claw_sessions, claw_history,
 │                         # claw_audit_log
 └── ui-sessions.ts        # ui_sessions
@@ -372,8 +370,6 @@ channels ── channel_users ── channel_sessions
 
 claws ── claw_sessions ── claw_history
               └── claw_audit_log
-
-fleets ── fleet_sessions ── fleet_tasks
 
 agent_souls ── agent_soul_versions
            └── agent_crews ── agent_crew_members
@@ -435,10 +431,6 @@ packages/core/src/
 │   │   ├── git.ts               # git tools
 │   │   ├── audio.ts             # audio tools
 │   │   └── data-extraction.ts   # data extraction tools
-│   └── fleet/
-│       ├── fleet-manager.ts
-│       ├── fleet-worker.ts
-│       └── fleet-types.ts
 │
 ├── plugins/
 │   ├── index.ts              # PluginRegistry, createPlugin, PluginBuilder
@@ -694,72 +686,154 @@ packages/gateway/src/
 │                           # Registers all middleware + 50+ route groups
 │
 ├── routes/
-│   ├── index.ts            # All route exports (66 route files)
-│   ├── register-*.ts       # Route registration helpers
-│   │   ├── register-platform-routes.ts  → health, auth, profile
-│   │   ├── register-agent-routes.ts     → agents, tools, chat
-│   │   ├── register-data-routes.ts      → personal data, memories
-│   │   ├── register-automation-routes.ts → goals, triggers, plans,
-│   │   │                                   autonomy, workflows, heartbeats
-│   │   └── register-integration-routes.ts→ channels, plugins, extensions,
-│   │                                       skills, MCP, browser, edge
+│   ├── index.ts            # All route exports (60 route files)
+│   ├── register/           # Route registration helpers (6 files)
+│   │   ├── platform.ts     → health, auth, profile
+│   │   ├── agent.ts       → agents, tools, chat
+│   │   ├── data.ts        → personal data, memories
+│   │   ├── automation.ts   → goals, triggers, plans, autonomy, workflows, heartbeats
+│   │   ├── integration.ts  → channels, plugins, extensions, skills, MCP, browser, edge
+│   │   └── v2.ts          → side-by-side v2 routes
+│   ├── agents/             # Agent routes
+│   ├── artifacts/          # Artifact routes
+│   ├── audit/              # Audit routes
+│   ├── autonomy/           # Autonomy routes
+│   ├── bridges/           # Bridge routes
+│   ├── browser/            # Browser routes
+│   ├── channels/           # Channel routes
+│   ├── chat/               # Chat routes
+│   ├── claws/              # Claw routes (16 endpoints)
+│   ├── cli/                # CLI routes
+│   ├── coding-agents/       # Coding agents routes
+│   ├── composio/           # Composio routes
+│   ├── config-services/    # Config services routes
+│   ├── costs/              # Cost routes
+│   ├── crews/              # Crew routes
+│   ├── custom-data/        # Custom data routes
+│   ├── custom-tools/       # Custom tools routes
+│   ├── dashboard/          # Dashboard routes
+│   ├── database/           # Database routes
+│   ├── debug/              # Debug routes
+│   ├── edge/               # Edge routes
+│   ├── error-codes/        # Error codes routes
+│   ├── execution-permissions/  # Execution permissions routes
+│   ├── expenses/           # Expense routes
+│   ├── extensions/         # Extension routes + eval + packaging
+│   ├── file-workspaces/    # File workspace routes
+│   ├── goals/              # Goal routes
+│   ├── health.ts           # GET /health
+│   ├── heartbeats/         # Heartbeat routes
 │   ├── helpers.ts          # apiResponse(), apiError(), ERROR_CODES
-│   ├── health.ts          # GET /health
-│   ├── agents.ts          # Agent CRUD + tool registration
-│   ├── chat.ts            # Chat completions (REST)
-│   ├── tools.ts           # Tool registry API
-│   ├── claws.ts           # Claw CRUD + runtime control (16 endpoints)
-│   ├── workflows.ts       # Workflow CRUD + execution + DAG validation
-│   ├── heartbeats.ts      # NL-to-cron heartbeat tasks
-│   ├── extensions/        # Extension CRUD + eval + packaging
-│   ├── fleet.ts           # Fleet CRUD + task coordination
-│   ├── souls.ts           # Soul agent management
-│   ├── crews.ts           # Crew orchestration
-│   ├── subagents.ts       # Ephemeral task agents
-│   ├── triggers.ts        # Trigger CRUD + event-driven execution
-│   ├── plans.ts           # Autonomous plan execution
-│   ├── goals.ts           # Long-term goal tracking
-│   └── ... (50+ more route files)
-│
+│   ├── local-providers/    # Local provider routes
+│   ├── memories/           # Memory routes
+│   ├── mcp/                # MCP routes
+│   ├── model-configs/      # Model configs routes
+│   ├── model-routing/      # Model routing routes
+│   ├── models/             # Models routes
+│   ├── notifications/      # Notification routes
+│   ├── openapi.ts          # OpenAPI spec
+│   ├── personal-data/      # Personal data routes
+│   ├── plans/              # Plan routes
+│   ├── plugins/           # Plugin routes
+│   ├── productivity/       # Productivity routes
+│   ├── profile/            # Profile routes
+│   ├── providers/          # Provider routes
+│   ├── pulse.ts            # Pulse routes
+│   ├── security/           # Security routes
+│   ├── settings/           # Settings routes
+│   ├── skills/             # Skills routes
+│   ├── souls/              # Soul routes
+│   ├── tools/              # Tool routes
+│   ├── triggers/           # Trigger routes
+│   ├── tunnel/             # Tunnel routes
+│   ├── ui-auth/            # UI auth routes
+│   ├── voice/              # Voice routes
+│   ├── webhooks/           # Webhook routes
+│   ├── workflow/           # Workflow routes
+│   └── workspaces/         # Workspace routes
+
 ├── services/
-│   ├── tool-executor.ts    # Shared ToolRegistry + executeTool()
-│   ├── claw-manager.ts     # Singleton Claw lifecycle manager
-│   ├── claw-runner.ts      # Single claw cycle executor
-│   ├── claw-service.ts     # ClawService interface implementation
-│   ├── fleet-manager.ts    # Fleet lifecycle + task coordination
-│   ├── fleet-worker.ts     # 5 worker types (ai-chat, coding-cli, api-call,
-│   │                       # mcp-bridge, claw)
-│   ├── orchestra-engine.ts# Multi-agent collaboration engine
-│   ├── subagent-manager.ts # Ephemeral subagent lifecycle
-│   ├── extension-service.ts# Extension install/enable/disable/scanning
-│   ├── heartbeat-service.ts# NL-to-cron heartbeat tasks
-│   ├── soul-heartbeat-service.ts # Soul heartbeat execution
+│   ├── agent/              # Agent service (cache, prompt, registry, runner-utils, service)
+│   ├── artifact/          # Artifact service
+│   ├── audit-service.ts    # Audit logging implementation
+│   ├── chat/              # Chat service + streaming
+│   ├── claw/              # Claw lifecycle (manager, runner, service)
+│   ├── cli/                # CLI service
+│   ├── coding-agent/       # Coding agent service
+│   ├── config/             # Config center + validation
 │   ├── conversation-service.ts  # Chat conversation management
-│   ├── audit-service-impl.ts     # Audit logging implementation
-│   ├── log-service-impl.ts       # Structured logging (getLog)
-│   ├── config-center-impl.ts     # GatewayConfigCenter
-│   └── ... (20+ more services)
+│   ├── custom/             # Custom data service
+│   ├── dashboard/          # Dashboard service
+│   ├── edge/               # Edge service
+│   ├── embedding/          # Embedding service
+│   ├── extension/          # Extension service (install, enable, scanner, trigger-manager)
+│   ├── heartbeat/          # Heartbeat service
+│   ├── job-queue-service.ts  # Durable job queue (pg-boss)
+│   ├── llm/                # LLM router + semaphore
+│   ├── log.ts              # Structured logging (getLog)
+│   ├── memory-service.ts   # Memory service
+│   ├── metric/             # Metrics service
+│   ├── mcp/                # MCP client + server services
+│   ├── model/              # Model service
+│   ├── notification-router.ts # Notification routing
+│   ├── orphan-reconciliation.ts # Boot-time orphan reclamation
+│   ├── permission/         # Permission gate service
+│   ├── provider/           # Provider service
+│   ├── resource/           # Resource service
+│   ├── retention-service.ts # Nightly retention cleanup
+│   ├── session-service.ts  # Session service
+│   ├── skill/              # Skill service
+│   ├── tool/               # Tool service
+│   ├── tool-executor.ts     # Shared ToolRegistry + executeTool()
+│   ├── voice-service.ts    # Voice service
+│   └── workspace-service.ts # Workspace service
 │
 ├── middleware/
 │   ├── index.ts            # All middleware exports
 │   ├── auth.ts             # createAuthMiddleware (api-key / JWT)
 │   ├── rate-limit.ts       # createRateLimitMiddleware (token bucket)
-│   ├── validation.ts      # Zod schema validation
+│   ├── validation.ts      # Zod schema validation + schemas/
 │   ├── audit.ts           # Audit logging middleware
 │   ├── ui-session.ts      # UI session authentication
 │   ├── pagination.ts      # parsePagination(), paginatedResponse()
-│   └── circuit-breaker.ts # Circuit breaker for external calls
+│   ├── circuit-breaker.ts # Circuit breaker for external calls
+│   ├── error-handler.ts   # Global error handler
+│   ├── request-id.ts      # Request ID + timing header
+│   ├── timing.ts          # Request timing logger
+│   └── schemas/           # Validation Zod schemas (workflow-claws, etc.)
 │
 ├── db/
-│   ├── repositories/       # 60+ repository classes
-│   │   ├── conversations.ts
-│   │   ├── messages.ts
-│   │   ├── claws.ts
-│   │   ├── habits.ts
-│   │   ├── extensions.ts
-│   │   ├── workflows.ts
-│   │   └── ... (15+ more)
-│   ├── schema/             # 13 PostgreSQL schema domain files
+│   ├── repositories/       # 84 files (38 flat .ts + 11 family subdirs)
+│   │   ├── agents/        # Agent repository
+│   │   ├── artifacts/     # Artifact repository
+│   │   ├── channels/      # Channel repositories (messages, sessions, assets, verification)
+│   │   ├── chat/          # Chat repositories (conversations, messages)
+│   │   ├── claw/          # Claw repository
+│   │   ├── cli/           # CLI repository
+│   │   ├── coding-agent/   # Coding agent repositories
+│   │   ├── config-services/  # Config services repository
+│   │   ├── crew/          # Crew repository
+│   │   ├── custom/         # Custom data repositories
+│   │   ├── goals/         # Goal repository
+│   │   ├── habits.ts       # Habit repository (645 lines)
+│   │   ├── heartbeats/     # Heartbeat repository
+│   │   ├── jobs.ts          # Job queue repository
+│   │   ├── memories.ts       # Memory repository (pgvector)
+│   │   ├── orchestrator/    # Orchestrator repository
+│   │   ├── plans/          # Plan repository
+│   │   ├── settings/        # Settings repository
+│   │   ├── souls/          # Soul repository
+│   │   ├── triggers/        # Trigger repository
+│   │   ├── workflows/       # Workflow repository
+│   │   ├── workspaces/      # Workspace repository
+│   │   ├── base.ts          # BaseRepository + transaction()
+│   │   ├── index.ts         # Barrel exports
+│   │   ├── interfaces.ts    # Repository interfaces
+│   │   └── ... (13 more: bookmarks, calendar, captures, contacts,
+│   │                  costs, embedding-cache, expenses, extensions,
+│   │                  idempotency-keys, logs, mcp-servers, notes,
+│   │                  pomodoro, query-helpers, tasks, ui-sessions)
+│   ├── schema/             # 14 PostgreSQL schema domain files
 │   └── adapters/           # pg adapter abstraction
 │
 ├── channels/
@@ -767,10 +841,50 @@ packages/gateway/src/
 │   └── channel-ai-routing.ts # Routes incoming → AI processing
 │
 ├── tools/
-│   ├── provider-manifest.ts  # Declarative gateway tool providers
-│   ├── custom-tool-registry.ts # DynamicToolRegistry for custom tools
-│   ├── provider-manifest.ts   # All gateway tool providers
-│   └── claw-tools.ts          # 16 claw tools + 7 management tools
+│   ├── agent-tool-registry.ts  # Registers agent tools (crew, goal, habit, heartbeat,
+│   │                            # memory, notification, pulse, soul-comm, trigger, etc.)
+│   ├── artifact-tools.ts        # Artifact tool provider
+│   ├── browser-tools.ts         # Browser automation tools
+│   ├── channel-tools.ts         # Channel (send/broadcast/list/inbox) tools
+│   ├── cli-tool-tools.ts         # CLI tool provider
+│   ├── coding-agent-tools.ts     # Coding agent tools
+│   ├── config-tools.ts           # Config tools
+│   ├── crew-tools.ts             # Crew tools (delegate, broadcast, members)
+│   ├── custom-data-tools.ts      # Custom data CRUD tools
+│   ├── custom-tools.ts           # Custom tool management
+│   ├── edge-tools.ts             # Edge device tools
+│   ├── event-tools.ts            # Event bus tools
+│   ├── expense-tools.ts          # Expense tracking tools
+│   ├── extension-tools.ts        # Extension tools
+│   ├── goal-tools.ts             # Goal management tools
+│   ├── habit-tools.ts            # Habit tracking tools (8 tools)
+│   ├── heartbeat-tools.ts         # Heartbeat tools
+│   ├── interactive-tools.ts      # Interactive confirmation tools
+│   ├── memory-tools.ts           # Memory tools
+│   ├── notification-tools.ts      # Notification tools
+│   ├── personal-data-tools.ts    # Personal data (bookmarks, notes, tasks, etc.)
+│   ├── plan-tools.ts             # Plan tools
+│   ├── provider-manifest.ts      # All gateway tool providers manifest
+│   ├── pulse-tools.ts            # Pulse engine tools
+│   ├── skill/                   # Skill tools (definitions, introspection, learning)
+│   ├── soul-communication-tools.ts # Soul-to-soul communication tools
+│   ├── trigger-tools.ts          # Trigger tools
+│   ├── claw/                    # Claw tools (16 tools + 7 management tools)
+│   │   ├── tools.ts             # Claw tool executors
+│   │   ├── definitions.ts       # Claw tool definitions
+│   │   ├── management-tools.ts  # claw_start/stop/pause/resume/get_status/list
+│   │   ├── context-executors.ts
+│   │   ├── delegation-executors.ts
+│   │   ├── lifecycle-executors.ts
+│   │   ├── output-executors.ts
+│   │   ├── sandbox-env.ts
+│   │   └── validation.ts
+│   ├── overrides/               # Tool overrides (audio, email, expense, image)
+│   └── registry/               # Tool registry utilities
+│       ├── core-registration.ts   # Core tool registration
+│       ├── external-registration.ts
+│       ├── meta-executors.ts     # Meta tools (search, help, use, batch)
+│       └── utils.ts
 │
 └── ws/
     ├── server.ts           # WebSocketServer (auth, heartbeat, reconnect)
@@ -839,7 +953,7 @@ packages/cli/src/
     └── telegram-bot.ts     # TelegramBot implementation
 ```
 
-> Note: Crew, msg, heartbeat, fleet operations live in the gateway HTTP API, not as dedicated CLI commands.
+> Note: Crew, msg, and heartbeat operations live in the gateway HTTP API, not as dedicated CLI commands.
 
 ---
 
@@ -1005,12 +1119,12 @@ ClawSession
 
 ### Claw Modes
 
-| Mode          | Description                                     |
-| ------------- | ----------------------------------------------- |
-| `continuous`  | Runs until stop condition met                   |
-| `interval`    | Runs on a schedule (interval-based)             |
-| `event`       | Runs when triggered by an event                 |
-| `single-shot` | Runs once and stops (used by Fleet claw worker) |
+| Mode          | Description                                              |
+| ------------- | -------------------------------------------------------- |
+| `continuous`  | Runs until stop condition met                            |
+| `interval`    | Runs on a schedule (interval-based)                      |
+| `event`       | Runs when triggered by an event                          |
+| `single-shot` | Runs once and stops (used for one-shot autonomous tasks) |
 
 ### Stop Conditions
 
@@ -1337,7 +1451,6 @@ gateway.*    — Gateway-specific (connection, chat stream)
 memory.*     — Memory events
 extension.*  — Extension lifecycle
 mcp.*        — MCP server events
-subagent.*   — Subagent spawn/complete/progress
 channel.*    — Channel message/events
 client.*    — Client-initiated actions
 ```
@@ -1496,8 +1609,6 @@ registerIntegrationRoutes()
   ├── /api/v1/edge
   ├── /api/v1/cli-chat
   ├── /api/v1/coding-agents
-  ├── /api/v1/subagents
-  ├── /api/v1/orchestra
   └── /webhooks/telegram/:secret
 
 registerV2Routes()
@@ -1511,8 +1622,6 @@ registerV2Routes()
 | ------------- | ------------------- | ----------------------------------------------------------- |
 | **Claws**     | `/api/v1/claws`     | 16 endpoints: CRUD + `/stats`, `/audit`, `/deny-escalation` |
 | **Workflows** | `/api/v1/workflows` | CRUD + DAG validation + execution                           |
-| **Subagents** | `/api/v1/subagents` | Ephemeral task agents                                       |
-| **Fleets**    | `/api/v1/fleet`     | Fleet CRUD + task coordination                              |
 | **Souls**     | `/api/v1/souls`     | Soul agent CRUD                                             |
 | **Crews**     | `/api/v1/crews`     | Crew orchestration                                          |
 | **Habits**    | `/api/v1/habits`    | Habit CRUD + logging + stats                                |
@@ -1655,15 +1764,13 @@ coding-agent-providers.ts     — Per-provider adapters (claude-code, codex, etc
 coding-agent-pty.ts           — node-pty wrapper for terminal capture
 coding-agent-sessions.ts      — In-memory session registry
 coding-agent-service.ts       — Public service facade
-orchestra-engine.ts           — Multi-agent collaboration (parallel CLI sessions)
 DB tables                     — coding_agent_results, cli_providers,
                                 cli_tool_policies, coding_agent_permissions,
                                 coding_agent_skill_attachments,
                                 coding_agent_subscriptions, orchestration_runs,
-                                orchestra_executions, artifacts, artifact_versions
-Routes                        — /api/v1/coding-agents, /api/v1/orchestra,
-                                /api/v1/cli-providers, /api/v1/cli-tools,
-                                /api/v1/artifacts
+                                artifacts, artifact_versions
+Routes                        — /api/v1/coding-agents, /api/v1/cli-providers,
+                                /api/v1/cli-tools, /api/v1/artifacts
 ```
 
 ### Browser Automation
@@ -1736,8 +1843,8 @@ jobs.ts (repo)                — claimJob, complete, fail (exponential backoff)
                                 cancel, cleanupOld
 retention-service.ts          — Nightly cleanup across 13 tables. See ADR-002 +
                                 section 24.3
-orphan-reconciliation.ts      — Boot-time reclamation of crashed Claw / Fleet /
-                                Subagent / Workflow / Plan sessions. See 24.5
+orphan-reconciliation.ts      — Boot-time reclamation of crashed Claw /
+                                Workflow / Plan sessions. See 24.5
 provider-health-service.ts    — Boot-time /models probe for all configured
                                 providers. See 24.10
 metrics-service.ts            — In-process Prometheus exporter (GET /metrics).
@@ -1759,7 +1866,7 @@ config validation             — config/validation.ts fail-fast at boot. See 24
 
 ### 24.1 Dayanıklılık — Persistent Task Queue Eksikliği (HIGH)
 
-**Problem:** Triggers, Plans, Workflows, Subagents, and Heartbeats — five separate systems — all implement cron-like or event-driven logic. None have a persistent queue. `EventSystem` is in-memory. `ClawManager` holds `Map<clawId, ClawSession>` in memory. Fleet sessions are also in-memory.
+**Problem:** Triggers, Plans, Workflows, and Heartbeats — four separate systems — all implement cron-like or event-driven logic. None have a persistent queue. `EventSystem` is in-memory. `ClawManager` holds `Map<clawId, ClawSession>` in memory.
 
 **Failure Scenario:** Workflow engine is running a 24-node DAG, node #7 is executing. Gateway process is killed (OOM, deploy, kernel panic). On restart: the in-progress node is lost. This is at-most-once execution. The user expects at-least-once or exactly-once.
 
@@ -1773,7 +1880,6 @@ config validation             — config/validation.ts fail-fast at boot. See 24
 - Worker pool executes nodes, writes results to DB, triggers dependent nodes via gating
 - `TriggerService` schedules cron-like jobs into the queue
 - `PlanExecutor` writes each step as a job
-- Fleet and Subagent systems become naturally restartable (workers wake up, see `in-progress` jobs, continue)
 
 **Idempotency Key:** Every tool execution, HTTP call, and webhook receive should be tagged with an idempotency key. Duplicate requests (retry, network duplication) return the first result without re-execution. Tool executor needs an `idempotency_keys` table (`key`, `result`, `expires_at`) with 24h TTL. Retry policy then naturally becomes duplication-safe.
 
@@ -1819,9 +1925,9 @@ config validation             — config/validation.ts fail-fast at boot. See 24
 **Problem 3 — Transaction Boundaries:** 40+ repository classes. Multi-step operations — e.g., creating a workflow + 24 nodes + edges + version snapshot — are atomic only if wrapped in a transaction. If each repository calls its own `pool.query()`, partial failure is possible (12 nodes written, 13th fails, half a workflow remains in DB). **Current state:** `BaseRepository.transaction()` delegates to `adapter.transaction()` with 30s timeout. Multi-step operations use it (e.g., channel-messages batch insert).
 
 **Problem 4 — Log Retention:** These tables grow unbounded:
-`request_logs`, `audit_log`, `claw_history`, `claw_audit_log`, `workflow_logs`, `plan_history`, `trigger_history`, `heartbeat_log`, `subagent_history`, `embedding_cache`
+`request_logs`, `audit_log`, `claw_history`, `claw_audit_log`, `workflow_logs`, `plan_history`, `trigger_history`, `heartbeat_log`, `embedding_cache`
 
-**Current state:** Cleanup methods exist across repositories: `memories.cleanup(maxAge, minImportance)`, `channel_sessions.cleanupOld(90 days)`, `trigger_history.cleanupHistory(30 days)`, `claws.cleanupOldHistory(30 days)`, `autonomy_log.cleanup(olderThanDays)`, `orchestra.cleanupOld(retentionDays)`, `subagents.cleanupOld(retentionDays)`, `fleet.cleanupOldSessions(olderThanDays)`. Retention intervals vary by table. Periodic cleanup via `setInterval` in each service. **Gap:** No automated retention policy enforcement at the DB level (no partition-based TTL expiry). After 6 months without maintenance, Postgres can hit 100GB.
+**Current state:** Cleanup methods exist across repositories: `memories.cleanup(maxAge, minImportance)`, `channel_sessions.cleanupOld(90 days)`, `trigger_history.cleanupHistory(30 days)`, `claws.cleanupOldHistory(30 days)`, `autonomy_log.cleanup(olderThanDays)`. Retention intervals vary by table.
 
 **Resolution — Drizzle ORM (future):**
 The long-term resolution for Problems 1-3 is Drizzle ORM, which generates migrations from schema definitions and provides type-safe query builders. The schema `/*.ts` files would become Drizzle schema definitions. This is a larger refactor (P2 priority) — not a quick fix.\*\*
@@ -1881,16 +1987,15 @@ Then `drizzle-kit generate` produces both `up.sql` and `down.sql`. `drizzle-kit 
 **Required Policy for Every In-Memory Collection:**
 
 - `ClawManager.tracks` — max 50 + LRU eviction or bounded queue
-- `FleetManager.fleets` — max N fleets + eviction policy
 - `EventBus` listeners — max unbounded but attach cleanup on unsubscribe
 - `DynamicToolRegistry` — max cached tools + LRU eviction
 - `embedding_cache` — max size + TTL eviction
 - `idempotency_keys` — max size + TTL (already has TTL, needs max size)
 - `ToolRegistry` — already bounded by registered tools, but custom tool sync needs bound
 
-**Create `core/src/utils/bounded-map.ts`:** A generic `BoundedMap<K, V>(maxSize, evictionPolicy)` wrapper used everywhere in-memory collections are needed.
+`core/src/utils/bounded-map.ts` — `BoundedMap<K, V>(maxSize, evictionPolicy)` with 'lru' and 'fifo' policies addresses all of the above.
 
-**Problem 2 — Orphan Cleanup:** Subagent, Claw, Fleet, Plan, Workflow — what happens when a parent process is killed while one of these is running? Orphan state remains in DB. Required: `reconcileOrphanedSubagents()` at boot — queries DB for `status: running` but not actually running, sets them to `status: aborted`, cascades to dependent tasks. Same reconciliation needed for Claw, Fleet, Plan, and Workflow.
+**Problem 2 — Orphan Cleanup:** Claw, Plan, Workflow — what happens when a parent process is killed while one of these is running? Orphan state remains in DB. Required: `reconcileOrphanedSessions()` at boot — queries DB for `status: running` but not actually running, sets them to `status: aborted`, cascades to dependent tasks.
 
 **Problem 3 — Browser Process Cleanup:** `/api/v1/browser` automation (Playwright/Puppeteer). Browser processes become zombies if Node.js parent exits without `browser.close()`. Required: `browser.close()` in `try/finally` on every path. Orphan cleanup at boot (`pkill chromium` or similar). Not visible in current architecture.
 
@@ -1993,9 +2098,9 @@ if (invalid) {
 
 **Current State:**
 
-- **Unit layer:** Vitest, `vi.hoisted()` pattern, 9307 core tests + 16696 gateway tests. Unit layer is solid.
+- **Unit layer:** Vitest, `vi.hoisted()` pattern, 9189 core tests + 16618 gateway tests. Unit layer is solid.
 - **Integration layer (partial):** Tests verify SQL patterns (e.g., `FOR UPDATE SKIP LOCKED` in `crew-tasks.test.ts`). SQL query generation is tested against expected output. `BaseRepository.transaction()` has test coverage. However, most repository tests use mocked adapters, not real Postgres connections.
-- **E2E layer:** Playwright configured (`packages/ui/playwright.config.ts`), 8 spec files in `packages/ui/e2e/`. **Not yet wired into CI.** No GitHub Actions step runs Playwright on every PR. This is the missing piece.
+- **E2E layer:** Playwright configured (`packages/ui/playwright.config.ts`), 8 spec files in `packages/ui/e2e/`. Wired into CI on PRs via GitHub Actions step.
 - **Adversarial testing (done):** `sandbox-escape.test.ts` covers 41 attack vectors. Runs in CI on release.
 
 **Recommended Test Pyramid:**
@@ -2085,17 +2190,15 @@ import { fc } from 'fast-check';
 **P1 — 24.5 Orphan Reconciliation:**
 
 - `packages/gateway/src/services/orphan-reconciliation.ts` — `reconcileOrphanedSessions()`
-- Finds and marks as aborted all orphaned Claw, Fleet, Subagent, Workflow, and Plan sessions
+- Finds and marks as aborted all orphaned Claw, Workflow, and Plan sessions
 - 5-minute heartbeat threshold to avoid false positives on long-running tasks
 - Called at boot, BEFORE any autonomous system starts
 
 Repository methods added:
 
 - `ClawsRepository.getOrphanedSessions()` + `updateSessionStatus()`
-- `SubagentsRepository.getOrphanedSessions()` + `markAborted()`
 - `WorkflowsRepository.getOrphanedRuns()` + `markRunFailed()`
 - `PlansRepository.getOrphanedPlans()` + `markPlanFailed()`
-- `FleetRepository.getOrphanedSessions()` + `markSessionStopped()`, `requeueOrphanedTasks('__all__')`
 
 **P0 — 24.2 Sandbox Adversarial Test Suite:**
 
@@ -2143,7 +2246,7 @@ Repository methods added:
 - `packages/core/src/utils/bounded-map.ts` — `BoundedMap<K, V>(maxSize, evictionPolicy)` with 'lru' and 'fifo' policies
 - `packages/core/src/utils/bounded-map.test.ts` — 20 tests covering basic ops, LRU/FIFO eviction, iteration
 - Monotonic counter approach: lowest counter = oldest mutation (LRU) or oldest insertion (FIFO)
-- Used by: ClawManager.tracks, FleetManager.fleets, DynamicToolRegistry, idempotency keys, embedding cache
+- Used by: ClawManager.tracks, DynamicToolRegistry, idempotency keys, embedding cache
 - Addresses: unbounded in-memory collections identified in gap 24.5
 
 **P2 — 24.7 Idempotency Keys:**
@@ -2196,21 +2299,20 @@ Repository methods added:
 - `docs/ADR/ADR-002-database-retention-policy.md` — full ADR for gap 24.3 retention enforcement
 - `packages/gateway/src/services/retention-service.ts` — `RetentionService` with `runRetentionCleanup()`, `scheduleRetentionCleanup(hour)`, `registerRetentionCleanupWorker()`; maps 13 tables to cleanup methods via factory functions; runs on 'system' queue at 02:00 UTC daily
 - `packages/gateway/src/db/migrations/postgres/032_retention_policies.sql` — idempotent migration creating `retention_policies` table
-- Cleanup methods: `request_logs(30)`, `claw_history(90)`, `claw_audit_log(30)`, `workflow_logs(90)`, `plan_history(90)`, `trigger_history(30)`, `heartbeat_log(30)`, `subagent_history(90)`, `embedding_cache(7)`, `jobs(30)`, `job_history(90)`, `provider_metrics(30)`
-- `createOrchestraRepository()` and `createSubagentsRepository()` factory functions added for consistent retention wiring
+- Cleanup methods: `request_logs(30)`, `claw_history(90)`, `claw_audit_log(30)`, `workflow_logs(90)`, `plan_history(90)`, `trigger_history(30)`, `heartbeat_log(30)`, `embedding_cache(7)`, `jobs(30)`, `job_history(90)`, `provider_metrics(30)`
 - **Remaining**: DB-level partition-based TTL expiry, Drizzle ORM migration
 
 **P1 — 24.1 Persistent Job Queue:**
 
 - `docs/ADR/ADR-001-persistent-job-queue.md` — full architecture decision record
 - pg-boss over Postgres chosen (no extra infra; FOR UPDATE SKIP LOCKED)
-- 4-phase plan: infrastructure → workflows → triggers/plans → fleet/subagent
+- 4-phase plan: infrastructure → workflows → triggers/plans
 - **Phase 1+2 infrastructure done:** `jobs` + `job_history` tables in schema/core.ts + migration 031_job_queue.sql; `JobsRepository` with claimJob (FOR UPDATE SKIP LOCKED), create, complete, fail (exponential backoff), cancel, cleanupOld, cleanupHistory; `JobQueueService` with enqueue, enqueueSystem, startWorker, getStats; `workflowRunId`/`nodeId` fields in `CreateJobInput` and `JobRecord`; `persistNodeOutputs()` and `getLogForRecovery()` in WorkflowsRepository; orphan reconciliation in place
 - **Phase 2 done:** worker pool boot wiring in server.ts; `WorkflowNodeJobHandler` with `enqueueWorkflowLevel()` and `resumeWorkflowFromRecovery()`; `jobifiedExecuteLevel()` in WorkflowService (level-by-level polling, 500ms interval); `listRunningLogs()` + `cleanupOldWorkflowLogs()` in WorkflowsRepository; hybrid sync/jobified node execution (SYNC_ONLY_TYPES: forEach, approval, parallel, subWorkflow, errorHandler, trigger, stickyNote stay inline; all others use job queue); crash recovery wired at boot
 
 **P2 — 24.9 Test Pyramid:**
 
-- Unit layer: 9307 core tests + 16696 gateway tests; `vi.hoisted()` pattern, `Result<T,E>` flows
+- Unit layer: 9189 core tests + 16618 gateway tests; `vi.hoisted()` pattern, `Result<T,E>` flows
 - Adversarial sandbox tests: `packages/core/src/sandbox/sandbox-escape.test.ts` — 41 attack vectors (prototype pollution, constructor escape, scope chain, Symbol, async, SAB, RCE, native modules, etc.)
 - Integration: SQL pattern tests exist (`FOR UPDATE SKIP LOCKED` in `crew-tasks.test.ts`); most repo tests use mocked adapters
 - E2E: Playwright configured, 8 spec files in `packages/ui/e2e/`; **wired into CI on PRs** (`.github/workflows/ci.yml`)

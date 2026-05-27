@@ -80,7 +80,7 @@ describe('CalendarRepository', () => {
 
       expect(mockAdapter.execute).toHaveBeenCalledOnce();
       expect(result.title).toBe('Team Meeting');
-      expect(result.startTime).toBeInstanceOf(Date);
+      expect(result.startTime).toBe('2025-01-20T10:00:00.000Z');
       expect(result.allDay).toBe(false);
       expect(result.timezone).toBe('UTC');
       expect(result.tags).toEqual([]);
@@ -202,13 +202,15 @@ describe('CalendarRepository', () => {
       expect(await repo.get('missing')).toBeNull();
     });
 
-    it('should parse dates', async () => {
+    it('should parse startTime and endTime as ISO strings', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeEventRow());
 
       const result = await repo.get('evt-1');
 
-      expect(result!.startTime).toBeInstanceOf(Date);
-      expect(result!.endTime).toBeInstanceOf(Date);
+      expect(typeof result!.startTime).toBe('string');
+      expect(result!.startTime).toBe('2025-01-20T10:00:00.000Z');
+      expect(typeof result!.endTime).toBe('string');
+      expect(result!.endTime).toBe('2025-01-20T11:00:00.000Z');
       expect(result!.createdAt).toBeInstanceOf(Date);
     });
 

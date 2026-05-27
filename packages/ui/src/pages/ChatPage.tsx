@@ -1040,18 +1040,49 @@ export function ChatPage() {
             </div>
           </div>
 
-          <button
-            onClick={handleNewChat}
-            className="px-4 py-2 text-sm text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors"
-          >
-            New Chat
-          </button>
-          <button
-            onClick={() => setTimelineMode(!timelineMode)}
-            className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${timelineMode ? 'bg-primary text-white border-primary' : 'text-text-secondary dark:text-dark-text-secondary border-border dark:border-dark-border hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'}`}
-          >
-            Timeline
-          </button>
+          {/* Right-side actions */}
+          <div className="flex items-center gap-2">
+            {/* Timeline toggle */}
+            <button
+              onClick={() => setTimelineMode(!timelineMode)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg border transition-colors ${
+                timelineMode
+                  ? 'bg-primary/10 border-primary/30 text-primary'
+                  : 'border-border dark:border-dark-border text-text-muted dark:text-dark-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+              }"
+              title="Toggle timeline view"
+            >
+              <span
+                className={`w-8 h-4 rounded-full relative transition-colors ${
+                  timelineMode ? 'bg-primary' : 'bg-bg-tertiary dark:bg-dark-bg-tertiary'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 w-3 h-3 rounded-full bg-white dark:bg-dark-text-secondary shadow transition-transform ${
+                    timelineMode ? 'left-4' : 'left-0.5'
+                  }`}
+                />
+              </span>
+              <span>Timeline</span>
+            </button>
+
+            {/* New Chat button */}
+            <button
+              onClick={handleNewChat}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-primary hover:bg-primary-dark rounded-lg transition-colors"
+              title="Start a new chat"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              New Chat
+            </button>
+          </div>
         </header>
 
         {/* Session tabs — visible when multiple sessions are open */}

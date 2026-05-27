@@ -507,7 +507,7 @@ async function createChatAgentInstance(
     ? (cliDef?.coreProvider ?? 'openai')
     : NATIVE_PROVIDERS.has(provider)
       ? provider
-      : 'openai';
+      : (providerConfig?.type ?? 'openai');
 
   const tools = new ToolRegistry();
   registerAllTools(tools);
@@ -595,10 +595,13 @@ async function createChatAgentInstance(
       : `Personal Assistant (${provider})`,
     systemPrompt: enhancedPrompt,
     provider: {
+      id: provider,
       provider: providerType as AIProvider,
       apiKey: apiKey ?? 'cli-no-key',
       baseUrl,
       headers: providerConfig?.headers,
+      endpoint: providerConfig?.endpoint,
+      features: providerConfig?.features,
     },
     model: {
       model,
@@ -880,16 +883,25 @@ export interface CompactionResult {
  * the conversation coherent (goals, decisions, file paths, open questions)
  * rather than producing a flat narrative.
  */
-const STRUCTURED_SUMMARY_INSTRUCTIONS = `You are compacting a conversation between a user and an assistant so the assistant can continue it without re-reading the full history. Produce a tight summary in this exact structure (omit empty sections):
+const STRUCTURED_SUMMARY_INSTRUCTIONS = `You are compacting a multi-turn conversation into a dense summary. The next assistant MUST be able to continue without re-reading the history.
 
-GOAL: <what the user is ultimately trying to accomplish>
-RECENT CONTEXT: <2-4 sentences on the latest topic right before the cut>
-DECISIONS: <bulleted list of decisions/agreements reached>
-ARTIFACTS: <files, code paths, commands, URLs, identifiers mentioned — verbatim>
-USER PREFERENCES: <how the user wants the assistant to behave>
-OPEN QUESTIONS: <unresolved items the assistant should remember>
+## Required Structure (omit empty sections)
+\`\`\`
+GOAL: What the user is ultimately trying to accomplish
+RECENT CONTEXT: 2-4 sentences on where the conversation left off
+DECISIONS: Agreements reached, choices made (exact if possible)
+ARTIFACTS: File paths, code snippets, commands, URLs, IDs — verbatim
+USER PREFERENCES: How the user likes to work (tone, approach, constraints)
+OPEN QUESTIONS: What still needs to be resolved
+\`\`\`
 
-Be specific. Quote file paths, function names, and identifiers exactly. Keep to ~250 words total. Do NOT add commentary outside the structure.`;
+## Rules
+- **Be verbatim** on specific values: file paths, function names, IDs, URLs, exact commands
+- **Be interpretive** on context and decisions: summarize accurately, don't quote
+- **~250 words max** — dense but complete
+- **No commentary** outside the structure
+- **Preserve state**: if mid-task, note exactly where and what the next step is
+- **User preferences** include: preferred language, tone, anything the user explicitly requested`;
 
 /**
  * Mirror a successful in-memory compaction to the persisted chat history so

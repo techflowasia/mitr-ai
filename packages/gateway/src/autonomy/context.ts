@@ -275,7 +275,7 @@ async function gatherCalendar(userId: string, _now: Date, ctx: PulseContext): Pr
 
     ctx.calendar.todayEvents = todayEvents.map((e) => ({
       title: e.title,
-      startTime: e.startTime ? e.startTime.toISOString() : '',
+      startTime: e.startTime ?? '',
     }));
 
     // Filter upcoming to only tomorrow's events
@@ -283,10 +283,10 @@ async function gatherCalendar(userId: string, _now: Date, ctx: PulseContext): Pr
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowStr = tomorrow.toISOString().split('T')[0] ?? '';
     ctx.calendar.tomorrowEvents = upcomingEvents
-      .filter((e) => e.startTime && e.startTime.toISOString().startsWith(tomorrowStr))
+      .filter((e) => e.startTime && e.startTime.startsWith(tomorrowStr))
       .map((e) => ({
         title: e.title,
-        startTime: e.startTime ? e.startTime.toISOString() : '',
+        startTime: e.startTime ?? '',
       }));
   } catch (error) {
     log.debug('Failed to gather calendar', { error: String(error) });

@@ -240,6 +240,14 @@ export function loadProviderConfig(
   apiKeyEnv?: string;
   type?: string;
   headers?: Record<string, string>;
+  endpoint?: string;
+  features?: {
+    streaming?: boolean;
+    toolUse?: boolean;
+    vision?: boolean;
+    jsonMode?: boolean;
+    systemMessage?: boolean;
+  };
 } | null {
   // 1. Check builtin provider configs
   const config = coreGetProviderConfig(providerId);
@@ -249,6 +257,8 @@ export function loadProviderConfig(
       apiKeyEnv: config.apiKeyEnv,
       type: config.type,
       headers: config.headers,
+      endpoint: config.endpoint,
+      features: config.features,
     };
   }
 
