@@ -34,6 +34,12 @@ import type {
   RevocationEntry,
 } from './marketplace.js';
 
+// generatePublisherKeys() does real RSA-4096 keypair generation, which is
+// CPU-heavy and highly variable under CI load. This file calls it ~22 times,
+// so a single test can exceed the 5s default and flake CI (observed on main).
+// Give the whole file a larger budget; production crypto strength is unchanged.
+vi.setConfig({ testTimeout: 30000 });
+
 // =============================================================================
 // Helpers
 // =============================================================================
