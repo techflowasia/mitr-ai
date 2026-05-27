@@ -471,7 +471,23 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
       ) {
         return c.notFound();
       }
-      return c.html(INDEX_HTML);
+      // Never serve HTML for a missing static asset — that produces a MIME
+      // mismatch in the browser. A miss here means a stale/renamed hashed file
+      // (e.g. after a UI rebuild); return a clean 404 instead.
+      if (path.startsWith('/assets/')) {
+        return c.notFound();
+      }
+      // Read index.html fresh so UI rebuilds are picked up without a gateway
+      // restart; fall back to the boot-time copy if the read fails. Served
+      // no-cache so browsers always revalidate and pick up new asset hashes.
+      let html = INDEX_HTML;
+      try {
+        html = readFileSync(resolve(UI_DIST_PATH, 'index.html'), 'utf-8');
+      } catch {
+        // keep boot-time copy
+      }
+      c.header('Cache-Control', 'no-cache, must-revalidate');
+      return c.html(html);
     });
   }
 

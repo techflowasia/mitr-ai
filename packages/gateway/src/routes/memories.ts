@@ -164,6 +164,28 @@ memoriesRoutes.get('/stats', async (c) => {
 });
 
 /**
+ * GET /memories/embedding-stats - Get embedding system stats
+ *
+ * NOTE: must be registered before GET /:id, otherwise the parameterized
+ * route captures "embedding-stats" as an :id and returns 404.
+ */
+memoriesRoutes.get('/embedding-stats', async (c) => {
+  const { getEmbeddingService } = await import('../services/embedding/service.js');
+  const { getEmbeddingQueue } = await import('../services/embedding/queue.js');
+  const { embeddingCacheRepo } = await import('../db/repositories/embedding-cache.js');
+
+  const embeddingService = getEmbeddingService();
+  const queue = getEmbeddingQueue();
+  const cacheStats = await embeddingCacheRepo.getStats();
+
+  return apiResponse(c, {
+    available: embeddingService.isAvailable(),
+    queue: queue.getStats(),
+    cache: cacheStats,
+  });
+});
+
+/**
  * GET /memories/:id - Get a specific memory
  */
 memoriesRoutes.get('/:id', async (c) => {
@@ -338,25 +360,6 @@ memoriesRoutes.post('/backfill-embeddings', async (c) => {
   return apiResponse(c, {
     queued,
     message: `Queued ${queued} memories for embedding generation.`,
-  });
-});
-
-/**
- * GET /memories/embedding-stats - Get embedding system stats
- */
-memoriesRoutes.get('/embedding-stats', async (c) => {
-  const { getEmbeddingService } = await import('../services/embedding/service.js');
-  const { getEmbeddingQueue } = await import('../services/embedding/queue.js');
-  const { embeddingCacheRepo } = await import('../db/repositories/embedding-cache.js');
-
-  const embeddingService = getEmbeddingService();
-  const queue = getEmbeddingQueue();
-  const cacheStats = await embeddingCacheRepo.getStats();
-
-  return apiResponse(c, {
-    available: embeddingService.isAvailable(),
-    queue: queue.getStats(),
-    cache: cacheStats,
   });
 });
 

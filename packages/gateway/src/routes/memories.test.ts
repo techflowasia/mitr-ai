@@ -62,6 +62,18 @@ vi.mock('../ws/server.js', () => ({
   },
 }));
 
+vi.mock('../services/embedding/service.js', () => ({
+  getEmbeddingService: () => ({ isAvailable: () => true }),
+}));
+
+vi.mock('../services/embedding/queue.js', () => ({
+  getEmbeddingQueue: () => ({ getStats: () => ({ pending: 0, processing: 0 }) }),
+}));
+
+vi.mock('../db/repositories/embedding-cache.js', () => ({
+  embeddingCacheRepo: { getStats: vi.fn(async () => ({ entries: 0, hits: 0 })) },
+}));
+
 vi.mock('../services/log.js', () => ({
   getLog: () => ({
     info: vi.fn(),
@@ -304,6 +316,28 @@ describe('Memories Routes', () => {
       expect(json.success).toBe(true);
       expect(json.data.total).toBe(10);
       expect(json.data.byType).toBeDefined();
+    });
+  });
+
+  // ========================================================================
+  // GET /memories/embedding-stats
+  // ========================================================================
+
+  describe('GET /memories/embedding-stats', () => {
+    // Regression: this literal route must be registered before GET /:id,
+    // otherwise the parameterized route captures "embedding-stats" as an :id
+    // and the request 404s with "Memory not found".
+    it('returns embedding stats, not a 404 from the /:id route', async () => {
+      const res = await app.request('/memories/embedding-stats');
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.data.available).toBe(true);
+      expect(json.data.queue).toBeDefined();
+      expect(json.data.cache).toBeDefined();
+      // getMemory must not have been called — proves we didn't fall through to /:id
+      expect(mockMemoryService.getMemory).not.toHaveBeenCalled();
     });
   });
 
