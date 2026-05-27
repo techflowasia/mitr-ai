@@ -113,3 +113,7 @@ docs/T4F-POC-*.md
 security-report/
 security-reports/
 security-reports/*
+# External tooling scratch dir (not OwnPilot source)
+.wrongstack/
+# Root-level debug screenshots
+/provider_screenshot.png
