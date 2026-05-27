@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Agent, createAgent, createSimpleAgent } from './agent.js';
 import { ToolRegistry } from './tools.js';
 import { ConversationMemory } from './memory.js';
@@ -1606,5 +1606,74 @@ describe('Agent streamCompletion (via chat with stream=true)', () => {
     if (result.ok) {
       expect(result.value.content).toBe('OOB text.');
     }
+  });
+});
+
+describe('Agent - preflight compaction', () => {
+  beforeEach(() => {
+    mockProviderOverride = createMockProvider();
+  });
+  afterEach(() => {
+    mockProviderOverride = null;
+  });
+
+  function bigAgent(maxTokens: number): { agent: Agent; memory: ConversationMemory } {
+    const memory = new ConversationMemory({ maxTokens });
+    const agent = new Agent(createTestConfig(), { memory, tools: new ToolRegistry() });
+    return { agent, memory };
+  }
+
+  function fillOverBudget(memory: ConversationMemory, convId: string, pairs = 12): void {
+    for (let i = 0; i < pairs; i++) {
+      memory.addUserMessage(convId, 'x'.repeat(400));
+      memory.addAssistantMessage(convId, 'y'.repeat(400));
+    }
+  }
+
+  it('does not compact when no compactor is installed (unchanged behavior)', async () => {
+    const { agent, memory } = bigAgent(100);
+    const convId = agent.getConversation().id;
+    fillOverBudget(memory, convId);
+    await agent.chat('current question');
+    // No summary message was inserted.
+    const msgs = memory.get(convId)!.messages;
+    expect(msgs.some((m) => m.metadata?.compactionSummary === true)).toBe(false);
+  });
+
+  it('invokes the compactor and inserts a summary when over threshold', async () => {
+    const { agent, memory } = bigAgent(100);
+    const convId = agent.getConversation().id;
+    fillOverBudget(memory, convId);
+    const compactor = vi.fn().mockResolvedValue('SUMMARY TEXT');
+    agent.setPreflightCompactor(compactor, { threshold: 0.5, keepRecent: 4 });
+
+    await agent.chat('current question');
+
+    expect(compactor).toHaveBeenCalledTimes(1);
+    const msgs = memory.get(convId)!.messages;
+    const summary = msgs.find((m) => m.metadata?.compactionSummary === true);
+    expect(summary).toBeDefined();
+    expect(String(summary!.content)).toContain('SUMMARY TEXT');
+  });
+
+  it('does not invoke the compactor when under threshold', async () => {
+    const { agent } = bigAgent(100000);
+    const compactor = vi.fn().mockResolvedValue('S');
+    agent.setPreflightCompactor(compactor);
+    await agent.chat('short message');
+    expect(compactor).not.toHaveBeenCalled();
+  });
+
+  it('fails open when the compactor throws — the turn still completes', async () => {
+    const { agent, memory } = bigAgent(100);
+    const convId = agent.getConversation().id;
+    fillOverBudget(memory, convId);
+    agent.setPreflightCompactor(vi.fn().mockRejectedValue(new Error('boom')), {
+      threshold: 0.5,
+    });
+    const res = await agent.chat('current question');
+    expect(res.ok).toBe(true);
+    // No summary inserted (compaction failed), but chat succeeded.
+    expect(memory.get(convId)!.messages.some((m) => m.metadata?.compactionSummary)).toBe(false);
   });
 });

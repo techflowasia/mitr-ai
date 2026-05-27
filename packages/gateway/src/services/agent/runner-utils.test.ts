@@ -45,7 +45,7 @@ const mockGatewayConfigCenter = vi.hoisted(() => ({}));
 vi.mock('@ownpilot/core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@ownpilot/core')>()),
   Agent: vi.fn().mockImplementation(function () {
-    return { setDirectToolMode: vi.fn() };
+    return { setDirectToolMode: vi.fn(), setPreflightCompactor: vi.fn() };
   }),
   ToolRegistry: vi.fn().mockImplementation(function () {
     return { setConfigCenter: vi.fn() };
@@ -448,6 +448,22 @@ describe('agent-runner-utils', () => {
       expect(agent).toBeDefined();
       expect(agent.setDirectToolMode).toHaveBeenCalledWith(true);
       expect(mockGetProviderApiKey).toHaveBeenCalledWith('openai');
+    });
+
+    it('installs a headless preflight compactor on the agent', async () => {
+      const agent = await createConfiguredAgent({
+        name: 'TestAgent',
+        provider: 'openai',
+        model: 'gpt-4',
+        systemPrompt: 'You are a test agent.',
+        userId: 'user-1',
+        conversationId: 'conv-1',
+      });
+
+      expect(agent.setPreflightCompactor).toHaveBeenCalledTimes(1);
+      const [fn, opts] = (agent.setPreflightCompactor as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(typeof fn).toBe('function');
+      expect(opts).toMatchObject({ threshold: 0.75, keepRecent: 6 });
     });
 
     it('throws when API key not found', async () => {

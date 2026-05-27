@@ -365,6 +365,95 @@ describe('ConversationMemory', () => {
   });
 });
 
+describe('compaction support', () => {
+  let memory: ConversationMemory;
+
+  beforeEach(() => {
+    memory = new ConversationMemory({ maxTokens: 1000 });
+  });
+
+  describe('getMaxTokens', () => {
+    it('returns the configured token budget', () => {
+      expect(memory.getMaxTokens()).toBe(1000);
+    });
+
+    it('returns 0 when unlimited', () => {
+      const unlimited = new ConversationMemory({ maxTokens: 0 });
+      expect(unlimited.getMaxTokens()).toBe(0);
+    });
+  });
+
+  describe('estimateContextTokens', () => {
+    it('returns 0 for unknown conversation', () => {
+      expect(memory.estimateContextTokens('nope')).toBe(0);
+    });
+
+    it('grows as messages are added', () => {
+      const conv = memory.create();
+      const before = memory.estimateContextTokens(conv.id);
+      memory.addUserMessage(conv.id, 'a'.repeat(400));
+      const after = memory.estimateContextTokens(conv.id);
+      expect(after).toBeGreaterThan(before);
+    });
+  });
+
+  describe('compactOlderIntoSummary', () => {
+    it('returns false when at or below keepRecent', () => {
+      const conv = memory.create();
+      memory.addUserMessage(conv.id, 'one');
+      memory.addAssistantMessage(conv.id, 'two');
+      expect(memory.compactOlderIntoSummary(conv.id, 6, 'summary')).toBe(false);
+    });
+
+    it('returns false for unknown conversation', () => {
+      expect(memory.compactOlderIntoSummary('nope', 2, 'summary')).toBe(false);
+    });
+
+    it('replaces older messages with a single user summary, keeping recent intact', () => {
+      const conv = memory.create();
+      // 8 messages: u/a/u/a/u/a/u/a
+      for (let i = 0; i < 4; i++) {
+        memory.addUserMessage(conv.id, `user ${i}`);
+        memory.addAssistantMessage(conv.id, `assistant ${i}`);
+      }
+      const ok = memory.compactOlderIntoSummary(conv.id, 4, 'CONDENSED');
+      expect(ok).toBe(true);
+
+      const msgs = memory.get(conv.id)!.messages;
+      // 1 summary + last 4 kept (cut advances to a 'user' boundary)
+      expect(msgs[0]?.role).toBe('user');
+      expect(msgs[0]?.content).toContain('CONDENSED');
+      expect(msgs[0]?.content).toContain('Conversation summary from compaction');
+      expect(msgs[0]?.metadata?.compactionSummary).toBe(true);
+      // tail begins at a user boundary
+      expect(msgs[1]?.role).toBe('user');
+      // total = summary + 4 recent
+      expect(msgs.length).toBe(5);
+    });
+
+    it('advances the cut to a user boundary so tool roundtrips are not split', () => {
+      const conv = memory.create();
+      memory.addUserMessage(conv.id, 'first');
+      memory.addAssistantMessage(conv.id, '', [{ id: 't1', name: 'tool', arguments: '{}' }]);
+      memory.addToolResults(conv.id, [{ toolCallId: 't1', content: 'result', isError: false }]);
+      memory.addAssistantMessage(conv.id, 'done');
+      memory.addUserMessage(conv.id, 'second');
+      memory.addAssistantMessage(conv.id, 'reply');
+
+      // keepRecent=3 lands the initial cut inside the tool roundtrip; it must
+      // advance forward to the 'second' user message.
+      const ok = memory.compactOlderIntoSummary(conv.id, 3, 'SUM');
+      expect(ok).toBe(true);
+      const msgs = memory.get(conv.id)!.messages;
+      expect(msgs[0]?.role).toBe('user'); // summary
+      expect(msgs[1]?.role).toBe('user'); // 'second'
+      expect(msgs[1]?.content).toBe('second');
+      // no orphaned tool result remains
+      expect(msgs.some((m) => m.role === 'tool')).toBe(false);
+    });
+  });
+});
+
 describe('createMemory', () => {
   it('creates memory with default config', () => {
     const memory = createMemory();

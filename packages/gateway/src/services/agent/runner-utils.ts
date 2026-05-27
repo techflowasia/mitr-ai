@@ -22,7 +22,7 @@ import {
   createProvider,
   type ProviderConfig,
 } from '@ownpilot/core';
-import type { AIProvider, ToolCall, ToolId } from '@ownpilot/core';
+import type { AIProvider, ToolCall, ToolId, Message } from '@ownpilot/core';
 import { getLog } from '../log.js';
 import { resolveForProcess } from '../llm/model-routing.js';
 import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from './cache.js';
@@ -229,7 +229,62 @@ export async function createConfiguredAgent(opts: CreateAgentOptions): Promise<A
   // Enable direct tool mode for autonomous agents (no meta-tool indirection)
   agent.setDirectToolMode(true);
 
+  // Headless preflight compaction: autonomous runners (claws, heartbeats,
+  // channel chats) have no UI to prompt for compaction, so without this their
+  // memory window would silently front-truncate (drop) old turns once over
+  // budget. Install an LLM summarizer so older context is condensed into a
+  // summary instead. Gated inside the Agent: only fires when the conversation
+  // exceeds the threshold, and fails open if summarization errors.
+  agent.setPreflightCompactor(
+    async (older: readonly Message[]): Promise<string | null> => {
+      const transcript = renderTranscriptForSummary(older);
+      if (!transcript.trim()) return null;
+      const result = await providerInstance.complete({
+        messages: [
+          { role: 'system', content: HEADLESS_COMPACTION_INSTRUCTIONS },
+          { role: 'user', content: transcript },
+        ],
+        model: { model: opts.model, maxTokens: 700, temperature: 0.2 },
+      });
+      if (!result.ok) return null;
+      const summary = result.value.content.trim();
+      return summary.length > 0 ? summary : null;
+    },
+    { threshold: 0.75, keepRecent: 6 }
+  );
+
   return agent;
+}
+
+const HEADLESS_COMPACTION_INSTRUCTIONS = `You are compacting the earlier part of an autonomous agent's working transcript so it fits in context. Produce a dense, factual summary under these headers:
+GOAL — what the agent is trying to accomplish.
+DECISIONS — choices made and why.
+ARTIFACTS — concrete results, file paths, IDs, values produced.
+OPEN QUESTIONS — unresolved items / next steps.
+Keep it compact. Do not invent information. Output only the summary.`;
+
+/**
+ * Render a list of messages into a compact text transcript for summarization.
+ * Tool calls and results are flattened to short markers so the summary model
+ * sees what happened without the full payloads.
+ */
+function renderTranscriptForSummary(messages: readonly Message[]): string {
+  const lines: string[] = [];
+  for (const m of messages) {
+    let text =
+      typeof m.content === 'string'
+        ? m.content
+        : m.content.map((p) => (p.type === 'text' ? p.text : `[${p.type}]`)).join(' ');
+    if (m.toolCalls?.length) {
+      text += ' ' + m.toolCalls.map((tc) => `[tool:${tc.name}]`).join(' ');
+    }
+    if (m.toolResults?.length) {
+      text += ' ' + m.toolResults.map((tr) => `[result:${tr.content.slice(0, 200)}]`).join(' ');
+    }
+    const trimmed = text.trim();
+    if (trimmed) lines.push(`${m.role.toUpperCase()}: ${trimmed}`);
+  }
+  return lines.join('\n');
 }
 
 // ============================================================================

@@ -49,6 +49,20 @@ export class Agent {
   private maxToolCallsOverride?: number;
   /** When true, expose all tools directly to the LLM instead of through meta-tool indirection */
   private directToolMode = false;
+  /**
+   * Optional preflight compactor. When set, the agent summarizes older
+   * messages BEFORE the first LLM call of a turn once the conversation
+   * exceeds `preflightThreshold` of the memory token budget — replacing the
+   * lossy front-truncation that the memory window otherwise applies. Returns
+   * the summary text, or null to skip. Headless paths (autonomous agents,
+   * channels) inject this so long runs retain a summary instead of dropping
+   * history. When unset, behavior is unchanged.
+   */
+  private preflightCompactor?: (olderMessages: readonly Message[]) => Promise<string | null>;
+  /** Fraction of the memory token budget that triggers preflight compaction. */
+  private preflightThreshold = 0.75;
+  /** Messages kept intact at the tail during preflight compaction. */
+  private preflightKeepRecent = 6;
 
   constructor(
     config: AgentConfig,
@@ -256,6 +270,13 @@ export class Agent {
     while (turnCount < maxTurns) {
       turnCount++;
       this.state = { ...this.state, turnCount: this.state.turnCount + 1 };
+
+      // Preflight compaction: only at the start of a fresh turn (turn 1), never
+      // mid tool-call roundtrip, so we don't split assistant.toolCalls from
+      // their tool results. No-op unless a compactor was installed.
+      if (turnCount === 1) {
+        await this.maybePreflightCompact(options);
+      }
 
       // Get context messages
       const messages = this.memory.getFullContext(this.state.conversation.id);
@@ -668,6 +689,65 @@ export class Agent {
    */
   setMaxToolCalls(n: number | undefined): void {
     this.maxToolCallsOverride = n;
+  }
+
+  /**
+   * Install (or clear) a preflight compactor. When set, the agent summarizes
+   * older messages before the first LLM call of a turn once the conversation
+   * exceeds `threshold` of the memory token budget. Pass `undefined` to clear.
+   */
+  setPreflightCompactor(
+    fn: ((olderMessages: readonly Message[]) => Promise<string | null>) | undefined,
+    opts?: { threshold?: number; keepRecent?: number }
+  ): void {
+    this.preflightCompactor = fn;
+    if (opts?.threshold !== undefined && opts.threshold > 0 && opts.threshold < 1) {
+      this.preflightThreshold = opts.threshold;
+    }
+    if (opts?.keepRecent !== undefined && opts.keepRecent > 0) {
+      this.preflightKeepRecent = Math.floor(opts.keepRecent);
+    }
+  }
+
+  /**
+   * Run preflight compaction if a compactor is installed and the conversation
+   * exceeds the threshold. Fails open: any error leaves the conversation
+   * untouched (the memory window still truncates to fit, so the turn proceeds).
+   */
+  private async maybePreflightCompact(options?: {
+    onProgress?: (message: string, data?: Record<string, unknown>) => void;
+  }): Promise<void> {
+    const compactor = this.preflightCompactor;
+    if (!compactor) return;
+
+    const maxTokens = this.memory.getMaxTokens();
+    if (maxTokens <= 0) return; // unlimited budget — nothing to relieve
+
+    const convId = this.state.conversation.id;
+    const used = this.memory.estimateContextTokens(convId);
+    if (used <= this.preflightThreshold * maxTokens) return;
+
+    try {
+      const conv = this.memory.get(convId);
+      if (!conv) return;
+      const keep = this.preflightKeepRecent;
+      if (conv.messages.length <= keep) return;
+
+      const older = conv.messages.slice(0, conv.messages.length - keep);
+      if (older.length === 0) return;
+
+      options?.onProgress?.('Compacting earlier context...', {
+        usedTokens: used,
+        maxTokens,
+      });
+
+      const summary = await compactor(older);
+      if (summary && summary.trim()) {
+        this.memory.compactOlderIntoSummary(convId, keep, summary.trim());
+      }
+    } catch {
+      // Fail open — proceed with the existing (window-truncated) context.
+    }
   }
 
   /**

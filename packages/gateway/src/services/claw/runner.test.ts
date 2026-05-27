@@ -82,6 +82,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     Agent: class MockAgent {
       chat = mockChat;
       setDirectToolMode = vi.fn();
+      setPreflightCompactor = vi.fn();
       reset = vi.fn();
     },
     ToolRegistry: class MockToolRegistry {

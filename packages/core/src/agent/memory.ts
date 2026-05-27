@@ -211,6 +211,63 @@ export class ConversationMemory {
     return contextMessages;
   }
 
+  /** Memory token budget in tokens (0 = unlimited). */
+  getMaxTokens(): number {
+    return this.config.maxTokens;
+  }
+
+  /**
+   * Estimate total tokens of ALL stored messages for a conversation
+   * (before any context windowing). Used to detect context pressure for
+   * preflight compaction.
+   */
+  estimateContextTokens(conversationId: string): number {
+    const conversation = this.conversations.get(conversationId);
+    if (!conversation) return 0;
+    let total = 0;
+    for (const msg of conversation.messages) total += this.estimateTokens(msg);
+    return total;
+  }
+
+  /**
+   * Replace older messages with a single summary message, keeping the most
+   * recent `keepRecent` messages intact.
+   *
+   * The cut point is advanced forward to the next `user` message so a
+   * tool-call roundtrip (assistant.toolCalls -> tool result) is never split
+   * across the boundary. The summary is inserted as a `user` message — never
+   * `system`, because some providers (Anthropic) strip all system-role
+   * messages out of the messages array.
+   *
+   * Returns false when there is nothing safe to compact (too few messages, or
+   * no clean `user` boundary after the cut), so callers can fail open.
+   */
+  compactOlderIntoSummary(conversationId: string, keepRecent: number, summary: string): boolean {
+    const conversation = this.conversations.get(conversationId);
+    if (!conversation) return false;
+    const messages = conversation.messages;
+    if (messages.length <= keepRecent) return false;
+
+    let cut = Math.max(0, messages.length - keepRecent);
+    while (cut < messages.length && messages[cut]?.role !== 'user') cut++;
+    // cut === 0 means nothing older to compact; cut >= length means no clean
+    // user boundary was found — skip rather than risk orphaning tool pairs.
+    if (cut === 0 || cut >= messages.length) return false;
+
+    const summaryMessage: Message = {
+      role: 'user',
+      content: `[Conversation summary from compaction — older turns condensed]\n${summary}`,
+      metadata: { compactionSummary: true },
+    };
+
+    this.conversations.set(conversationId, {
+      ...conversation,
+      messages: [summaryMessage, ...messages.slice(cut)],
+      updatedAt: new Date(),
+    });
+    return true;
+  }
+
   /**
    * Truncate large tool results in older messages to save context tokens.
    * Keeps the last 4 messages fully intact (the current turn + previous turn).
