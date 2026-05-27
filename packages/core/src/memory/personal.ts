@@ -325,6 +325,81 @@ export class PersonalMemoryStore {
   }
 
   /**
+   * Merge an AI-inferred fact into the profile with source-precedence rules.
+   *
+   * Never overwrites human-curated entries (`user_stated` / `user_confirmed` /
+   * `imported`). For an existing `ai_inferred` entry the value is only replaced
+   * when the new confidence is at least as high. New facts are stored as
+   * `ai_inferred` so the UI can flag/review them. This is the write path for
+   * the autonomous user-modeling loop — keep it distinct from `set()` (which
+   * defaults to `user_stated` and always overwrites).
+   */
+  async learnInferred(
+    category: PersonalDataCategory,
+    key: string,
+    value: string,
+    options?: { confidence?: number; sensitive?: boolean }
+  ): Promise<{ action: 'created' | 'updated' | 'skipped'; entry: PersonalDataEntry | null }> {
+    await this.ensureInitialized();
+
+    const confidence = Math.max(0, Math.min(1, options?.confidence ?? 0.6));
+    const now = new Date().toISOString();
+    const existingId = this.findEntryId(category, key);
+
+    if (existingId) {
+      const existing = this.data.get(existingId)!;
+
+      // Human-curated data is authoritative — never overwrite it.
+      if (existing.source !== 'ai_inferred') {
+        return { action: 'skipped', entry: existing };
+      }
+
+      // Same value: refresh timestamp and keep the higher confidence.
+      if (existing.value === value) {
+        const updated: PersonalDataEntry = {
+          ...existing,
+          confidence: Math.max(existing.confidence, confidence),
+          updatedAt: now,
+        };
+        this.data.set(existingId, updated);
+        await this.save();
+        return { action: 'updated', entry: updated };
+      }
+
+      // Different value: only replace when at least as confident.
+      if (confidence < existing.confidence) {
+        return { action: 'skipped', entry: existing };
+      }
+      const updated: PersonalDataEntry = {
+        ...existing,
+        value,
+        confidence,
+        sensitive: options?.sensitive ?? existing.sensitive,
+        updatedAt: now,
+      };
+      this.data.set(existingId, updated);
+      await this.save();
+      return { action: 'updated', entry: updated };
+    }
+
+    const entry: PersonalDataEntry = {
+      id: `pd_${randomUUID()}`,
+      userId: this.userId,
+      category,
+      key,
+      value,
+      confidence,
+      source: 'ai_inferred',
+      sensitive: options?.sensitive ?? false,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.data.set(entry.id, entry);
+    await this.save();
+    return { action: 'created', entry };
+  }
+
+  /**
    * Get a personal data entry
    */
   async get(category: PersonalDataCategory, key: string): Promise<PersonalDataEntry | null> {
