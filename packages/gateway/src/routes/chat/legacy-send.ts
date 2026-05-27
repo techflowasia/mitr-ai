@@ -10,6 +10,7 @@ import type { ChatRequest } from '../../types/index.js';
 import type { AIProvider } from '@ownpilot/core';
 import { apiError, ERROR_CODES, getErrorMessage } from '../helpers.js';
 import { getSessionInfo } from '../agents/index.js';
+import { runInSessionLane } from '../../services/agent/session-lane.js';
 import { usageTracker } from '../../services/usage-tracking.js';
 import { logChatEvent } from '../../audit/index.js';
 import { LogsRepository } from '../../db/repositories/index.js';
@@ -118,42 +119,46 @@ export async function handleLegacySend(params: LegacySendParams): Promise<Respon
 
     const modelCallStart = Date.now();
 
-    const result = await agent.chat(chatMessage, {
-      thinking: body.thinking,
-      onBeforeToolCall: async (toolCall) => {
-        let toolArgs: Record<string, unknown>;
-        try {
-          toolArgs =
-            typeof toolCall.arguments === 'string'
-              ? (JSON.parse(toolCall.arguments) as Record<string, unknown>)
-              : (toolCall.arguments as Record<string, unknown>);
-        } catch {
-          toolArgs = {};
-        }
-        const toolStart = traceToolCallStart(toolCall.name, toolArgs);
+    // Serialize per conversation so concurrent messages on the same shared
+    // agent run in order instead of racing / being rejected as "busy".
+    const result = await runInSessionLane(agent.getConversation().id, () =>
+      agent.chat(chatMessage, {
+        thinking: body.thinking,
+        onBeforeToolCall: async (toolCall) => {
+          let toolArgs: Record<string, unknown>;
+          try {
+            toolArgs =
+              typeof toolCall.arguments === 'string'
+                ? (JSON.parse(toolCall.arguments) as Record<string, unknown>)
+                : (toolCall.arguments as Record<string, unknown>);
+          } catch {
+            toolArgs = {};
+          }
+          const toolStart = traceToolCallStart(toolCall.name, toolArgs);
 
-        const approval = await checkToolCallApproval(userId, toolCall, {
-          agentId,
-          conversationId: body.conversationId,
-          provider,
-          model,
-        });
+          const approval = await checkToolCallApproval(userId, toolCall, {
+            agentId,
+            conversationId: body.conversationId,
+            provider,
+            model,
+          });
 
-        traceAutonomyCheck(toolCall.name, approval.approved, approval.reason);
+          traceAutonomyCheck(toolCall.name, approval.approved, approval.reason);
 
-        if (!approval.approved) {
-          traceToolCallEnd(toolCall.name, toolStart, false, undefined, approval.reason);
-          log.info(
-            `Tool call blocked: ${toolCall.name} - ${approval.reason ?? 'Requires approval'}`
-          );
-        }
+          if (!approval.approved) {
+            traceToolCallEnd(toolCall.name, toolStart, false, undefined, approval.reason);
+            log.info(
+              `Tool call blocked: ${toolCall.name} - ${approval.reason ?? 'Requires approval'}`
+            );
+          }
 
-        return {
-          approved: approval.approved,
-          reason: approval.reason,
-        };
-      },
-    });
+          return {
+            approved: approval.approved,
+            reason: approval.reason,
+          };
+        },
+      })
+    );
 
     if (body.directTools?.length) {
       agent.clearAdditionalTools();

@@ -35,6 +35,7 @@ import {
   getSessionInfo,
   getCliCorrelationId,
 } from '../agents/index.js';
+import { runInSessionLane } from '../../services/agent/session-lane.js';
 import { onMcpToolEvents } from '../../mcp/mcp-events.js';
 import { getLLMRouter } from '@ownpilot/core';
 import { ChatRepository } from '../../db/repositories/index.js';
@@ -673,15 +674,20 @@ chatRoutes.post('/', async (c) => {
       }
 
       try {
-        const result = await agent.chat(chatMessage, {
-          stream: true,
-          thinking: body.thinking,
-          onBeforeToolCall: callbacks.onBeforeToolCall,
-          onChunk: callbacks.onChunk,
-          onToolStart: callbacks.onToolStart,
-          onToolEnd: callbacks.onToolEnd,
-          onProgress: callbacks.onProgress,
-        });
+        // Serialize per conversation: if another message for this conversation
+        // is still streaming, wait for it instead of racing the shared agent's
+        // memory (or hitting its "already processing" guard).
+        const result = await runInSessionLane(conversationId, () =>
+          agent.chat(chatMessage, {
+            stream: true,
+            thinking: body.thinking,
+            onBeforeToolCall: callbacks.onBeforeToolCall,
+            onChunk: callbacks.onChunk,
+            onToolStart: callbacks.onToolStart,
+            onToolEnd: callbacks.onToolEnd,
+            onProgress: callbacks.onProgress,
+          })
+        );
 
         if (!result.ok) {
           await stream.writeSSE({
