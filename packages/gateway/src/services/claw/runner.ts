@@ -30,6 +30,7 @@ import {
 import { runInClawContext } from './context.js';
 import {
   getSessionWorkspaceFiles,
+  getSessionWorkspacePath,
   readSessionWorkspaceFile,
   type WorkspaceFileInfo,
 } from '../../workspace/file-workspace.js';
@@ -240,6 +241,22 @@ export class ClawRunner {
       this.config.id
     );
 
+    // Workspace boundary: when this claw owns a session workspace, scope all
+    // file-system tool operations to that directory. Without this the
+    // file-system tools fall back to process.cwd() — the gateway repo root —
+    // so a runaway tool call could read/write anywhere the gateway process
+    // can reach.
+    let workspaceDir: string | undefined;
+    if (this.config.workspaceId) {
+      try {
+        workspaceDir = getSessionWorkspacePath(this.config.workspaceId);
+      } catch (err) {
+        log.warn(
+          `[${this.config.id}] Could not resolve workspaceId="${this.config.workspaceId}" to a directory; file tools will use process.cwd(): ${getErrorMessage(err)}`
+        );
+      }
+    }
+
     return createConfiguredAgent({
       name: `claw-${this.config.id}`,
       provider,
@@ -252,6 +269,7 @@ export class ClawRunner {
       toolFilter,
       fallbackProvider,
       fallbackModel,
+      workspaceDir,
     });
   }
 

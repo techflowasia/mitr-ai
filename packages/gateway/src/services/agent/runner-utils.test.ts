@@ -37,6 +37,7 @@ const mockRegisterPluginTools = vi.hoisted(() => vi.fn());
 const mockRegisterExtensionTools = vi.hoisted(() => vi.fn());
 const mockRegisterMcpTools = vi.hoisted(() => vi.fn());
 const mockGatewayConfigCenter = vi.hoisted(() => ({}));
+const mockSetWorkspaceDir = vi.hoisted(() => vi.fn());
 
 // ============================================================================
 // Module mocks
@@ -48,7 +49,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => ({
     return { setDirectToolMode: vi.fn(), setPreflightCompactor: vi.fn() };
   }),
   ToolRegistry: vi.fn().mockImplementation(function () {
-    return { setConfigCenter: vi.fn() };
+    return { setConfigCenter: vi.fn(), setWorkspaceDir: mockSetWorkspaceDir };
   }),
   registerAllTools: mockRegisterAllTools,
   getServiceRegistry: mockGetServiceRegistry,
@@ -494,6 +495,36 @@ describe('agent-runner-utils', () => {
       });
 
       expect(mockGetProviderApiKey).not.toHaveBeenCalledWith('anthropic');
+    });
+
+    it('scopes the tool registry to workspaceDir when supplied', async () => {
+      mockSetWorkspaceDir.mockClear();
+      await createConfiguredAgent({
+        name: 'TestAgent',
+        provider: 'openai',
+        model: 'gpt-4',
+        systemPrompt: 'You are a test agent.',
+        userId: 'user-1',
+        conversationId: 'conv-1',
+        workspaceDir: '/srv/data/workspaces/claw-42',
+      });
+
+      expect(mockSetWorkspaceDir).toHaveBeenCalledTimes(1);
+      expect(mockSetWorkspaceDir).toHaveBeenCalledWith('/srv/data/workspaces/claw-42');
+    });
+
+    it('does not scope the registry when workspaceDir is omitted', async () => {
+      mockSetWorkspaceDir.mockClear();
+      await createConfiguredAgent({
+        name: 'TestAgent',
+        provider: 'openai',
+        model: 'gpt-4',
+        systemPrompt: 'You are a test agent.',
+        userId: 'user-1',
+        conversationId: 'conv-1',
+      });
+
+      expect(mockSetWorkspaceDir).not.toHaveBeenCalled();
     });
 
     it('throws when API key not found', async () => {

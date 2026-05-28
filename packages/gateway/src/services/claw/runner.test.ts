@@ -19,6 +19,7 @@ const {
   mockRegisterExtensionTools,
   mockRegisterMcpTools,
   mockGetSessionWorkspaceFiles,
+  mockGetSessionWorkspacePath,
 } = vi.hoisted(() => {
   const mockChat = vi
     .fn()
@@ -72,6 +73,7 @@ const {
     mockRegisterExtensionTools: vi.fn().mockReturnValue([]),
     mockRegisterMcpTools: vi.fn().mockReturnValue([]),
     mockGetSessionWorkspaceFiles: vi.fn().mockReturnValue([]),
+    mockGetSessionWorkspacePath: vi.fn((id: string) => `/srv/data/workspaces/${id}`),
   };
 });
 
@@ -87,6 +89,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     },
     ToolRegistry: class MockToolRegistry {
       setConfigCenter = vi.fn();
+      setWorkspaceDir = vi.fn();
       register = vi.fn();
       has = vi.fn(() => true);
       get = vi.fn();
@@ -179,6 +182,8 @@ vi.mock('../../assistant/orchestrator.js', () => ({
 
 vi.mock('../../workspace/file-workspace.js', () => ({
   getSessionWorkspaceFiles: mockGetSessionWorkspaceFiles,
+  getSessionWorkspacePath: mockGetSessionWorkspacePath,
+  readSessionWorkspaceFile: vi.fn(() => null),
 }));
 
 const mockSoulsGetById = vi.fn();
@@ -384,6 +389,22 @@ describe('ClawRunner', () => {
       const basePromptArg = mockBuildEnhancedSystemPrompt.mock.calls[0][0] as string;
       expect(basePromptArg).toContain('Workspace');
       expect(basePromptArg).toContain('.claw/ Files');
+    });
+
+    it('resolves workspaceId to a directory and scopes file tools to it', async () => {
+      mockGetSessionWorkspacePath.mockClear();
+      runner = new ClawRunner(makeConfig({ workspaceId: 'ws-boundary' }));
+      await runner.runCycle(makeSession());
+
+      expect(mockGetSessionWorkspacePath).toHaveBeenCalledWith('ws-boundary');
+    });
+
+    it('does not resolve a workspace directory when no workspaceId is configured', async () => {
+      mockGetSessionWorkspacePath.mockClear();
+      runner = new ClawRunner(makeConfig({ workspaceId: undefined }));
+      await runner.runCycle(makeSession());
+
+      expect(mockGetSessionWorkspacePath).not.toHaveBeenCalled();
     });
 
     it('includes coding agent info when configured', async () => {

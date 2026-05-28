@@ -157,6 +157,14 @@ export interface CreateAgentOptions {
   /** Optional backup provider/model for failover (resolved via LLM routing). */
   fallbackProvider?: string;
   fallbackModel?: string;
+  /**
+   * Absolute path scoping all file-system tool operations to this directory
+   * (plus os.tmpdir()). When omitted, file tools fall back to process.cwd() —
+   * which means autonomous agents would otherwise range over the gateway
+   * working directory. Per-claw / per-workspace runners should always pass
+   * this so a runaway tool call can only touch its own session files.
+   */
+  workspaceDir?: string;
 }
 
 /**
@@ -183,6 +191,15 @@ export async function createConfiguredAgent(opts: CreateAgentOptions): Promise<A
   // Create and populate tool registry
   const tools = new ToolRegistry();
   await registerAllToolSources(tools, opts.userId, opts.conversationId, opts.name);
+
+  // Scope file-system tools to the caller's workspace dir if supplied. The
+  // file-system tools read this via context.workspaceDir, and the registry
+  // injects its stored workspaceDir on every execute(). When omitted the
+  // tools fall back to process.cwd() (intentional for the chat path which
+  // runs as the operator) — autonomous runners should always supply it.
+  if (opts.workspaceDir) {
+    tools.setWorkspaceDir(opts.workspaceDir);
+  }
 
   // Build provider config for Agent (config.provider) and create real IProvider for options.provider
   const agentProviderConfig: ProviderConfig = {
