@@ -521,6 +521,26 @@ export function SoulEditor({ agentId }: Props) {
               />
             </FieldGroup>
           </div>
+          <FieldGroup label="Auto-recall relevant memories">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={edited.heartbeat.injectRelevantMemories === true}
+                onChange={(e) =>
+                  updateField('heartbeat', 'injectRelevantMemories', e.target.checked)
+                }
+                className="rounded"
+              />
+              <span className="text-sm text-text-primary dark:text-dark-text-primary">
+                Prepend top-matching memories to each task prompt
+              </span>
+            </label>
+            <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">
+              When enabled, the runtime runs a hybrid (vector + FTS) search against this soul's
+              memories for every task and prepends a "Relevant memories" block — the same affordance
+              chat gets via context injection. Off by default to keep prompts small.
+            </p>
+          </FieldGroup>
           {edited.heartbeat.checklist.length > 0 && (
             <FieldGroup label={`Tasks (${edited.heartbeat.checklist.length})`}>
               <div className="space-y-1">

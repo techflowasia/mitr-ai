@@ -197,6 +197,15 @@ export interface SoulHeartbeat {
   selfHealingEnabled: boolean;
   /** Heartbeat timeout in ms (default: 120000 = 2 min) */
   maxDurationMs: number;
+  /**
+   * When true, the runtime queries MemoryService.hybridSearch with each
+   * task prompt and prepends the top-matching memories as a "Relevant
+   * memories" section — same auto-recall the chat path enjoys via the
+   * context-injection middleware. Defaults to false to preserve the
+   * existing minimal-context behavior; opt in when a soul benefits from
+   * remembering past work without explicitly calling recall_memory.
+   */
+  injectRelevantMemories?: boolean;
 }
 
 export interface QuietHours {

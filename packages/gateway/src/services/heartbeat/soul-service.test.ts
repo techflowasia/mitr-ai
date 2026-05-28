@@ -14,6 +14,7 @@ const {
   mockEmit,
   mockGetEventSystem,
   mockCreateMemory,
+  mockHybridSearch,
   mockMemoryService,
   mockGetServiceRegistry,
   mockMsgRepo,
@@ -58,7 +59,11 @@ const {
   const mockGetEventSystem = vi.fn().mockReturnValue({ emit: mockEmit });
 
   const mockCreateMemory = vi.fn().mockResolvedValue(undefined);
-  const mockMemoryService = { createMemory: mockCreateMemory };
+  const mockHybridSearch = vi.fn().mockResolvedValue([]);
+  const mockMemoryService = {
+    createMemory: mockCreateMemory,
+    hybridSearch: mockHybridSearch,
+  };
   const mockGetServiceRegistry = vi.fn().mockReturnValue({
     get: vi.fn().mockReturnValue(mockMemoryService),
   });
@@ -126,6 +131,7 @@ const {
     mockEmit,
     mockGetEventSystem,
     mockCreateMemory,
+    mockHybridSearch,
     mockMemoryService,
     mockGetServiceRegistry,
     mockMsgRepo,
@@ -183,6 +189,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     getPermissionGate: () => mockPermissionGate,
     // Memory now resolves through the capability accessor.
     getMemoryService: () => mockMemoryService,
+    hasMemoryService: () => true,
     // Runtime context bundle — the SoulHeartbeatService resolves capabilities
     // through this rather than reaching for each global individually. Build
     // it from the same mocks the rest of the file already wires up.
@@ -689,6 +696,97 @@ describe('heartbeat engine — processMessage()', () => {
     };
 
     expect(result.toolCalls).toBeUndefined();
+  });
+
+  it('prepends a relevant-memories section when injectRelevantMemories=true and hits exist', async () => {
+    initRunner();
+    mockHybridSearch.mockResolvedValueOnce([
+      { content: 'User prefers brevity.', score: 0.9, matchType: 'vector' },
+      { content: 'Last week the deploy failed at step 4.', score: 0.7, matchType: 'fts' },
+    ]);
+    let observedMessage = '';
+    mockChat.mockImplementation((msg: string) => {
+      observedMessage = msg;
+      return Promise.resolve({ ok: true, value: { content: 'ok', usage: null } });
+    });
+
+    await getEngine().processMessage({
+      agentId: 'soul-agent-7',
+      message: 'review the last deploy and summarise',
+      context: { injectRelevantMemories: true },
+    });
+
+    expect(mockHybridSearch).toHaveBeenCalledWith(
+      'soul-agent-7',
+      'review the last deploy and summarise',
+      { limit: 5 }
+    );
+    expect(observedMessage).toContain('## Relevant memories (from recall)');
+    expect(observedMessage).toContain('- User prefers brevity.');
+    expect(observedMessage).toContain('- Last week the deploy failed at step 4.');
+    // Memory block precedes the original task prompt
+    expect(observedMessage.indexOf('## Relevant memories')).toBeLessThan(
+      observedMessage.indexOf('review the last deploy')
+    );
+  });
+
+  it('does not call hybridSearch when injectRelevantMemories is not set', async () => {
+    initRunner();
+    mockHybridSearch.mockClear();
+    mockChat.mockResolvedValue({ ok: true, value: { content: 'ok', usage: null } });
+
+    await getEngine().processMessage({ message: 'a regular task' });
+
+    expect(mockHybridSearch).not.toHaveBeenCalled();
+  });
+
+  it('skips recall when task prompt is too short', async () => {
+    initRunner();
+    mockHybridSearch.mockClear();
+    mockChat.mockResolvedValue({ ok: true, value: { content: 'ok', usage: null } });
+
+    await getEngine().processMessage({
+      message: 'go',
+      context: { injectRelevantMemories: true },
+    });
+
+    expect(mockHybridSearch).not.toHaveBeenCalled();
+  });
+
+  it('omits the memory section when hybridSearch returns no hits', async () => {
+    initRunner();
+    mockHybridSearch.mockResolvedValueOnce([]);
+    let observedMessage = '';
+    mockChat.mockImplementation((msg: string) => {
+      observedMessage = msg;
+      return Promise.resolve({ ok: true, value: { content: 'ok', usage: null } });
+    });
+
+    await getEngine().processMessage({
+      message: 'do this important thing',
+      context: { injectRelevantMemories: true },
+    });
+
+    expect(observedMessage).not.toContain('Relevant memories');
+    expect(observedMessage).toContain('do this important thing');
+  });
+
+  it('soft-fails when hybridSearch throws (recall miss never breaks heartbeat)', async () => {
+    initRunner();
+    mockHybridSearch.mockRejectedValueOnce(new Error('vector store offline'));
+    let observedMessage = '';
+    mockChat.mockImplementation((msg: string) => {
+      observedMessage = msg;
+      return Promise.resolve({ ok: true, value: { content: 'ok', usage: null } });
+    });
+
+    const result = await getEngine().processMessage({
+      message: 'do this important thing',
+      context: { injectRelevantMemories: true },
+    });
+
+    expect(observedMessage).not.toContain('Relevant memories');
+    expect((result as { content: string }).content).toBe('ok');
   });
 });
 

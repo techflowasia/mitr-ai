@@ -465,6 +465,10 @@ Be concise and focused. Report your findings clearly.`.trim();
           // tool access to the soul's session workspace via ExecContext.
           // Without this, heartbeats inherit the chat agent's process.cwd().
           workspaceId: soul.workspaceId,
+          // Opt-in auto-recall: when true, the service prepends a
+          // "Relevant memories" block (hybrid vector+FTS) before the task
+          // prompt — same affordance chat gets via context-injection middleware.
+          injectRelevantMemories: soul.heartbeat.injectRelevantMemories === true,
           // Claw mode flags
           clawMode: isClawMode,
           clawCanManageAgents: soul.autonomy.clawMode?.canManageAgents,

@@ -62,9 +62,53 @@ const CREW_CONTEXT_CACHE_TTL_MS =
 /** Bound the size of stored tool-call previews so heartbeat_log rows stay small. */
 const TOOL_CALL_PREVIEW_MAX_CHARS = 500;
 
+/** Max query-relevant memories injected per heartbeat task prompt. */
+const HEARTBEAT_MEMORY_RECALL_LIMIT = 5;
+/** Min task-prompt length before we bother with relevance recall. */
+const HEARTBEAT_MEMORY_RECALL_MIN_CHARS = 8;
+
 function truncate(value: string, max: number): string {
   if (value.length <= max) return value;
   return `${value.slice(0, max)}…`;
+}
+
+/**
+ * Query the MemoryService for entries relevant to this heartbeat task and
+ * render them as a markdown section to prepend to the prompt. Mirrors the
+ * chat path's buildRelevantMemorySection so heartbeats with the opt-in flag
+ * get the same auto-recall affordance. Returns '' on miss / error / no
+ * MemoryService — never throws, never blocks the heartbeat.
+ *
+ * The first argument is the soul's `agentId`, which is what
+ * `runtime.memory.createMemory(agentId, …)` uses as the scope key in
+ * soul-service's saveMemory adapter — so a soul recalls its own memories,
+ * not the human user's.
+ */
+async function buildRelevantMemorySection(agentId: string, taskPrompt: string): Promise<string> {
+  const text = taskPrompt.trim();
+  if (text.length < HEARTBEAT_MEMORY_RECALL_MIN_CHARS) return '';
+  const { hasMemoryService, getMemoryService } = await import('@ownpilot/core');
+  if (!hasMemoryService()) return '';
+
+  try {
+    const hits = await getMemoryService().hybridSearch(agentId, text, {
+      limit: HEARTBEAT_MEMORY_RECALL_LIMIT,
+    });
+    if (hits.length === 0) return '';
+
+    const lines: string[] = [];
+    for (const m of hits) {
+      const content = m.content.trim();
+      if (!content) continue;
+      lines.push(`- ${content}`);
+    }
+    if (lines.length === 0) return '';
+
+    return `## Relevant memories (from recall)\n${lines.join('\n')}`;
+  } catch (err) {
+    log.debug('Heartbeat memory recall failed (non-fatal)', { agentId, error: String(err) });
+    return '';
+  }
 }
 
 /**
@@ -343,6 +387,19 @@ export class SoulHeartbeatService {
           const crewSection = await getCachedCrewContext(request.agentId, crewId);
           if (crewSection) {
             taskMessage = `${crewSection}\n${taskMessage}`;
+          }
+        }
+
+        // Opt-in auto memory recall — mirrors the chat path's
+        // context-injection middleware so heartbeats can leverage the same
+        // hybrid (vector + FTS) recall instead of forcing every prompt to
+        // call the recall_memory tool explicitly. Soft-fails on any error
+        // so the heartbeat still runs without memories on a recall miss.
+        const wantRecall = request.context?.injectRelevantMemories === true;
+        if (wantRecall) {
+          const memorySection = await buildRelevantMemorySection(request.agentId, request.message);
+          if (memorySection) {
+            taskMessage = `${memorySection}\n\n${taskMessage}`;
           }
         }
 

@@ -372,6 +372,9 @@ export const createSoulSchema = z.object({
       .optional(),
     selfHealingEnabled: z.boolean().default(false),
     maxDurationMs: z.number().int().positive().default(120000),
+    // Opt-in auto-recall of relevant memories before each task — mirrors the
+    // chat path's context-injection middleware. Wired in soul-service.
+    injectRelevantMemories: z.boolean().optional(),
   }),
   evolution: z.record(z.string(), z.unknown()),
   relationships: z.record(z.string(), z.unknown()).optional(),

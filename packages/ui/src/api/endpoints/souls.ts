@@ -60,6 +60,7 @@ export interface AgentSoul {
     };
     selfHealingEnabled: boolean;
     maxDurationMs: number;
+    injectRelevantMemories?: boolean;
   };
   relationships: {
     reportsTo?: string;
