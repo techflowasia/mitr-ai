@@ -273,6 +273,27 @@ export function SoulEditor({ agentId }: Props) {
               className={inputClass}
             />
           </FieldGroup>
+          <FieldGroup label="Workspace ID">
+            <input
+              type="text"
+              value={edited.workspaceId || ''}
+              onChange={(e) =>
+                setEdited((prev) =>
+                  prev ? { ...prev, workspaceId: e.target.value || undefined } : prev
+                )
+              }
+              placeholder="e.g. session-id or sandbox name"
+              className={inputClass}
+            />
+            <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">
+              Optional sandbox directory. When set, file and CLI tools the soul runs during
+              heartbeats are scoped to{' '}
+              <code>
+                ${'{dataPath}'}/workspace/{'{workspaceId}'}
+              </code>
+              . Leave empty for default behavior.
+            </p>
+          </FieldGroup>
         </div>
       )}
 
