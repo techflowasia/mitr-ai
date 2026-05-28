@@ -338,4 +338,192 @@ describe('SoulEvolutionEngine.selfReflect()', () => {
     expect(updated.evolution.learnings.length).toBe(50);
     expect(result.applied).toBe(true);
   });
+
+  it('reflection prompt surfaces failing tool patterns when toolCalls are present', async () => {
+    const soul = makeSoul({ evolution: { ...makeSoul().evolution, evolutionMode: 'supervised' } });
+    const repo = makeRepo(soul);
+    const logRepo = makeLogRepo([
+      {
+        id: 'log-1',
+        agentId: 'agent-1',
+        soulVersion: 1,
+        tasksRun: [{ id: 't1', name: 'recon' }],
+        tasksSkipped: [],
+        tasksFailed: [],
+        durationMs: 1000,
+        tokenUsage: { input: 10, output: 20 },
+        cost: 0.01,
+        createdAt: new Date('2026-05-27T10:00:00Z'),
+        toolCalls: [
+          {
+            taskId: 't1',
+            tool: 'fetch_url',
+            durationMs: 30,
+            success: false,
+            errorPreview: 'ENOTFOUND example.test',
+          },
+          { taskId: 't1', tool: 'fetch_url', durationMs: 25, success: false },
+          { taskId: 't1', tool: 'create_memory', durationMs: 8, success: true },
+        ],
+      },
+      {
+        id: 'log-2',
+        agentId: 'agent-1',
+        soulVersion: 1,
+        tasksRun: [{ id: 't1', name: 'recon' }],
+        tasksSkipped: [],
+        tasksFailed: [],
+        durationMs: 800,
+        tokenUsage: { input: 10, output: 20 },
+        cost: 0.01,
+        createdAt: new Date('2026-05-27T11:00:00Z'),
+        toolCalls: [
+          { taskId: 't1', tool: 'fetch_url', durationMs: 22, success: true },
+          { taskId: 't1', tool: 'create_memory', durationMs: 7, success: true },
+        ],
+      },
+    ]);
+    let capturedPrompt = '';
+    const reflectionEngine = {
+      processMessage: vi.fn().mockImplementation(async ({ message }: { message: string }) => {
+        capturedPrompt = message;
+        return { content: 'I should retry transient fetch_url failures.' };
+      }),
+    };
+    const engine = new SoulEvolutionEngine(repo, logRepo, reflectionEngine);
+    const result = await engine.selfReflect('agent-1');
+
+    expect(result.suggestions.length).toBeGreaterThanOrEqual(1);
+    expect(capturedPrompt).toContain('Tool usage across these cycles');
+    expect(capturedPrompt).toContain('fetch_url: 2/3 failed (67%)');
+    expect(capturedPrompt).toContain('ENOTFOUND example.test');
+    expect(capturedPrompt).toContain('Most used:');
+    expect(capturedPrompt).toContain('fetch_url (3)');
+    expect(capturedPrompt).toContain('create_memory (2)');
+  });
+
+  it('reflection prompt stays silent about tool usage when no toolCalls captured', async () => {
+    const soul = makeSoul({ evolution: { ...makeSoul().evolution, evolutionMode: 'supervised' } });
+    const repo = makeRepo(soul);
+    const logRepo = makeLogRepo([
+      {
+        id: 'log-empty',
+        agentId: 'agent-1',
+        soulVersion: 1,
+        tasksRun: [{ id: 't1', name: 'recon' }],
+        tasksSkipped: [],
+        tasksFailed: [],
+        durationMs: 100,
+        tokenUsage: { input: 0, output: 0 },
+        cost: 0,
+        createdAt: new Date('2026-05-27T10:00:00Z'),
+        // toolCalls intentionally absent — runner omits when no tools fired
+      },
+    ]);
+    let capturedPrompt = '';
+    const reflectionEngine = {
+      processMessage: vi.fn().mockImplementation(async ({ message }: { message: string }) => {
+        capturedPrompt = message;
+        return { content: 'I should keep going.' };
+      }),
+    };
+    const engine = new SoulEvolutionEngine(repo, logRepo, reflectionEngine);
+    await engine.selfReflect('agent-1');
+
+    expect(capturedPrompt).not.toContain('Tool usage');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// summarizeToolUsage()
+// ---------------------------------------------------------------------------
+
+describe('summarizeToolUsage()', () => {
+  it('returns null when no logs carry tool calls', async () => {
+    const { summarizeToolUsage } = await import('./evolution.js');
+    expect(summarizeToolUsage([])).toBeNull();
+    expect(
+      summarizeToolUsage([
+        {
+          id: 'l',
+          agentId: 'a',
+          soulVersion: 1,
+          tasksRun: [],
+          tasksSkipped: [],
+          tasksFailed: [],
+          durationMs: 0,
+          tokenUsage: { input: 0, output: 0 },
+          cost: 0,
+          createdAt: new Date(),
+        },
+      ])
+    ).toBeNull();
+  });
+
+  it('ranks failing tools by failure count, then highlights most-used', async () => {
+    const { summarizeToolUsage } = await import('./evolution.js');
+    const summary = summarizeToolUsage([
+      {
+        id: 'l1',
+        agentId: 'a',
+        soulVersion: 1,
+        tasksRun: [],
+        tasksSkipped: [],
+        tasksFailed: [],
+        durationMs: 0,
+        tokenUsage: { input: 0, output: 0 },
+        cost: 0,
+        createdAt: new Date(),
+        toolCalls: [
+          {
+            taskId: 't1',
+            tool: 'fetch_url',
+            durationMs: 5,
+            success: false,
+            errorPreview: 'timeout',
+          },
+          { taskId: 't1', tool: 'fetch_url', durationMs: 5, success: false },
+          { taskId: 't1', tool: 'fetch_url', durationMs: 5, success: true },
+          { taskId: 't2', tool: 'list_files', durationMs: 3, success: true },
+          { taskId: 't2', tool: 'list_files', durationMs: 3, success: true },
+          { taskId: 't2', tool: 'list_files', durationMs: 3, success: true },
+          { taskId: 't2', tool: 'list_files', durationMs: 3, success: true },
+        ],
+      },
+    ]);
+    expect(summary).not.toBeNull();
+    expect(summary).toContain('fetch_url: 2/3 failed');
+    expect(summary).toContain('timeout');
+    // list_files never failed → not in failure ranking
+    expect(summary).not.toContain('list_files: 0/');
+    // But it IS in Most used
+    expect(summary).toContain('Most used:');
+    expect(summary).toContain('list_files (4)');
+  });
+
+  it('omits failure section entirely when nothing failed', async () => {
+    const { summarizeToolUsage } = await import('./evolution.js');
+    const summary = summarizeToolUsage([
+      {
+        id: 'l1',
+        agentId: 'a',
+        soulVersion: 1,
+        tasksRun: [],
+        tasksSkipped: [],
+        tasksFailed: [],
+        durationMs: 0,
+        tokenUsage: { input: 0, output: 0 },
+        cost: 0,
+        createdAt: new Date(),
+        toolCalls: [
+          { taskId: 't1', tool: 'create_memory', durationMs: 8, success: true },
+          { taskId: 't1', tool: 'create_memory', durationMs: 9, success: true },
+        ],
+      },
+    ]);
+    expect(summary).not.toBeNull();
+    expect(summary).not.toContain('failed');
+    expect(summary).toContain('Most used:');
+    expect(summary).toContain('create_memory (2)');
+  });
 });

@@ -87,6 +87,54 @@ const MAX_BOUNDARIES = 100;
 /** Maximum mutable traits to keep */
 const MAX_MUTABLE_TRAITS = 100;
 
+/**
+ * Aggregate tool-call activity across recent heartbeats so self-reflection
+ * can spot patterns the reflection prompt couldn't see before (e.g. a soul
+ * that keeps failing the same fetch_url call). Returns null when no logs
+ * carry tool-call data so the prompt stays silent rather than empty.
+ */
+export function summarizeToolUsage(logs: HeartbeatLogEntry[]): string | null {
+  const totals = new Map<string, { calls: number; failures: number; failureSample?: string }>();
+  let totalCalls = 0;
+  for (const log of logs) {
+    for (const call of log.toolCalls ?? []) {
+      const stat = totals.get(call.tool) ?? { calls: 0, failures: 0 };
+      stat.calls += 1;
+      if (!call.success) {
+        stat.failures += 1;
+        // Keep the first error preview seen so the prompt has a hint
+        if (!stat.failureSample && call.errorPreview) {
+          stat.failureSample = call.errorPreview.slice(0, 120);
+        }
+      }
+      totals.set(call.tool, stat);
+      totalCalls += 1;
+    }
+  }
+  if (totalCalls === 0) return null;
+
+  // Surface the 5 tools that failed most often, then the 3 most-used. This
+  // keeps the prompt small while highlighting the actionable bits.
+  const ranked = Array.from(totals.entries()).sort(
+    ([, a], [, b]) => b.failures - a.failures || b.calls - a.calls
+  );
+  const lines: string[] = [];
+  for (const [tool, stat] of ranked.slice(0, 5)) {
+    if (stat.failures === 0) break;
+    const pct = Math.round((stat.failures / stat.calls) * 100);
+    const sample = stat.failureSample ? ` — e.g. ${stat.failureSample}` : '';
+    lines.push(`- ${tool}: ${stat.failures}/${stat.calls} failed (${pct}%)${sample}`);
+  }
+  const topUsed = Array.from(totals.entries())
+    .sort(([, a], [, b]) => b.calls - a.calls)
+    .slice(0, 3)
+    .map(([tool, stat]) => `${tool} (${stat.calls})`);
+  if (topUsed.length > 0) {
+    lines.push(`- Most used: ${topUsed.join(', ')}`);
+  }
+  return lines.length > 0 ? lines.join('\n') : null;
+}
+
 export class SoulEvolutionEngine {
   constructor(
     private soulRepo: ISoulRepository,
@@ -164,12 +212,14 @@ export class SoulEvolutionEngine {
 
     const recentLogs = await this.heartbeatLogRepo.getRecent(agentId, 20);
     const recentFeedback = soul.evolution.feedbackLog.slice(-10);
+    const toolStats = summarizeToolUsage(recentLogs);
 
     const reflectionPrompt = `
 You are ${soul.identity.name}, reflecting on your recent performance.
 
 Recent heartbeat results:
 ${recentLogs.map((l) => `- ${l.createdAt.toISOString()}: ${l.tasksRun.length} done, ${l.tasksFailed.length} failed, $${l.cost}`).join('\n')}
+${toolStats ? `\nTool usage across these cycles:\n${toolStats}` : ''}
 
 Recent feedback from user:
 ${recentFeedback.map((f) => `- [${f.type}] ${f.content}`).join('\n')}
