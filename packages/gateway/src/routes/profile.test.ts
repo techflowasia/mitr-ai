@@ -140,6 +140,16 @@ describe('Profile Routes', () => {
 
       expect(res.status).toBe(400);
     });
+
+    it('also accepts ?category=&key= query params (browser DELETE without body)', async () => {
+      const res = await app.request('/profile/data?category=identity&key=name', {
+        method: 'DELETE',
+      });
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.deleted).toBe(true);
+      expect(mockStore.delete).toHaveBeenCalledWith('identity', 'name');
+    });
   });
 
   describe('GET /profile/search', () => {
@@ -190,6 +200,69 @@ describe('Profile Routes', () => {
       const json = await res.json();
       expect(json.data.entries).toHaveLength(1);
       expect(json.data.count).toBe(1);
+    });
+  });
+
+  describe('GET /profile/inferred', () => {
+    it('returns only ai_inferred entries, newest first', async () => {
+      mockStore.exportData.mockResolvedValueOnce([
+        {
+          id: '1',
+          category: 'hobbies',
+          key: 'reading',
+          value: 'sci-fi',
+          source: 'user_stated',
+          confidence: 1,
+          updatedAt: '2026-05-27T10:00:00Z',
+        },
+        {
+          id: '2',
+          category: 'food',
+          key: 'breakfast',
+          value: 'oatmeal',
+          source: 'ai_inferred',
+          confidence: 0.6,
+          updatedAt: '2026-05-27T11:00:00Z',
+        },
+        {
+          id: '3',
+          category: 'hobbies',
+          key: 'sport',
+          value: 'climbing',
+          source: 'ai_inferred',
+          confidence: 0.8,
+          updatedAt: '2026-05-27T12:00:00Z',
+        },
+      ]);
+
+      const res = await app.request('/profile/inferred');
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.count).toBe(2);
+      // Newest (id=3) first
+      expect(json.data.entries[0].id).toBe('3');
+      expect(json.data.entries[1].id).toBe('2');
+      // The user_stated one is filtered out
+      expect(json.data.entries.find((e: { id: string }) => e.id === '1')).toBeUndefined();
+    });
+
+    it('returns an empty list when nothing was inferred', async () => {
+      mockStore.exportData.mockResolvedValueOnce([
+        {
+          id: '1',
+          category: 'identity',
+          key: 'name',
+          value: 'Alice',
+          source: 'user_stated',
+          confidence: 1,
+          updatedAt: '2026-05-27T10:00:00Z',
+        },
+      ]);
+
+      const res = await app.request('/profile/inferred');
+      const json = await res.json();
+      expect(json.data.count).toBe(0);
+      expect(json.data.entries).toEqual([]);
     });
   });
 

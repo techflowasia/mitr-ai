@@ -47,6 +47,7 @@ import { useDialog } from '../components/ConfirmDialog';
 import { useSkipHome } from '../hooks/useSkipHome';
 import { profileApi } from '../api';
 import { memoriesApi } from '../api/endpoints/personal-data';
+import { InferredFactsPanel } from './profile/InferredFactsPanel';
 import type { ProfileData } from '../api';
 import type { Memory } from '../api/types';
 
@@ -1625,6 +1626,10 @@ export function ProfilePage() {
                   />
                 </div>
               </div>
+            </SectionCard>
+
+            <SectionCard title="AI-Inferred Profile Facts" icon={Sparkles}>
+              <InferredFactsPanel />
             </SectionCard>
           </div>
         )}

@@ -180,9 +180,19 @@ app.post('/data', async (c) => {
  */
 app.delete('/data', async (c) => {
   try {
-    const body = await parseJsonBody(c);
+    // Accept either a JSON body OR query params (?category=&key=). Browsers
+    // and most fetch wrappers don't send a body on DELETE; the UI api client
+    // uses query params, while existing CLI/test callers pass a body.
+    const queryCategory = c.req.query('category');
+    const queryKey = c.req.query('key');
+    let parsedInput: unknown;
+    if (queryCategory && queryKey) {
+      parsedInput = { category: queryCategory, key: queryKey };
+    } else {
+      parsedInput = await parseJsonBody(c);
+    }
     const { profileDeleteDataSchema } = await import('../middleware/validation.js');
-    const parsed = profileDeleteDataSchema.safeParse(body);
+    const parsed = profileDeleteDataSchema.safeParse(parsedInput);
 
     if (!parsed.success) {
       return zodValidationError(c, parsed.error.issues);
@@ -283,6 +293,32 @@ app.post('/import', async (c) => {
     return apiError(
       c,
       { code: ERROR_CODES.IMPORT_ERROR, message: getErrorMessage(error, 'Failed to import') },
+      500
+    );
+  }
+});
+
+/**
+ * GET /profile/inferred — list every entry the profile-learning loop wrote
+ * with source='ai_inferred'. Lets users audit what the AI assumed about them
+ * and delete entries they disagree with, without dumping the whole profile.
+ * Sorted newest-first so freshly-learned facts surface at the top.
+ */
+app.get('/inferred', async (c) => {
+  try {
+    const store = await getPersonalMemoryStore(getUserId(c));
+    const all = await store.exportData();
+    const entries = all
+      .filter((e) => e.source === 'ai_inferred')
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    return apiResponse(c, { entries, count: entries.length });
+  } catch (error) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.PROFILE_FETCH_ERROR,
+        message: getErrorMessage(error, 'Failed to list inferred entries'),
+      },
       500
     );
   }
