@@ -18,7 +18,7 @@ import type { Result } from '../../types/result.js';
 import { ok, err } from '../../types/result.js';
 import { InternalError, TimeoutError, ValidationError } from '../../types/errors.js';
 import { getErrorMessage } from '../../services/error-utils.js';
-import { sanitizeToolName, desanitizeToolName } from '../tool-namespace.js';
+import { sanitizeToolName, desanitizeToolName, normalizeToolArguments } from '../tool-namespace.js';
 import type {
   CompletionRequest,
   CompletionResponse,
@@ -645,7 +645,9 @@ export class OpenAICompatibleProvider {
           type: 'function',
           function: {
             name: sanitizeToolName(tc.name),
-            arguments: tc.arguments,
+            // Valid JSON string required — strict providers (MiniMax 2013,
+            // ZAI 1214) reject "" / malformed args on the replayed turn.
+            arguments: normalizeToolArguments(tc.arguments),
           },
         }));
       }

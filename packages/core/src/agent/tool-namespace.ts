@@ -99,3 +99,26 @@ export function sanitizeToolName(name: string): string {
 export function desanitizeToolName(name: string): string {
   return name.replaceAll('__', '.');
 }
+
+/**
+ * Normalize an assistant tool-call's `arguments` to a valid JSON string.
+ *
+ * The OpenAI tool-call schema requires `function.arguments` to be a JSON
+ * string. A tool call with no parameters commonly carries `""` (and very
+ * occasionally malformed JSON). Lenient providers accept it, but strict ones
+ * reject it when the assistant turn is replayed — MiniMax returns
+ * `invalid function arguments json string (2013)`, ZAI/GLM `1214`. Coerce
+ * empty/invalid arguments to `"{}"` so the replayed turn is always valid;
+ * pass through anything that already parses as JSON unchanged.
+ */
+export function normalizeToolArguments(args: unknown): string {
+  if (typeof args !== 'string') return '{}';
+  const trimmed = args.trim();
+  if (trimmed === '') return '{}';
+  try {
+    JSON.parse(trimmed);
+    return trimmed;
+  } catch {
+    return '{}';
+  }
+}

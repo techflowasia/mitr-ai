@@ -19,7 +19,7 @@ import type {
 import type { IProvider, ProviderHealthResult } from './provider-types.js';
 import type { RetryConfig } from './retry.js';
 import { logRetry } from './debug.js';
-import { sanitizeToolName, desanitizeToolName } from './tool-namespace.js';
+import { sanitizeToolName, desanitizeToolName, normalizeToolArguments } from './tool-namespace.js';
 
 /**
  * Default retry configuration for AI provider calls
@@ -246,7 +246,9 @@ export abstract class BaseProvider implements IProvider {
           type: 'function',
           function: {
             name: sanitizeToolName(tc.name),
-            arguments: tc.arguments,
+            // Must be a valid JSON string — strict providers (MiniMax 2013,
+            // ZAI 1214) reject "" / malformed args on the replayed turn.
+            arguments: normalizeToolArguments(tc.arguments),
           },
         }));
       }

@@ -537,6 +537,32 @@ describe('BaseProvider', () => {
       ]);
     });
 
+    it('normalizes empty/malformed tool-call arguments to "{}" (MiniMax 2013 / ZAI 1214)', () => {
+      // Regression: a no-arg tool call carries arguments "" (or occasionally
+      // malformed JSON). MiniMax rejects the replayed turn with "invalid
+      // function arguments json string (2013)". Coerce to a valid JSON string.
+      const messages: Message[] = [
+        {
+          role: 'assistant',
+          content: '',
+          toolCalls: [
+            { id: 'c1', name: 'core.get_time', arguments: '' },
+            { id: 'c2', name: 'core.list', arguments: 'not json' },
+            { id: 'c3', name: 'core.read', arguments: '{"path":"/tmp"}' },
+          ],
+        },
+      ];
+
+      const result = provider.testBuildMessages(messages);
+      const calls = result[0].tool_calls as Array<{ function: { arguments: string } }>;
+
+      expect(calls[0].function.arguments).toBe('{}'); // "" → "{}"
+      expect(calls[1].function.arguments).toBe('{}'); // malformed → "{}"
+      expect(calls[2].function.arguments).toBe('{"path":"/tmp"}'); // valid preserved
+      // Every emitted arguments string must parse as JSON.
+      for (const call of calls) expect(() => JSON.parse(call.function.arguments)).not.toThrow();
+    });
+
     it('uses a non-empty space (not null, not "") for empty assistant content with tool_calls', () => {
       // Regression: Moonshot/Kimi-style providers reject null content with
       // "chat content is empty (2013)"; code-1214 providers reject "". A single
