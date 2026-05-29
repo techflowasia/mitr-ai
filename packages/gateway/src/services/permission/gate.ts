@@ -22,6 +22,8 @@ import type {
   PermissionRequest,
   PermissionDecision,
   ClawAutonomyPolicy,
+  ActionCategory,
+  AutonomyDisposition,
 } from '@ownpilot/core';
 import { setPermissionGate } from '@ownpilot/core';
 
@@ -90,6 +92,66 @@ const SELF_MODIFY_TOOLS = new Set<string>(['claw_update_config', 'update_config'
 
 /** Tools gated by `allowSubclaws`. */
 const SUBCLAW_TOOLS = new Set<string>(['claw_spawn_subclaw', 'spawn_subclaw', 'start_claw']);
+
+// --- Action-category mapping (for per-category autonomy dispositions) --------
+// Each destructive base name maps to an ActionCategory so a policy can treat,
+// say, filesystem mutations differently from outbound communication or a deploy.
+
+const FILESYSTEM_DESTRUCTIVE_TOOLS = new Set<string>([
+  'delete_file',
+  'remove_file',
+  'move_file',
+  'rename_file',
+]);
+
+const COMMUNICATION_TOOLS = new Set<string>([
+  'send_email',
+  'send_channel_message',
+  'broadcast_channel_message',
+  'broadcast_to_crew',
+]);
+
+const VCS_TOOLS = new Set<string>(['git_push', 'git_reset', 'git_clean']);
+
+const DEPLOY_TOOLS = new Set<string>(['publish_package', 'deploy']);
+
+/**
+ * Map a destructive tool (already determined to be destructive) to its action
+ * category. Shell tools that matched a destructive arg pattern are `shell`.
+ * Returns undefined when the base name has no known category (treated as the
+ * generic destructive bucket governed by `destructiveActionPolicy`).
+ */
+function categorizeDestructiveAction(base: string): ActionCategory | undefined {
+  if (FILESYSTEM_DESTRUCTIVE_TOOLS.has(base)) return 'filesystem';
+  if (COMMUNICATION_TOOLS.has(base)) return 'communication';
+  if (VCS_TOOLS.has(base)) return 'vcs';
+  if (DEPLOY_TOOLS.has(base)) return 'deploy';
+  if (SHELL_TOOLS.has(base)) return 'shell';
+  return undefined;
+}
+
+/** Map an autonomy disposition + context to a permission decision. */
+function dispositionToDecision(
+  disposition: AutonomyDisposition,
+  base: string,
+  category: ActionCategory | undefined
+): PermissionDecision {
+  const suffix = category ? ` [${category}]` : '';
+  switch (disposition) {
+    case 'block':
+      return {
+        type: 'deny',
+        reason: `Destructive action "${base}"${suffix} blocked by autonomy policy`,
+      };
+    case 'ask':
+      return {
+        type: 'require_approval',
+        reason: `Destructive action "${base}"${suffix} requires approval`,
+      };
+    default:
+      return { type: 'allow' };
+  }
+}
 
 /** Irreversible / dangerous shell-command signatures. */
 const DESTRUCTIVE_ARG_PATTERNS: readonly RegExp[] = [
@@ -217,22 +279,18 @@ export function evaluateAutonomyPolicy(
     }
   }
 
-  // 4. Destructive-action policy.
+  // 4. Destructive-action policy, with optional per-category overrides.
   const isDestructive =
     ALWAYS_DESTRUCTIVE_TOOLS.has(base) ||
     (SHELL_TOOLS.has(base) && DESTRUCTIVE_ARG_PATTERNS.some((re) => re.test(argText(args))));
 
   if (isDestructive) {
-    switch (policy.destructiveActionPolicy) {
-      case 'block':
-        return { type: 'deny', reason: `Destructive action "${base}" blocked by autonomy policy` };
-      case 'ask':
-        return {
-          type: 'require_approval',
-          reason: `Destructive action "${base}" requires approval`,
-        };
-      // 'allow' (or undefined) falls through to allow.
-    }
+    const category = categorizeDestructiveAction(base);
+    // Per-category override wins when present; otherwise fall back to the
+    // single destructiveActionPolicy knob (fully backward compatible).
+    const disposition: AutonomyDisposition =
+      (category && policy.categoryPolicies?.[category]) ?? policy.destructiveActionPolicy;
+    return dispositionToDecision(disposition, base, category);
   }
 
   return { type: 'allow' };

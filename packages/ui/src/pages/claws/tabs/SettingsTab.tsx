@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import type { ClawConfig } from '../../../api/endpoints/claws';
+import type { ClawConfig, ActionCategory, AutonomyDisposition } from '../../../api/endpoints/claws';
 import { clawsApi } from '../../../api/endpoints/claws';
 import { useToast } from '../../../components/ToastProvider';
 import { chatApi } from '../../../api/endpoints/chat';
@@ -65,6 +65,9 @@ export function SettingsTab({
   const [editDestructivePolicy, setEditDestructivePolicy] = useState<'ask' | 'block' | 'allow'>(
     claw.autonomyPolicy?.destructiveActionPolicy ?? 'ask'
   );
+  const [editCategoryPolicies, setEditCategoryPolicies] = useState<
+    Partial<Record<ActionCategory, AutonomyDisposition>>
+  >(claw.autonomyPolicy?.categoryPolicies ?? {});
   const [editMaxCostBeforePause, setEditMaxCostBeforePause] = useState(
     claw.autonomyPolicy?.maxCostUsdBeforePause ?? 0
   );
@@ -99,6 +102,7 @@ export function SettingsTab({
     setEditAllowSelfModify(claw.autonomyPolicy?.allowSelfModify ?? false);
     setEditAllowSubclaws(claw.autonomyPolicy?.allowSubclaws ?? true);
     setEditDestructivePolicy(claw.autonomyPolicy?.destructiveActionPolicy ?? 'ask');
+    setEditCategoryPolicies(claw.autonomyPolicy?.categoryPolicies ?? {});
     setEditMaxCostBeforePause(claw.autonomyPolicy?.maxCostUsdBeforePause ?? 0);
   }, [claw.id]);
 
@@ -135,6 +139,8 @@ export function SettingsTab({
           allowSubclaws: editAllowSubclaws,
           requireEvidence: editEvidenceRequired,
           destructiveActionPolicy: editDestructivePolicy,
+          categoryPolicies:
+            Object.keys(editCategoryPolicies).length > 0 ? editCategoryPolicies : undefined,
           filesystemScopes: claw.autonomyPolicy?.filesystemScopes ?? [],
           maxCostUsdBeforePause: editMaxCostBeforePause > 0 ? editMaxCostBeforePause : undefined,
         },
@@ -553,6 +559,49 @@ Current mission: ${userBrief}`;
               <option value="block">Block all destructive actions</option>
               <option value="allow">Allow destructive actions</option>
             </select>
+          </div>
+
+          <div>
+            <label className={lbl}>Per-Category Overrides</label>
+            <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2">
+              Run unattended on safe categories while escalating risky ones. "Default" falls back to
+              the policy above.
+            </p>
+            <div className="space-y-1.5">
+              {(
+                [
+                  ['filesystem', 'Filesystem (delete / move / rename)'],
+                  ['communication', 'Communication (email / channels / crew)'],
+                  ['vcs', 'Version control (git push / reset / clean)'],
+                  ['deploy', 'Deploy (publish / deploy)'],
+                  ['shell', 'Shell (destructive commands)'],
+                ] as [ActionCategory, string][]
+              ).map(([cat, label]) => (
+                <div key={cat} className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-text-secondary dark:text-dark-text-secondary">
+                    {label}
+                  </span>
+                  <select
+                    value={editCategoryPolicies[cat] ?? ''}
+                    onChange={(e) => {
+                      const v = e.target.value as '' | AutonomyDisposition;
+                      setEditCategoryPolicies((prev) => {
+                        const next = { ...prev };
+                        if (v === '') delete next[cat];
+                        else next[cat] = v;
+                        return next;
+                      });
+                    }}
+                    className={ic + ' max-w-[10rem]'}
+                  >
+                    <option value="">Default</option>
+                    <option value="allow">Allow</option>
+                    <option value="ask">Ask</option>
+                    <option value="block">Block</option>
+                  </select>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div>

@@ -85,12 +85,35 @@ export interface ClawMissionContract {
   minConfidence: number;
 }
 
+/** How a gated action is handled: hard-deny, escalate for approval, or permit. */
+export type AutonomyDisposition = 'ask' | 'block' | 'allow';
+
+/**
+ * Categories of consequential actions, so an autonomy policy can treat them
+ * differently — e.g. allow filesystem writes unattended but require approval for
+ * outbound communication or a deploy. The "safe envelope": run on the safe 90%,
+ * escalate the risky 10%.
+ */
+export type ActionCategory =
+  | 'filesystem' // deleting / moving / renaming files
+  | 'communication' // email, channel messages, crew broadcasts (outbound, hard to recall)
+  | 'vcs' // git push / reset / clean
+  | 'deploy' // publish / deploy
+  | 'shell'; // arbitrary command execution matching a destructive signature
+
 /** Guardrails that control how much autonomy a claw may exercise. */
 export interface ClawAutonomyPolicy {
   allowSelfModify: boolean;
   allowSubclaws: boolean;
   requireEvidence: boolean;
   destructiveActionPolicy: 'ask' | 'block' | 'allow';
+  /**
+   * Optional per-category overrides of `destructiveActionPolicy`. When a category
+   * is present, its disposition wins for actions in that category; otherwise the
+   * action falls back to `destructiveActionPolicy`. Omitting this preserves the
+   * previous single-knob behavior exactly (backward compatible).
+   */
+  categoryPolicies?: Partial<Record<ActionCategory, AutonomyDisposition>>;
   filesystemScopes: string[];
   maxCostUsdBeforePause?: number;
 }

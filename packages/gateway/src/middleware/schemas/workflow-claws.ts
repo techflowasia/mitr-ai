@@ -343,11 +343,22 @@ const clawMissionContractSchema = z.object({
   minConfidence: z.number().min(0).max(1).optional(),
 });
 
+const autonomyDispositionSchema = z.enum(['ask', 'block', 'allow']);
+
 const clawAutonomyPolicySchema = z.object({
   allowSelfModify: z.boolean().optional(),
   allowSubclaws: z.boolean().optional(),
   requireEvidence: z.boolean().optional(),
-  destructiveActionPolicy: z.enum(['ask', 'block', 'allow']).optional(),
+  destructiveActionPolicy: autonomyDispositionSchema.optional(),
+  categoryPolicies: z
+    .object({
+      filesystem: autonomyDispositionSchema.optional(),
+      communication: autonomyDispositionSchema.optional(),
+      vcs: autonomyDispositionSchema.optional(),
+      deploy: autonomyDispositionSchema.optional(),
+      shell: autonomyDispositionSchema.optional(),
+    })
+    .optional(),
   filesystemScopes: z.array(z.string().max(500)).max(50).optional(),
   maxCostUsdBeforePause: z.number().min(0).optional(),
 });

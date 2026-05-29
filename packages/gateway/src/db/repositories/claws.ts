@@ -115,6 +115,9 @@ function normalizeAutonomyPolicy(
     allowSubclaws: value.allowSubclaws ?? true,
     requireEvidence: value.requireEvidence ?? true,
     destructiveActionPolicy: value.destructiveActionPolicy ?? 'ask',
+    // Only carry per-category overrides when present so an absent field stays
+    // absent (preserves the single-knob backward-compatible behavior).
+    ...(value.categoryPolicies ? { categoryPolicies: value.categoryPolicies } : {}),
     filesystemScopes: value.filesystemScopes ?? [],
     maxCostUsdBeforePause: value.maxCostUsdBeforePause,
   };

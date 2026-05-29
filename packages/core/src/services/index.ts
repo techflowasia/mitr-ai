@@ -376,6 +376,8 @@ export type {
   ClawLimits,
   ClawMissionContract,
   ClawAutonomyPolicy,
+  AutonomyDisposition,
+  ActionCategory,
   ClawHealthStatus,
   ClawConfig,
   CreateClawInput,

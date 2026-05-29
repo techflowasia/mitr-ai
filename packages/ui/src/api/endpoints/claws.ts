@@ -39,11 +39,16 @@ export interface ClawMissionContract {
   minConfidence: number;
 }
 
+export type AutonomyDisposition = 'ask' | 'block' | 'allow';
+export type ActionCategory = 'filesystem' | 'communication' | 'vcs' | 'deploy' | 'shell';
+
 export interface ClawAutonomyPolicy {
   allowSelfModify: boolean;
   allowSubclaws: boolean;
   requireEvidence: boolean;
-  destructiveActionPolicy: 'ask' | 'block' | 'allow';
+  destructiveActionPolicy: AutonomyDisposition;
+  /** Per-category overrides of destructiveActionPolicy; absent = single-knob behavior. */
+  categoryPolicies?: Partial<Record<ActionCategory, AutonomyDisposition>>;
   filesystemScopes: string[];
   maxCostUsdBeforePause?: number;
 }

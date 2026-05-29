@@ -282,4 +282,80 @@ describe('evaluateAutonomyPolicy (pure)', () => {
     );
     expect(d.type).toBe('deny');
   });
+
+  describe('per-category dispositions (categoryPolicies)', () => {
+    it('allows a filesystem mutation when filesystem category is allowed, even with a stricter base policy', () => {
+      const d = evaluateAutonomyPolicy(
+        'core.delete_file',
+        { path: '/ws/tmp.txt' },
+        policy({
+          destructiveActionPolicy: 'block',
+          categoryPolicies: { filesystem: 'allow' },
+        }),
+        '/ws'
+      );
+      expect(d.type).toBe('allow');
+    });
+
+    it('blocks communication when communication category is block, even with a permissive base policy', () => {
+      const d = evaluateAutonomyPolicy(
+        'send_email',
+        {},
+        policy({
+          destructiveActionPolicy: 'allow',
+          categoryPolicies: { communication: 'block' },
+        })
+      );
+      expect(d.type).toBe('deny');
+      if (d.type === 'deny') expect(d.reason).toContain('[communication]');
+    });
+
+    it('escalates a deploy to approval when deploy category is ask', () => {
+      const d = evaluateAutonomyPolicy(
+        'deploy',
+        {},
+        policy({
+          destructiveActionPolicy: 'allow',
+          categoryPolicies: { deploy: 'ask' },
+        })
+      );
+      expect(d.type).toBe('require_approval');
+      if (d.type === 'require_approval') expect(d.reason).toContain('[deploy]');
+    });
+
+    it('falls back to destructiveActionPolicy for categories without an override', () => {
+      const d = evaluateAutonomyPolicy(
+        'git_push',
+        {},
+        policy({
+          destructiveActionPolicy: 'block',
+          categoryPolicies: { filesystem: 'allow' }, // vcs not overridden -> falls back to block
+        })
+      );
+      expect(d.type).toBe('deny');
+      if (d.type === 'deny') expect(d.reason).toContain('[vcs]');
+    });
+
+    it('applies the shell category to destructive shell scripts', () => {
+      const d = evaluateAutonomyPolicy(
+        'claw_run_script',
+        { script: 'rm -rf /tmp/x' },
+        policy({
+          destructiveActionPolicy: 'allow',
+          categoryPolicies: { shell: 'block' },
+        })
+      );
+      expect(d.type).toBe('deny');
+      if (d.type === 'deny') expect(d.reason).toContain('[shell]');
+    });
+
+    it('is unchanged when categoryPolicies is absent (backward compat)', () => {
+      const d = evaluateAutonomyPolicy(
+        'send_email',
+        {},
+        policy({ destructiveActionPolicy: 'ask' })
+      );
+      expect(d.type).toBe('require_approval');
+    });
+  });
 });
