@@ -190,6 +190,24 @@ export interface ShareGPTTrajectory {
   conversations: ShareGPTTurn[];
 }
 
+/** Objective reliability metrics for a claw, computed from its run history. */
+export interface ClawRunEval {
+  clawId?: string;
+  sampleSize: number;
+  cycles: { total: number; succeeded: number; failed: number; successRate: number };
+  toolCalls: { total: number; succeeded: number; failed: number; successRate: number };
+  byTool: Array<{ tool: string; calls: number; failures: number; failureRate: number }>;
+  topFailures: Array<{ signature: string; count: number; tools: string[]; example: string }>;
+  repeatedFailures: Array<{ tool: string; signature: string; count: number }>;
+  efficiency: {
+    avgToolCallsPerCycle: number;
+    avgCycleDurationMs: number;
+    totalCostUsd: number;
+    wastedCalls: number;
+  };
+  reliabilityScore: number | null;
+}
+
 export interface CreateClawInput {
   name: string;
   mission: string;
@@ -407,6 +425,11 @@ export const clawsApi = {
     apiClient.get<{ format: string; trajectory: ShareGPTTrajectory }>(
       `/claws/${id}/trajectory?limit=${limit}&offset=${offset}`
     ),
+
+  /** Reliability metrics computed from run history (per-tool failures, repeated
+   *  failures, composite reliabilityScore). */
+  evaluate: (id: string, limit = 200, offset = 0) =>
+    apiClient.get<ClawRunEval>(`/claws/${id}/eval?limit=${limit}&offset=${offset}`),
 
   stats: () =>
     apiClient.get<{

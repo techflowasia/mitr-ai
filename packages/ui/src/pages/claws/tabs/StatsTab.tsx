@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { ClawConfig } from '../../../api/endpoints/claws';
+import type { ClawConfig, ClawRunEval } from '../../../api/endpoints/claws';
 import { clawsApi } from '../../../api/endpoints/claws';
 import { ignoreError } from '../../../utils/ignore-error';
 import {
@@ -9,6 +9,7 @@ import {
   DollarSign,
   Activity,
   Terminal as TerminalIcon,
+  ShieldAlert,
 } from '../../../components/icons';
 import { formatDuration, formatCost, timeAgo } from '../utils';
 
@@ -23,6 +24,7 @@ export function StatsTab({ claw }: { claw: ClawConfig }) {
       error?: string;
     }>
   >([]);
+  const [reliability, setReliability] = useState<ClawRunEval | null>(null);
 
   useEffect(() => {
     ignoreError(
@@ -39,6 +41,7 @@ export function StatsTab({ claw }: { claw: ClawConfig }) {
       }),
       'claw.statsTab'
     );
+    ignoreError(clawsApi.evaluate(claw.id, 200).then(setReliability), 'claw.statsTab.eval');
   }, [claw.id]);
 
   const totalCost = session?.totalCostUsd ?? 0;
@@ -64,6 +67,78 @@ export function StatsTab({ claw }: { claw: ClawConfig }) {
 
   return (
     <div className="space-y-4">
+      {/* Reliability — objective score from run history. The headline is the
+          repeated-failure list: the same tool failing the same way is wasted
+          effort and the highest-leverage thing to fix. */}
+      {reliability && reliability.reliabilityScore !== null && (
+        <div className="p-3 rounded-lg bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-text-primary dark:text-dark-text-primary">
+              Reliability
+            </p>
+            <span className="text-[10px] text-text-muted">
+              over {reliability.sampleSize} cycle{reliability.sampleSize === 1 ? '' : 's'}
+            </span>
+          </div>
+          <div className="flex items-center gap-4">
+            {(() => {
+              const score = reliability.reliabilityScore ?? 0;
+              const color = score >= 85 ? '#22c55e' : score >= 60 ? '#f59e0b' : '#ef4444';
+              return (
+                <div className="shrink-0 text-center">
+                  <p className="text-3xl font-bold font-mono leading-none" style={{ color }}>
+                    {score}
+                  </p>
+                  <p className="text-[10px] text-text-muted mt-0.5">score</p>
+                </div>
+              );
+            })()}
+            <div className="flex-1 grid grid-cols-3 gap-2 text-center">
+              <div>
+                <p className="text-sm font-bold text-text-primary dark:text-dark-text-primary">
+                  {Math.round(reliability.toolCalls.successRate * 100)}%
+                </p>
+                <p className="text-[10px] text-text-muted">tool success</p>
+              </div>
+              <div>
+                <p className="text-sm font-bold text-text-primary dark:text-dark-text-primary">
+                  {Math.round(reliability.cycles.successRate * 100)}%
+                </p>
+                <p className="text-[10px] text-text-muted">cycle success</p>
+              </div>
+              <div>
+                <p
+                  className={`text-sm font-bold ${reliability.efficiency.wastedCalls > 0 ? 'text-rose-500' : 'text-text-primary dark:text-dark-text-primary'}`}
+                >
+                  {reliability.efficiency.wastedCalls}
+                </p>
+                <p className="text-[10px] text-text-muted">wasted calls</p>
+              </div>
+            </div>
+          </div>
+
+          {reliability.repeatedFailures.length > 0 && (
+            <div className="mt-3 pt-2 border-t border-border dark:border-dark-border space-y-1">
+              <div className="flex items-center gap-1.5 mb-1">
+                <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />
+                <p className="text-[10px] uppercase tracking-wider text-rose-500">
+                  Repeated failures (wasted retries)
+                </p>
+              </div>
+              {reliability.repeatedFailures.slice(0, 4).map((r, i) => (
+                <div key={i} className="flex items-center gap-2 text-[11px]">
+                  <span className="font-mono text-rose-400 shrink-0">×{r.count}</span>
+                  <span className="font-mono text-text-primary dark:text-dark-text-primary shrink-0">
+                    {r.tool}
+                  </span>
+                  <span className="text-text-muted truncate">{r.signature}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Top KPI row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         <div className="bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg p-3 flex flex-col items-center text-center">
