@@ -320,24 +320,41 @@ export class ConversationMemory {
    * Older tool results > 2000 chars are truncated with a "[truncated]" note.
    */
   private truncateOldToolResults(messages: Message[]): Message[] {
-    if (messages.length <= 4) return messages;
-
     const TOOL_RESULT_LIMIT = 2000;
-    const safeCount = 4; // keep last N messages intact
+
+    // No single tool result may dominate the context window. Older results are
+    // capped hard (2000 chars). Recent results in the "safe zone" stay intact
+    // UNLESS one is larger than half the memory budget: a single multi-MB tool
+    // output (giant file read, command dump, page scrape) otherwise overflows
+    // the model's real context window and the request fails outright with
+    // "Prompt exceeds max length" (ZAI/GLM code 1261) — proven against a live
+    // Claw cycle that kept a 2.1 MB (~533K-token) tool result. The recent cap
+    // is budget-relative so ordinary recent results are untouched; maxTokens
+    // === 0 (unlimited) disables it.
+    const recentLimit =
+      this.config.maxTokens > 0
+        ? Math.max(TOOL_RESULT_LIMIT, Math.floor(this.config.maxTokens / 2) * 4)
+        : Number.POSITIVE_INFINITY;
+
+    const safeCount = 4; // keep the last N messages otherwise intact
     const cutoff = messages.length - safeCount;
 
     return messages.map((msg, i) => {
-      if (i >= cutoff) return msg; // recent — keep intact
       if (!msg.toolResults || msg.toolResults.length === 0) return msg;
 
+      const limit = i >= cutoff ? recentLimit : TOOL_RESULT_LIMIT;
+      if (!Number.isFinite(limit)) return msg; // unlimited recent budget
+
+      let changed = false;
       const truncatedResults = msg.toolResults.map((tr) => {
-        if (tr.content.length <= TOOL_RESULT_LIMIT) return tr;
+        if (tr.content.length <= limit) return tr;
+        changed = true;
         return {
           ...tr,
-          content: tr.content.slice(0, TOOL_RESULT_LIMIT) + '\n[...truncated]',
+          content: tr.content.slice(0, limit) + '\n[...truncated]',
         };
       });
-      return { ...msg, toolResults: truncatedResults };
+      return changed ? { ...msg, toolResults: truncatedResults } : msg;
     });
   }
 

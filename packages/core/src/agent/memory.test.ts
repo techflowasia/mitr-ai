@@ -202,6 +202,26 @@ describe('ConversationMemory', () => {
       expect(toolMsg!.toolResults![0]!.content).toBe(longContent); // intact
     });
 
+    it('caps an oversized recent tool result that would overflow the budget', () => {
+      // Small budget so we can exceed it without multi-MB strings.
+      const tiny = new ConversationMemory({ maxTokens: 1000 });
+      const conversation = tiny.create('sys');
+      // recentLimit = max(2000, floor(1000/2)*4) = 2000 chars.
+      const huge = 'x'.repeat(50000); // ~12.5K tokens — dwarfs the 1000-tok budget
+      tiny.addUserMessage(conversation.id, 'do the thing');
+      tiny.addToolResults(conversation.id, [{ toolCallId: 'tc1', content: huge }]);
+
+      const messages = tiny.getContextMessages(conversation.id);
+      const toolMsg = messages.find((m) => m.role === 'tool');
+      expect(toolMsg).toBeDefined();
+      // Recent result is truncated despite being in the safe zone — otherwise a
+      // single giant tool output overflows the model's context (ZAI 1261).
+      expect(toolMsg!.toolResults![0]!.content.length).toBeLessThan(huge.length);
+      expect(toolMsg!.toolResults![0]!.content).toContain('[...truncated]');
+      // The user turn is still present so the request is structurally valid.
+      expect(messages.some((m) => m.role === 'user')).toBe(true);
+    });
+
     it('does NOT truncate tool results within 2000 chars', () => {
       const conversation = memory.create();
       const shortContent = 'z'.repeat(100);
