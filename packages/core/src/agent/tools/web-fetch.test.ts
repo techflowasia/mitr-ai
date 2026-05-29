@@ -1531,3 +1531,27 @@ describe('httpRequestExecutor error self-correction', () => {
     expect(content.retryAfter).toBe(10);
   });
 });
+
+describe('httpRequestExecutor 304 Not Modified handling', () => {
+  it('treats a 304 (conditional cache hit) as success, not an error', async () => {
+    fetchMock.mockResolvedValueOnce(
+      mockResponse({
+        ok: false, // .ok is false for 304
+        status: 304,
+        statusText: 'Not Modified',
+        headers: { etag: 'W/"abc"' },
+      })
+    );
+
+    const result = await httpRequestExecutor(
+      { url: 'https://api.example.com/data.json', headers: { 'If-None-Match': 'W/"abc"' } },
+      ctx
+    );
+    expect(result.isError).toBe(false);
+    const content = result.content as Record<string, unknown>;
+    expect(content.status).toBe(304);
+    expect(content.notModified).toBe(true);
+    // No misleading error hint on the success path.
+    expect(content.hint).toBeUndefined();
+  });
+});

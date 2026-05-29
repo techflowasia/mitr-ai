@@ -396,7 +396,13 @@ export const httpRequestExecutor: ToolExecutor = async (
       responseBody = responseBody.slice(0, MAX_RESPONSE_SIZE) + '\n\n... [Truncated]';
     }
 
-    const errored = !response.ok;
+    // 304 Not Modified is the success path for a conditional request
+    // (If-None-Match / If-Modified-Since) — the agent's cached copy is still
+    // valid. `response.ok` is false for 304, so without this it would be
+    // mis-reported as a failure even though the ETag cache-hit is exactly what
+    // the agent wanted. Mirrors call_json_api's handling.
+    const notModified = response.status === 304;
+    const errored = !response.ok && !notModified;
     const hint = errored ? describeHttpStatus(response.status) : '';
     const retryAfter = errored ? parseRetryAfter(response.headers.get('retry-after')) : undefined;
 
@@ -406,6 +412,7 @@ export const httpRequestExecutor: ToolExecutor = async (
         statusText: response.statusText,
         headers: responseHeaders,
         body: responseBody,
+        ...(notModified ? { notModified: true } : {}),
         ...(hint ? { hint } : {}),
         ...(retryAfter !== undefined ? { retryAfter } : {}),
       },
