@@ -224,11 +224,14 @@ export abstract class BaseProvider implements IProvider {
         tool_call_id?: string;
       } = {
         role: msg.role,
-        // Strict OpenAI-compatible APIs (e.g. code 1214) reject "" when tool_calls present — use null
+        // Empty assistant content alongside tool_calls is a cross-provider minefield:
+        // some strict APIs (code 1214) reject "" and want null; others (Moonshot /
+        // Kimi-style code 2013 "chat content is empty") reject null and want a string.
+        // A single space satisfies both — non-empty for the former, non-null for the
+        // latter. Claw trips this on its first tool call (model emits a tool_call with
+        // no text), where plain chat usually carries text content and never hits it.
         content:
-          msg.role === 'assistant' && msg.toolCalls?.length && rawContent === ''
-            ? null
-            : rawContent,
+          msg.role === 'assistant' && msg.toolCalls?.length && rawContent === '' ? ' ' : rawContent,
       };
 
       // Add tool calls for assistant messages

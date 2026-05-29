@@ -625,11 +625,12 @@ export class OpenAICompatibleProvider {
 
       const base: Msg = {
         role: msg.role,
-        // Strict OpenAI-compatible APIs reject "" when tool_calls present — use null
+        // Empty assistant content alongside tool_calls is a cross-provider minefield:
+        // some strict APIs (code 1214) reject "" and want null; others (Moonshot /
+        // Kimi-style code 2013 "chat content is empty") reject null and want a string.
+        // A single space satisfies both — non-empty for the former, non-null for the latter.
         content:
-          msg.role === 'assistant' && msg.toolCalls?.length && rawContent === ''
-            ? null
-            : rawContent,
+          msg.role === 'assistant' && msg.toolCalls?.length && rawContent === '' ? ' ' : rawContent,
       };
 
       // Add tool calls for assistant messages

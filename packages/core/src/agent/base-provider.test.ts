@@ -515,6 +515,38 @@ describe('BaseProvider', () => {
       ]);
     });
 
+    it('uses a non-empty space (not null, not "") for empty assistant content with tool_calls', () => {
+      // Regression: Moonshot/Kimi-style providers reject null content with
+      // "chat content is empty (2013)"; code-1214 providers reject "". A single
+      // space satisfies both. Claw trips this on its first text-less tool call.
+      const messages: Message[] = [
+        {
+          role: 'assistant',
+          content: '',
+          toolCalls: [{ id: 'call_1', name: 'core.read_file', arguments: '{"path":"/tmp"}' }],
+        },
+      ];
+
+      const result = provider.testBuildMessages(messages);
+
+      expect(result[0].content).toBe(' ');
+      expect(result[0].content).not.toBeNull();
+      expect(result[0].tool_calls).toHaveLength(1);
+    });
+
+    it('preserves real assistant content when tool_calls are present', () => {
+      const messages: Message[] = [
+        {
+          role: 'assistant',
+          content: 'Reading the file now.',
+          toolCalls: [{ id: 'call_1', name: 'core.read_file', arguments: '{"path":"/tmp"}' }],
+        },
+      ];
+
+      const result = provider.testBuildMessages(messages);
+      expect(result[0].content).toBe('Reading the file now.');
+    });
+
     it('does not add tool_calls for user messages even if toolCalls present', () => {
       const messages: Message[] = [
         {
