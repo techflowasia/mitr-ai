@@ -1058,6 +1058,54 @@ describe('Claws Routes', () => {
     });
   });
 
+  // ---- Eval ----
+
+  describe('GET /claws/:id/eval', () => {
+    it('returns reliability metrics computed from history', async () => {
+      service.getClaw.mockResolvedValue({ id: 'claw-1', name: 'Test', mission: 'm' });
+      service.getHistory.mockResolvedValue({
+        entries: [
+          {
+            id: 'h-1',
+            clawId: 'claw-1',
+            cycleNumber: 1,
+            entryType: 'cycle',
+            success: true,
+            toolCalls: [
+              { tool: 'core.read_file', args: {}, result: 'ok', success: true, durationMs: 3 },
+              {
+                tool: 'core.edit_file',
+                args: {},
+                result: 'Error: oldText not found',
+                success: false,
+                durationMs: 2,
+              },
+            ],
+            outputMessage: '',
+            durationMs: 1000,
+            executedAt: new Date().toISOString(),
+          },
+        ],
+        total: 1,
+      });
+
+      const res = await app.request('/claws/claw-1/eval');
+      expect(res.status).toBe(200);
+
+      const body = await res.json();
+      expect(body.data.toolCalls.total).toBe(2);
+      expect(body.data.toolCalls.failed).toBe(1);
+      expect(body.data.byTool[0].tool).toBe('core.edit_file');
+      expect(typeof body.data.reliabilityScore).toBe('number');
+    });
+
+    it('returns 404 when the claw does not exist', async () => {
+      service.getClaw.mockResolvedValue(null);
+      const res = await app.request('/claws/missing/eval');
+      expect(res.status).toBe(404);
+    });
+  });
+
   // ---- Escalation ----
 
   describe('POST /claws/:id/approve-escalation', () => {

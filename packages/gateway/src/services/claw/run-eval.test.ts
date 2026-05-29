@@ -1,0 +1,165 @@
+import { describe, it, expect } from 'vitest';
+import { evaluateClawRun } from './run-eval.js';
+import type { ClawHistoryEntry, ClawToolCall } from '@ownpilot/core';
+
+function call(over: Partial<ClawToolCall> = {}): ClawToolCall {
+  return { tool: 'core.noop', args: {}, result: 'ok', success: true, durationMs: 5, ...over };
+}
+
+function entry(over: Partial<ClawHistoryEntry> = {}): ClawHistoryEntry {
+  return {
+    id: 'ch_1',
+    clawId: 'claw_1',
+    cycleNumber: 1,
+    entryType: 'cycle',
+    success: true,
+    toolCalls: [],
+    outputMessage: '',
+    durationMs: 1000,
+    executedAt: new Date(),
+    ...over,
+  };
+}
+
+describe('evaluateClawRun', () => {
+  it('returns a null score and zeros for an empty history', () => {
+    const r = evaluateClawRun([]);
+    expect(r.sampleSize).toBe(0);
+    expect(r.cycles.total).toBe(0);
+    expect(r.toolCalls.total).toBe(0);
+    expect(r.reliabilityScore).toBeNull();
+  });
+
+  it('computes cycle and tool success rates', () => {
+    const r = evaluateClawRun([
+      entry({
+        cycleNumber: 1,
+        success: true,
+        toolCalls: [call(), call({ success: false, result: 'Error: boom' })],
+      }),
+      entry({ cycleNumber: 2, success: false, toolCalls: [call()] }),
+    ]);
+    expect(r.cycles.total).toBe(2);
+    expect(r.cycles.succeeded).toBe(1);
+    expect(r.cycles.successRate).toBe(0.5);
+    expect(r.toolCalls.total).toBe(3);
+    expect(r.toolCalls.failed).toBe(1);
+    expect(r.toolCalls.successRate).toBeCloseTo(0.6667, 3);
+    expect(r.reliabilityScore).toBeGreaterThan(0);
+  });
+
+  it('ranks tools by failure count', () => {
+    const r = evaluateClawRun([
+      entry({
+        toolCalls: [
+          call({ tool: 'core.edit_file', success: false, result: 'Error: oldText not found' }),
+          call({ tool: 'core.edit_file', success: false, result: 'Error: oldText not found' }),
+          call({ tool: 'core.read_file', success: true }),
+        ],
+      }),
+    ]);
+    expect(r.byTool[0].tool).toBe('core.edit_file');
+    expect(r.byTool[0].failures).toBe(2);
+    expect(r.byTool[0].failureRate).toBe(1);
+  });
+
+  it('detects repeated failures (probe-and-fail waste) by normalized signature', () => {
+    // Same failure mode, different line numbers — must group into one repeated failure.
+    const r = evaluateClawRun([
+      entry({
+        toolCalls: [
+          call({
+            tool: 'core.edit_file',
+            success: false,
+            result: 'Error: oldText not found near line 5',
+          }),
+          call({
+            tool: 'core.edit_file',
+            success: false,
+            result: 'Error: oldText not found near line 12',
+          }),
+          call({
+            tool: 'core.edit_file',
+            success: false,
+            result: 'Error: oldText not found near line 99',
+          }),
+        ],
+      }),
+    ]);
+    expect(r.repeatedFailures).toHaveLength(1);
+    expect(r.repeatedFailures[0].tool).toBe('core.edit_file');
+    expect(r.repeatedFailures[0].count).toBe(3);
+    expect(r.efficiency.wastedCalls).toBe(2); // count - 1
+  });
+
+  it('groups failure signatures globally with an example and tool list', () => {
+    const r = evaluateClawRun([
+      entry({
+        toolCalls: [
+          call({
+            tool: 'core.http_request',
+            success: false,
+            result: '{"error":"Unexpected end of JSON input"}',
+          }),
+          call({
+            tool: 'core.call_json_api',
+            success: false,
+            result: '{"error":"Unexpected end of JSON input"}',
+          }),
+        ],
+      }),
+    ]);
+    expect(r.topFailures).toHaveLength(1);
+    expect(r.topFailures[0].count).toBe(2);
+    expect(r.topFailures[0].tools.sort()).toEqual(['core.call_json_api', 'core.http_request']);
+    expect(r.topFailures[0].example).toContain('Unexpected end of JSON input');
+  });
+
+  it('penalizes wasted retries in the composite score', () => {
+    const clean = evaluateClawRun([
+      entry({ toolCalls: [call(), call(), call({ success: false, result: 'one-off A' })] }),
+    ]);
+    const wasteful = evaluateClawRun([
+      entry({
+        toolCalls: [
+          call(),
+          call({ success: false, result: 'repeat X' }),
+          call({ success: false, result: 'repeat X' }),
+        ],
+      }),
+    ]);
+    // Same 2/3 tool success rate, but the wasteful run repeats a known failure.
+    expect(wasteful.efficiency.wastedCalls).toBe(1);
+    expect(clean.efficiency.wastedCalls).toBe(0);
+    expect(wasteful.reliabilityScore!).toBeLessThan(clean.reliabilityScore!);
+  });
+
+  it('computes efficiency metrics and total cost', () => {
+    const r = evaluateClawRun([
+      entry({ cycleNumber: 1, durationMs: 2000, costUsd: 0.01, toolCalls: [call(), call()] }),
+      entry({ cycleNumber: 2, durationMs: 4000, costUsd: 0.03, toolCalls: [call()] }),
+    ]);
+    expect(r.efficiency.avgToolCallsPerCycle).toBe(1.5);
+    expect(r.efficiency.avgCycleDurationMs).toBe(3000);
+    expect(r.efficiency.totalCostUsd).toBeCloseTo(0.04, 6);
+  });
+
+  it('excludes escalation entries from cycle stats but counts their tool calls', () => {
+    const r = evaluateClawRun([
+      entry({ cycleNumber: 1, entryType: 'cycle', success: true, toolCalls: [call()] }),
+      entry({
+        cycleNumber: 2,
+        entryType: 'escalation',
+        success: false,
+        toolCalls: [call({ success: false, result: 'x' })],
+      }),
+    ]);
+    expect(r.cycles.total).toBe(1);
+    expect(r.toolCalls.total).toBe(2);
+  });
+
+  it('attaches the claw id when config is provided', () => {
+    const r = evaluateClawRun([entry()], { id: 'claw_abc' });
+    expect(r.clawId).toBe('claw_abc');
+  });
+});

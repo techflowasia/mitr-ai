@@ -1069,6 +1069,31 @@ clawRoutes.get('/:id/trajectory', async (c) => {
   }
 });
 
+// GET /:id/eval — Objective reliability metrics computed from run history:
+// per-tool failure rates, grouped failure signatures, repeated-failure (wasted
+// retry) detection, efficiency, and a 0-100 composite reliabilityScore.
+clawRoutes.get('/:id/eval', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const { id } = c.req.param();
+    const { limit, offset } = getPaginationParams(c);
+    const service = getClawService();
+
+    const config = await service.getClaw(id, userId);
+    if (!config) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Claw not found' }, 404);
+    }
+
+    const { entries } = await service.getHistory(id, userId, limit, offset);
+    const { evaluateClawRun } = await import('../services/claw/run-eval.js');
+    const evaluation = evaluateClawRun(entries, config);
+
+    return apiResponse(c, evaluation);
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
 // GET /:id/audit — Get audit log (per-tool-call tracking)
 clawRoutes.get('/:id/audit', async (c) => {
   try {
