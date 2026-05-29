@@ -64,6 +64,7 @@ import {
   buildEditMismatchHint,
   findFlexibleMatch,
   buildMissingDirHint,
+  buildSearchMissHint,
   FILE_SYSTEM_TOOLS,
 } from './file-system.js';
 
@@ -1403,5 +1404,46 @@ describe('findFlexibleMatch', () => {
     // (substring still matches because "return 1;" is a suffix; verify span)
     const m = findFlexibleMatch('    return 1;', 'return 1;');
     expect('    return 1;'.slice(m!.start, m!.end)).toBe('return 1;');
+  });
+});
+
+describe('buildSearchMissHint', () => {
+  it('points at the filePattern when nothing was scanned and a filter was set', () => {
+    const h = buildSearchMissHint(0, { filePattern: '*.ts' });
+    expect(h).toMatch(/filePattern "\*\.ts"/);
+    expect(h).toMatch(/broaden|remove/i);
+  });
+
+  it('points at the path when nothing was scanned and no filter was set', () => {
+    const h = buildSearchMissHint(0, {});
+    expect(h).toMatch(/path exists|list_directory/i);
+  });
+
+  it('suggests loosening the query when files were scanned but none matched', () => {
+    const h = buildSearchMissHint(12, {});
+    expect(h).toMatch(/Scanned 12 file/);
+    expect(h).toMatch(/shorter or less specific/i);
+  });
+
+  it('suggests disabling case sensitivity when it was on', () => {
+    const h = buildSearchMissHint(5, { caseSensitive: true });
+    expect(h).toMatch(/caseSensitive:false/);
+  });
+});
+
+describe('searchFilesExecutor no-match hint (integration)', () => {
+  it('includes a hint when the search returns zero results', async () => {
+    fsMock.realpath.mockImplementation(async (p: string) => p);
+    // Empty directory -> nothing scanned -> path-oriented hint.
+    fsMock.readdir.mockResolvedValue([]);
+
+    const result = await searchFilesExecutor(
+      { path: '/workspace', query: 'needle-that-is-absent' },
+      ctx()
+    );
+    const data = parse(result);
+    expect(data.count).toBe(0);
+    expect(typeof data.hint).toBe('string');
+    expect(data.hint.length).toBeGreaterThan(0);
   });
 });

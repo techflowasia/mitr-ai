@@ -1555,3 +1555,33 @@ describe('httpRequestExecutor 304 Not Modified handling', () => {
     expect(content.hint).toBeUndefined();
   });
 });
+
+describe('fetchWebPageExecutor error self-correction', () => {
+  it('attaches a status hint and Retry-After on a non-ok page fetch', async () => {
+    fetchMock.mockResolvedValueOnce(
+      mockResponse({
+        ok: false,
+        status: 429,
+        statusText: 'Too Many Requests',
+        url: 'https://example.com/page',
+        headers: { 'retry-after': '15' },
+      })
+    );
+
+    const result = await fetchWebPageExecutor({ url: 'https://example.com/page' }, ctx);
+    expect(result.isError).toBe(true);
+    const content = result.content as Record<string, unknown>;
+    expect(content.status).toBe(429);
+    expect(String(content.hint)).toMatch(/Rate limited/i);
+    expect(content.retryAfter).toBe(15);
+  });
+
+  it('attaches a network hint when the page fetch throws', async () => {
+    fetchMock.mockRejectedValueOnce(new Error('connect ECONNREFUSED 1.2.3.4:443'));
+
+    const result = await fetchWebPageExecutor({ url: 'https://example.com/page' }, ctx);
+    expect(result.isError).toBe(true);
+    const content = result.content as Record<string, unknown>;
+    expect(String(content.hint)).toMatch(/refused/i);
+  });
+});

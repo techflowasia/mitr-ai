@@ -493,6 +493,31 @@ const searchFilesTool: ToolDefinition = {
   },
 };
 
+/**
+ * Build a self-correction cue when a file search returns nothing. A bare
+ * `count: 0` leaves the model guessing whether the pattern, the file filter, the
+ * path, or case sensitivity is at fault. This distinguishes "scanned files but
+ * none matched" (loosen the query) from "scanned nothing" (the filter or path is
+ * the problem). Exported for unit testing.
+ */
+export function buildSearchMissHint(
+  filesScanned: number,
+  opts: { filePattern?: string; caseSensitive?: boolean }
+): string {
+  if (filesScanned === 0) {
+    return opts.filePattern
+      ? `No files matched filePattern "${opts.filePattern}" under this path. Remove or broaden the filePattern, or check the path is correct.`
+      : 'No readable files were found under this path. Verify the path exists and is a directory (use list_directory to inspect it).';
+  }
+  const parts = [
+    `Scanned ${filesScanned} file(s) but the pattern matched no lines.`,
+    'Try a shorter or less specific query',
+  ];
+  if (opts.caseSensitive) parts.push('set caseSensitive:false');
+  parts.push('confirm the term actually appears (regex is supported — escape special chars)');
+  return parts.join('; ') + '.';
+}
+
 export const searchFilesExecutor: ToolExecutor = async (
   args,
   context
@@ -532,6 +557,7 @@ export const searchFilesExecutor: ToolExecutor = async (
     }> = [];
 
     const visited = new Set<string>();
+    let filesScanned = 0;
 
     async function searchDir(dir: string, depth = 0): Promise<void> {
       if (results.length >= maxResults || depth > MAX_SEARCH_DEPTH) return;
@@ -561,6 +587,7 @@ export const searchFilesExecutor: ToolExecutor = async (
           if (filePattern) {
             if (!safeGlobToRegex(filePattern).test(item.name)) continue;
           }
+          filesScanned += 1;
 
           try {
             const content = await fs.readFile(fullPath, 'utf-8');
@@ -592,6 +619,9 @@ export const searchFilesExecutor: ToolExecutor = async (
         path: dirPath,
         count: results.length,
         results,
+        ...(results.length === 0
+          ? { hint: buildSearchMissHint(filesScanned, { filePattern, caseSensitive }) }
+          : {}),
       }),
     };
   } catch (error) {

@@ -510,11 +510,15 @@ export const fetchWebPageExecutor: ToolExecutor = async (
     }
 
     if (!response.ok) {
+      const hint = describeHttpStatus(response.status);
+      const retryAfter = parseRetryAfter(response.headers.get('retry-after'));
       return {
         content: {
           status: response.status,
           statusText: response.statusText,
           error: `HTTP ${response.status}: ${response.statusText}`,
+          ...(hint ? { hint } : {}),
+          ...(retryAfter !== undefined ? { retryAfter } : {}),
         },
         isError: true,
       };
@@ -559,8 +563,9 @@ export const fetchWebPageExecutor: ToolExecutor = async (
         isError: true,
       };
     }
+    const netHint = describeNetworkError(err.message);
     return {
-      content: { error: err.message },
+      content: { error: err.message, ...(netHint ? { hint: netHint } : {}) },
       isError: true,
     };
   }
