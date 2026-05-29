@@ -286,8 +286,10 @@ const browserAccessibilityTreeDef: ToolDefinition = {
     'Returns the current page as an accessibility tree — a compact, indented outline of ' +
     'roles and names (button, link, textbox, heading, …) instead of raw HTML. This is the ' +
     'best way to understand page structure and find interactive elements to click/type into: ' +
-    'it is far smaller than HTML and surfaces exactly what is actionable. Optionally pass a ' +
-    'selector to scope the tree to a subtree.',
+    'it is far smaller than HTML and surfaces exactly what is actionable. State flags appear in ' +
+    'brackets — [disabled], [checked], [expanded]/[collapsed], [selected], [required], [invalid], ' +
+    '[focused] — so you can avoid acting on a disabled control or re-checking a checked box. ' +
+    'Optionally pass a selector to scope the tree to a subtree.',
   category: 'Browser',
   tags: ['browser', 'accessibility', 'a11y', 'structure', 'navigate', 'inspect'],
   parameters: {

@@ -137,7 +137,7 @@ vi.mock('fs', () => ({
 // Import the module under test (after all mocks are registered)
 // =============================================================================
 
-import { BrowserService, getBrowserService } from './browser-service.js';
+import { BrowserService, getBrowserService, renderAxNode } from './browser-service.js';
 
 // =============================================================================
 // Helpers
@@ -1150,6 +1150,80 @@ describe('BrowserService', () => {
       const svc1 = getBrowserService();
       const svc2 = getBrowserService();
       expect(svc1).toBe(svc2);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // renderAxNode() — accessibility-tree rendering with state flags
+  // ---------------------------------------------------------------------------
+
+  describe('renderAxNode()', () => {
+    const node = (over: Record<string, unknown>): any => ({ role: 'generic', ...over });
+
+    it('renders role, name, and value', () => {
+      const out = renderAxNode(node({ role: 'textbox', name: 'Email', value: 'a@b.com' }), 0);
+      expect(out).toBe('- textbox "Email" = a@b.com');
+    });
+
+    it('marks a disabled control', () => {
+      const out = renderAxNode(node({ role: 'button', name: 'Submit', disabled: true }), 0);
+      expect(out).toBe('- button "Submit" [disabled]');
+    });
+
+    it('shows checked / mixed checkbox state', () => {
+      expect(renderAxNode(node({ role: 'checkbox', name: 'A', checked: true }), 0)).toContain(
+        '[checked]'
+      );
+      expect(renderAxNode(node({ role: 'checkbox', name: 'B', checked: 'mixed' }), 0)).toContain(
+        '[mixed]'
+      );
+    });
+
+    it('distinguishes expanded from collapsed (tri-state)', () => {
+      expect(renderAxNode(node({ role: 'button', name: 'More', expanded: true }), 0)).toContain(
+        '[expanded]'
+      );
+      expect(renderAxNode(node({ role: 'button', name: 'More', expanded: false }), 0)).toContain(
+        '[collapsed]'
+      );
+      // expanded undefined -> no flag at all
+      expect(renderAxNode(node({ role: 'button', name: 'Plain' }), 0)).not.toMatch(
+        /expanded|collapsed/
+      );
+    });
+
+    it('combines multiple state flags in one bracket', () => {
+      const out = renderAxNode(
+        node({ role: 'textbox', name: 'Pw', required: true, invalid: 'spelling', focused: true }),
+        0
+      );
+      expect(out).toContain('[required invalid focused]');
+    });
+
+    it('annotates heading level', () => {
+      expect(renderAxNode(node({ role: 'heading', name: 'Title', level: 2 }), 0)).toBe(
+        '- heading "Title" (h2)'
+      );
+    });
+
+    it('indents and recurses into children', () => {
+      const out = renderAxNode(
+        node({
+          role: 'list',
+          children: [
+            node({ role: 'listitem', name: 'One' }),
+            node({ role: 'listitem', name: 'Two' }),
+          ],
+        }),
+        0
+      );
+      expect(out).toBe('- list\n  - listitem "One"\n  - listitem "Two"');
+    });
+
+    it('does not emit a flag for invalid="false"', () => {
+      expect(renderAxNode(node({ role: 'textbox', name: 'X', invalid: 'false' }), 0)).not.toContain(
+        '[invalid]'
+      );
     });
   });
 });

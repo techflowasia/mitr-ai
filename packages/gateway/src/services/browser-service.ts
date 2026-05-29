@@ -31,11 +31,41 @@ const DEFAULT_ACTION_TIMEOUT = BROWSER_ACTION_TIMEOUT_MS;
 const MAX_TEXT_LENGTH = BROWSER_MAX_TEXT_LENGTH;
 
 /** Render a serialized accessibility node into a compact indented outline. */
-function renderAxNode(node: SerializedAXNode, depth: number): string {
+/**
+ * Render one accessibility node (and its subtree) as a compact indented line.
+ *
+ * Beyond role/name/value we surface the accessibility STATE flags so an agent
+ * can pick the right action without a probe-and-fail cycle: it should not click
+ * a `[disabled]` control, should not re-check an already `[checked]` box, and
+ * should expand a `[collapsed]` section before looking inside it. Puppeteer only
+ * populates each flag for roles where it applies (interestingOnly snapshot), so
+ * emitting them is safe and adds no noise for elements that don't support them.
+ * Exported for unit testing.
+ */
+export function renderAxNode(node: SerializedAXNode, depth: number): string {
   const indent = '  '.repeat(depth);
   const parts: string[] = [node.role];
   if (node.name) parts.push(`"${node.name}"`);
   if (node.value !== undefined && node.value !== '') parts.push(`= ${String(node.value)}`);
+
+  const flags: string[] = [];
+  if (node.disabled) flags.push('disabled');
+  if (node.checked === 'mixed') flags.push('mixed');
+  else if (node.checked === true) flags.push('checked');
+  if (node.pressed === 'mixed') flags.push('pressed:mixed');
+  else if (node.pressed === true) flags.push('pressed');
+  if (node.selected) flags.push('selected');
+  if (node.expanded === true) flags.push('expanded');
+  else if (node.expanded === false) flags.push('collapsed');
+  if (node.required) flags.push('required');
+  if (node.readonly) flags.push('readonly');
+  if (node.invalid && node.invalid !== 'false') flags.push('invalid');
+  if (node.focused) flags.push('focused');
+  if (flags.length) parts.push(`[${flags.join(' ')}]`);
+
+  // Heading depth helps the agent reconstruct document structure.
+  if (node.role === 'heading' && node.level) parts.push(`(h${node.level})`);
+
   let line = `${indent}- ${parts.join(' ')}`;
   if (node.children?.length) {
     line += `\n${node.children.map((child) => renderAxNode(child, depth + 1)).join('\n')}`;
