@@ -1168,6 +1168,12 @@ async function main() {
   });
 
   process.on('uncaughtException', (error) => {
+    // Print synchronously to stderr FIRST. The structured logger flushes
+    // asynchronously, so an async logger write loses the message when the
+    // process exits during the shutdown below — leaving an "Uncaught
+    // Exception" crash with no visible cause. console.error is synchronous.
+
+    console.error('\n=== UNCAUGHT EXCEPTION — shutting down ===\n', error);
     log.error('Uncaught Exception — shutting down', {
       error: error.message,
       name: error.name,

@@ -181,6 +181,17 @@ export class SlackChannelAPI implements ChannelPluginAPI {
       this.emitConnectionEvent('disconnected');
     });
 
+    // SocketModeClient is an EventEmitter. Without an 'error' listener, any
+    // async error it emits (bad app_token, socket/network failure, reconnect
+    // attempts) is re-thrown by Node as an uncaughtException and takes the
+    // whole gateway down — the connect() try/catch can't catch it because it
+    // fires after start() resolves. Swallow-and-log instead.
+    this.socketModeClient.on('error', (error: unknown) => {
+      log.warn(`Slack Socket Mode error: ${getErrorMessage(error)}`);
+      this.status = 'error';
+      this.emitConnectionEvent('error');
+    });
+
     await this.socketModeClient.start();
     log.info('Slack Socket Mode connected');
   }
