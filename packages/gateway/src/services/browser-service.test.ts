@@ -144,6 +144,7 @@ import {
   renderAxNode,
   buildActionableElementsHint,
   waitForSelectorWithHint,
+  isRetryableNavError,
 } from './browser-service.js';
 
 // =============================================================================
@@ -351,6 +352,36 @@ describe('BrowserService', () => {
       await expect(service.navigate('user-1', 'https://nope.invalid')).rejects.toThrow(
         'ERR_NAME_NOT_RESOLVED'
       );
+    });
+
+    it('retries a transient navigation fault and succeeds on the second attempt', async () => {
+      const service = new BrowserService();
+      mockPage.$eval.mockResolvedValueOnce('body text');
+      // First goto fails transiently; the default mock resolves on retry.
+      mockPage.goto.mockRejectedValueOnce(new Error('net::ERR_CONNECTION_RESET'));
+
+      const result = await service.navigate('user-1', 'https://example.com');
+
+      expect(result.title).toBe('Test Page');
+      expect(mockPage.goto).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not retry a permanent (DNS) navigation fault', async () => {
+      const service = new BrowserService();
+      mockPage.goto.mockRejectedValue(new Error('net::ERR_NAME_NOT_RESOLVED'));
+
+      await expect(service.navigate('user-1', 'https://nope.invalid')).rejects.toThrow();
+      expect(mockPage.goto).toHaveBeenCalledTimes(1);
+    });
+
+    it('gives up after the attempt cap on a persistent transient fault', async () => {
+      const service = new BrowserService();
+      mockPage.goto.mockRejectedValue(new Error('net::ERR_TIMED_OUT'));
+
+      await expect(service.navigate('user-1', 'https://example.com')).rejects.toThrow(
+        'ERR_TIMED_OUT'
+      );
+      expect(mockPage.goto).toHaveBeenCalledTimes(2);
     });
 
     it('does not swallow a non-timeout error from the network-idle wait', async () => {
@@ -1199,6 +1230,38 @@ describe('BrowserService', () => {
   // ---------------------------------------------------------------------------
   // renderAxNode() — accessibility-tree rendering with state flags
   // ---------------------------------------------------------------------------
+
+  describe('isRetryableNavError()', () => {
+    it('treats connection/socket/timeout faults as retryable', () => {
+      for (const msg of [
+        'net::ERR_CONNECTION_RESET',
+        'net::ERR_CONNECTION_CLOSED',
+        'net::ERR_TIMED_OUT',
+        'net::ERR_NETWORK_CHANGED',
+        'net::ERR_EMPTY_RESPONSE',
+        'Navigation timeout of 30000 ms exceeded',
+      ]) {
+        expect(isRetryableNavError(new Error(msg))).toBe(true);
+      }
+    });
+
+    it('treats a TimeoutError (by name) as retryable', () => {
+      const err = new Error('timed out');
+      err.name = 'TimeoutError';
+      expect(isRetryableNavError(err)).toBe(true);
+    });
+
+    it('treats DNS / abort / invalid-URL faults as permanent', () => {
+      for (const msg of ['net::ERR_NAME_NOT_RESOLVED', 'net::ERR_ABORTED', 'Invalid URL']) {
+        expect(isRetryableNavError(new Error(msg))).toBe(false);
+      }
+    });
+
+    it('returns false for non-Error values', () => {
+      expect(isRetryableNavError('ERR_TIMED_OUT')).toBe(false);
+      expect(isRetryableNavError(undefined)).toBe(false);
+    });
+  });
 
   describe('renderAxNode()', () => {
     const node = (over: Record<string, unknown>): any => ({ role: 'generic', ...over });

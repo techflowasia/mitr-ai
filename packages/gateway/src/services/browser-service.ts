@@ -30,6 +30,26 @@ const DEFAULT_NAVIGATION_TIMEOUT = BROWSER_NAVIGATION_TIMEOUT_MS;
 const DEFAULT_ACTION_TIMEOUT = BROWSER_ACTION_TIMEOUT_MS;
 const MAX_TEXT_LENGTH = BROWSER_MAX_TEXT_LENGTH;
 
+/** Total navigation attempts (1 initial + retries) for transient network faults. */
+const MAX_NAV_ATTEMPTS = 2;
+/** Base backoff between navigation retries; multiplied by the attempt number. */
+const NAV_RETRY_DELAY_MS = 400;
+
+/**
+ * Chromium navigation faults that are typically transient — a connection reset,
+ * a dropped socket, a network change, or a timeout — where an immediate retry
+ * usually succeeds. Permanent faults (ERR_NAME_NOT_RESOLVED / DNS, ERR_ABORTED,
+ * invalid URL, SSRF blocks) are deliberately excluded so they fail fast instead
+ * of wasting a retry. Exported for direct unit testing.
+ */
+const RETRYABLE_NAV_ERROR =
+  /ERR_CONNECTION_RESET|ERR_CONNECTION_CLOSED|ERR_CONNECTION_REFUSED|ERR_CONNECTION_FAILED|ERR_TIMED_OUT|ERR_NETWORK_CHANGED|ERR_EMPTY_RESPONSE|ERR_SOCKET_NOT_CONNECTED|Navigation timeout|timeout exceeded/i;
+
+export function isRetryableNavError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  return err.name === 'TimeoutError' || RETRYABLE_NAV_ERROR.test(err.message);
+}
+
 /** Render a serialized accessibility node into a compact indented outline. */
 /**
  * Render one accessibility node (and its subtree) as a compact indented line.
@@ -241,10 +261,24 @@ export class BrowserService {
     // navigation errors (DNS, connection refused, HTTP abort); (2) then settle
     // the network best-effort with a short budget, swallowing only a timeout so a
     // chatty page does not fail the whole navigation.
-    await page.goto(url, {
-      waitUntil: 'domcontentloaded',
-      timeout: DEFAULT_NAVIGATION_TIMEOUT,
-    });
+    // Retry the DOM-ready load on transient network faults (reset socket,
+    // dropped connection, timeout). Permanent faults (DNS, SSRF, invalid URL)
+    // are not retryable and throw on the first attempt.
+    for (let attempt = 1; ; attempt++) {
+      try {
+        await page.goto(url, {
+          waitUntil: 'domcontentloaded',
+          timeout: DEFAULT_NAVIGATION_TIMEOUT,
+        });
+        break;
+      } catch (err) {
+        if (attempt < MAX_NAV_ATTEMPTS && isRetryableNavError(err)) {
+          await new Promise((r) => setTimeout(r, NAV_RETRY_DELAY_MS * attempt));
+          continue;
+        }
+        throw err;
+      }
+    }
 
     try {
       await page.waitForNetworkIdle({
