@@ -260,3 +260,7 @@ export function getPlanService(): PlanService {
   }
   return instance;
 }
+
+export function resetPlanService(): void {
+  instance = null;
+}

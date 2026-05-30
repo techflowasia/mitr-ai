@@ -322,3 +322,10 @@ export function getCustomDataService(): CustomDataService {
   }
   return instance;
 }
+
+/**
+ * Reset the singleton (for testing or shutdown).
+ */
+export function resetCustomDataService(): void {
+  instance = null;
+}

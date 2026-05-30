@@ -283,3 +283,7 @@ export function getGoalService(): GoalService {
   }
   return instance;
 }
+
+export function resetGoalService(): void {
+  instance = null;
+}

@@ -914,3 +914,13 @@ export function getBrowserService(): BrowserService {
 export function tryGetBrowserService(): BrowserService | null {
   return instance;
 }
+
+/**
+ * Stop and null the singleton. Call during shutdown or reset.
+ */
+export function resetBrowserService(): void {
+  if (instance) {
+    instance.shutdown();
+    instance = null;
+  }
+}

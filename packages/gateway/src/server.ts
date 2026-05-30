@@ -65,6 +65,7 @@ import {
   getEventSystem,
   setChannelService,
   setModuleResolver,
+  type ServiceToken,
 } from '@ownpilot/core';
 import type { NormalizedMessage } from '@ownpilot/core';
 import { createLogService } from './services/log-service.js';
@@ -573,9 +574,15 @@ async function main() {
     setHeartbeatService(heartbeat);
   }
 
-  // 19b. Pulse Metrics Service (claw + soul monitoring)
-  const { getPulseMetricsService } = await import('./services/metric/pulse.js');
-  getPulseMetricsService().start();
+  // 19b. Pulse Metrics Service (claw + soul monitoring) — registered in the ServiceRegistry
+  // so event subscriptions can be cleaned up via resetPulseMetricsService() on shutdown.
+  const { getPulseMetricsServiceForRegistry } = await import('./services/metric/pulse.js');
+  registry.registerFactory(
+    Services.Pulse as ServiceToken<import('./services/metric/pulse.js').PulseMetricsService>,
+    () => getPulseMetricsServiceForRegistry()
+  );
+  // Start after registry registration so .start() is called once
+  getPulseMetricsServiceForRegistry().start();
 
   // 20. Coding Agent Service (external AI coding CLI orchestration) — also installed on the core capability singleton
   {
@@ -1048,8 +1055,8 @@ async function main() {
 
     // 5.3. Stop embedding queue
     try {
-      const { getEmbeddingQueue } = await import('./services/embedding/queue.js');
-      getEmbeddingQueue().stop();
+      const { resetEmbeddingQueue } = await import('./services/embedding/queue.js');
+      resetEmbeddingQueue();
     } catch (e) {
       log.warn('Embedding queue stop error', { error: String(e) });
     }
@@ -1060,6 +1067,14 @@ async function main() {
       resetHeartbeatRunner();
     } catch (e) {
       log.warn('Heartbeat runner stop error', { error: String(e) });
+    }
+
+    // 5.4b. Stop Pulse Metrics Service (cleanup event subscriptions + timers)
+    try {
+      const { resetPulseMetricsService } = await import('./services/metric/pulse.js');
+      resetPulseMetricsService();
+    } catch (e) {
+      log.warn('Pulse metrics service stop error', { error: String(e) });
     }
 
     // 5.5. Stop circuit breaker cleanup intervals
@@ -1076,6 +1091,71 @@ async function main() {
       getCodingAgentSessionManager().stop();
     } catch (e) {
       log.warn('Coding agent sessions stop error', { error: String(e) });
+    }
+
+    // 5.6b. Reset coding agent service singleton
+    try {
+      const { resetCodingAgentSessionManager } =
+        await import('./services/coding-agent/sessions.js');
+      resetCodingAgentSessionManager();
+    } catch (e) {
+      log.warn('Coding agent session manager reset error', { error: String(e) });
+    }
+
+    // 5.6c. Reset heartbeat service
+    try {
+      const { resetHeartbeatService } = await import('./services/heartbeat/service.js');
+      resetHeartbeatService();
+    } catch (e) {
+      log.warn('Heartbeat service reset error', { error: String(e) });
+    }
+
+    // 5.6d. Reset memory service
+    try {
+      const { resetMemoryService } = await import('./services/memory-service.js');
+      resetMemoryService();
+    } catch (e) {
+      log.warn('Memory service reset error', { error: String(e) });
+    }
+
+    // 5.6e. Reset goal service
+    try {
+      const { resetGoalService } = await import('./services/goal-service.js');
+      resetGoalService();
+    } catch (e) {
+      log.warn('Goal service reset error', { error: String(e) });
+    }
+
+    // 5.6f. Reset plan service
+    try {
+      const { resetPlanService } = await import('./services/plan-service.js');
+      resetPlanService();
+    } catch (e) {
+      log.warn('Plan service reset error', { error: String(e) });
+    }
+
+    // 5.6g. Reset extension service
+    try {
+      const { resetExtensionService } = await import('./services/extension/service.js');
+      resetExtensionService();
+    } catch (e) {
+      log.warn('Extension service reset error', { error: String(e) });
+    }
+
+    // 5.6h. Reset CLI tool service
+    try {
+      const { resetCliToolService } = await import('./services/cli/tool-service.js');
+      resetCliToolService();
+    } catch (e) {
+      log.warn('CLI tool service reset error', { error: String(e) });
+    }
+
+    // 5.6i. Reset coding agent service singleton
+    try {
+      const { resetCodingAgentService } = await import('./services/coding-agent/service.js');
+      resetCodingAgentService();
+    } catch (e) {
+      log.warn('Coding agent service reset error', { error: String(e) });
     }
 
     // 6. Cleanup webhook handler (if Telegram is in webhook mode)
@@ -1134,11 +1214,68 @@ async function main() {
 
     // 8.4. Shutdown browser service (H-C3: cleanup timer + open Playwright pages)
     try {
-      const { tryGetBrowserService } = await import('./services/browser-service.js');
-      const svc = tryGetBrowserService();
-      if (svc) await svc.shutdown();
+      const { resetBrowserService } = await import('./services/browser-service.js');
+      resetBrowserService();
     } catch (e) {
       log.warn('Browser service shutdown error', { error: String(e) });
+    }
+
+    // 8.5. Reset extension sandbox
+    try {
+      const { resetExtensionSandbox } = await import('./services/extension/sandbox.js');
+      resetExtensionSandbox();
+    } catch (e) {
+      log.warn('Extension sandbox reset error', { error: String(e) });
+    }
+
+    // 8.6. Reset remaining legacy singletons
+    try {
+      const { resetEdgeMqttClient } = await import('./services/edge/mqtt-client.js');
+      resetEdgeMqttClient();
+    } catch (e) {
+      log.warn('Edge MQTT client reset error', { error: String(e) });
+    }
+    try {
+      const { resetEmbeddingService } = await import('./services/embedding/service.js');
+      resetEmbeddingService();
+    } catch (e) {
+      log.warn('Embedding service reset error', { error: String(e) });
+    }
+    try {
+      const { resetVoiceService } = await import('./services/voice-service.js');
+      resetVoiceService();
+    } catch (e) {
+      log.warn('Voice service reset error', { error: String(e) });
+    }
+    try {
+      const { resetNpmInstaller } = await import('./services/skill/npm-installer.js');
+      resetNpmInstaller();
+    } catch (e) {
+      log.warn('NPM installer reset error', { error: String(e) });
+    }
+    try {
+      const { resetLlmSemaphore } = await import('./services/llm/semaphore.js');
+      resetLlmSemaphore();
+    } catch (e) {
+      log.warn('LLM semaphore reset error', { error: String(e) });
+    }
+    try {
+      const { resetCustomDataService } = await import('./services/custom/data-service.js');
+      resetCustomDataService();
+    } catch (e) {
+      log.warn('Custom data service reset error', { error: String(e) });
+    }
+    try {
+      const { resetTriggerService } = await import('./services/trigger-service.js');
+      resetTriggerService();
+    } catch (e) {
+      log.warn('Trigger service reset error', { error: String(e) });
+    }
+    try {
+      const { resetResourceRegistry } = await import('./services/resource/registry.js');
+      resetResourceRegistry();
+    } catch (e) {
+      log.warn('Resource registry reset error', { error: String(e) });
     }
 
     // 9. Close DB connection pool

@@ -216,7 +216,7 @@ class PulseMetricsService {
 }
 
 // ---------------------------------------------------------------------------
-// Singleton
+// Singleton (for ServiceRegistry)
 // ---------------------------------------------------------------------------
 
 let instance: PulseMetricsService | null = null;
@@ -227,4 +227,25 @@ export function getPulseMetricsService(): PulseMetricsService {
     instance.start();
   }
   return instance;
+}
+
+/**
+ * Returns the instance for ServiceRegistry factory use.
+ * Does NOT auto-start — caller is responsible for lifecycle.
+ */
+export function getPulseMetricsServiceForRegistry(): PulseMetricsService {
+  if (!instance) {
+    instance = new PulseMetricsService();
+  }
+  return instance;
+}
+
+/**
+ * Stop and null the singleton. Call during shutdown or reset.
+ */
+export function resetPulseMetricsService(): void {
+  if (instance) {
+    instance.stop();
+    instance = null;
+  }
 }

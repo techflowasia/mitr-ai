@@ -632,4 +632,8 @@ export function getCodingAgentService(): CodingAgentService {
   return instance;
 }
 
+export function resetCodingAgentService(): void {
+  instance = null;
+}
+
 export { CodingAgentService };

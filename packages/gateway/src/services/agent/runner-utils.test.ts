@@ -571,3 +571,53 @@ describe('agent-runner-utils', () => {
     });
   });
 });
+
+// =============================================================================
+// Cleanup — reset singleton state after each test to prevent cross-test pollution
+// =============================================================================
+
+afterEach(async () => {
+  vi.clearAllMocks();
+
+  // Reset all legacy singletons to prevent state pollution across tests
+  const [
+    { resetServiceRegistrySync },
+    { resetPulseMetricsService },
+    { resetHeartbeatService },
+    { resetEmbeddingQueue },
+    { resetEmbeddingService },
+    { resetMemoryService },
+    { resetGoalService },
+    { resetPlanService },
+    { resetTriggerService },
+    { resetCodingAgentService },
+    { resetCodingAgentSessionManager },
+    { resetBrowserService },
+  ] = await Promise.all([
+    import('@ownpilot/core'),
+    import('../metric/pulse.js'),
+    import('../heartbeat/service.js'),
+    import('../embedding/queue.js'),
+    import('../embedding/service.js'),
+    import('../memory-service.js'),
+    import('../goal-service.js'),
+    import('../plan-service.js'),
+    import('../trigger-service.js'),
+    import('../coding-agent/service.js'),
+    import('../coding-agent/sessions.js'),
+    import('../browser-service.js'),
+  ]);
+
+  resetBrowserService();
+  resetCodingAgentSessionManager();
+  resetCodingAgentService();
+  resetTriggerService();
+  resetPlanService();
+  resetGoalService();
+  resetMemoryService();
+  resetEmbeddingService();
+  resetEmbeddingQueue();
+  resetHeartbeatService();
+  resetPulseMetricsService();
+  resetServiceRegistrySync();
+});

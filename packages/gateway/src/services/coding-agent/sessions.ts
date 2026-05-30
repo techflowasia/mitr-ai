@@ -927,3 +927,8 @@ export function getCodingAgentSessionManager(): CodingAgentSessionManager {
   }
   return instance;
 }
+
+export function resetCodingAgentSessionManager(): void {
+  instance?.stop();
+  instance = null;
+}

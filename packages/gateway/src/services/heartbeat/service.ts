@@ -317,3 +317,7 @@ export function getHeartbeatService(): HeartbeatService {
   }
   return instance;
 }
+
+export function resetHeartbeatService(): void {
+  instance = null;
+}

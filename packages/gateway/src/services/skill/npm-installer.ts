@@ -334,3 +334,10 @@ export function getNpmInstaller(): NpmSkillInstaller {
   }
   return instance;
 }
+
+/**
+ * Reset the singleton (for testing or shutdown).
+ */
+export function resetNpmInstaller(): void {
+  instance = null;
+}

@@ -140,6 +140,17 @@ export class ServiceRegistry {
     this.factories.clear();
     this.disposables.length = 0;
   }
+
+  /**
+   * Synchronous reset — clears all registered instances and factories without
+   * awaiting dispose(). Use in test `afterEach` for fast, reliable teardown.
+   * In production, prefer `dispose()` which properly awaits async cleanup.
+   */
+  reset(): void {
+    this.instances.clear();
+    this.factories.clear();
+    this.disposables.length = 0;
+  }
 }
 
 // ============================================================================
@@ -187,6 +198,18 @@ export function hasServiceRegistry(): boolean {
 export async function resetServiceRegistry(): Promise<void> {
   if (_registry) {
     await _registry.dispose();
+  }
+  _registry = null;
+}
+
+/**
+ * Synchronous reset for test cleanup — clears the registry synchronously without
+ * awaiting dispose on services. Use in test `afterEach` blocks for fast teardown.
+ * In production, prefer `resetServiceRegistry()` (async).
+ */
+export function resetServiceRegistrySync(): void {
+  if (_registry) {
+    _registry.reset();
   }
   _registry = null;
 }

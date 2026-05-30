@@ -314,3 +314,13 @@ export function getEdgeMqttClient(): EdgeMqttClient {
   }
   return instance;
 }
+
+/**
+ * Reset the singleton (for testing or shutdown).
+ */
+export function resetEdgeMqttClient(): void {
+  if (instance) {
+    instance.disconnect();
+  }
+  instance = null;
+}

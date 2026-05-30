@@ -258,3 +258,10 @@ export function getEmbeddingService(): EmbeddingService {
   }
   return instance;
 }
+
+/**
+ * Reset the singleton (for testing or shutdown).
+ */
+export function resetEmbeddingService(): void {
+  instance = null;
+}

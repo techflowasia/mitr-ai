@@ -300,4 +300,8 @@ export function getCliToolService(): CliToolService {
   return instance;
 }
 
+export function resetCliToolService(): void {
+  instance = null;
+}
+
 export { CliToolService };

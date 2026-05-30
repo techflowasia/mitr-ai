@@ -249,3 +249,10 @@ export function getLlmSemaphore(): LlmSemaphore {
   }
   return instance;
 }
+
+/**
+ * Reset the singleton (for testing or shutdown).
+ */
+export function resetLlmSemaphore(): void {
+  instance = null;
+}

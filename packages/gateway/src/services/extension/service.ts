@@ -719,3 +719,7 @@ export function getExtensionService(): ExtensionService {
   }
   return instance;
 }
+
+export function resetExtensionService(): void {
+  instance = null;
+}

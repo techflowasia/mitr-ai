@@ -202,3 +202,10 @@ export function getTriggerService(): TriggerService {
   }
   return instance;
 }
+
+/**
+ * Reset the singleton (for testing or shutdown).
+ */
+export function resetTriggerService(): void {
+  instance = null;
+}

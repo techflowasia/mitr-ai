@@ -455,3 +455,7 @@ export function getMemoryService(): MemoryService {
   }
   return instance;
 }
+
+export function resetMemoryService(): void {
+  instance = null;
+}

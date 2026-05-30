@@ -458,3 +458,18 @@ export function getExtensionSandbox(): ExtensionSandboxManager {
   }
   return instance;
 }
+
+/**
+ * Returns the instance for ServiceRegistry factory use.
+ * Does NOT auto-create — returns null if not yet instantiated.
+ */
+export function getExtensionSandboxForRegistry(): ExtensionSandboxManager | null {
+  return instance;
+}
+
+/**
+ * Null the singleton. Call during shutdown or reset.
+ */
+export function resetExtensionSandbox(): void {
+  instance = null;
+}
