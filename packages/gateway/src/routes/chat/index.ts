@@ -564,7 +564,7 @@ chatRoutes.post('/', async (c) => {
         };
         reqSignal.addEventListener('abort', onAbort);
 
-        wireStreamApproval(agent, stream);
+        wireStreamApproval(agent, stream, streamUserId);
         log.info(`[ExecSecurity] SSE requestApproval callback wired on agent (MessageBus path)`);
 
         // ── MCP tool event forwarding for CLI providers ──
@@ -643,7 +643,7 @@ chatRoutes.post('/', async (c) => {
         contextWindowOverride: userContextWindow,
       });
 
-      wireStreamApproval(agent, stream);
+      wireStreamApproval(agent, stream, streamUserId);
 
       // ── MCP tool event forwarding for CLI providers ──
       // Subscribe to real-time tool call events from MCP server and forward as SSE progress events.
@@ -943,6 +943,7 @@ chatRoutes.post('/', async (c) => {
 chatRoutes.get('/conversations/:id', async (c) => {
   const id = c.req.param('id');
   const agentId = c.req.query('agentId');
+  const userId = getUserId(c);
 
   if (await isDemoMode()) {
     return apiResponse(c, {
@@ -952,6 +953,13 @@ chatRoutes.get('/conversations/:id', async (c) => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
+  }
+
+  // IDOR guard: verify conversation belongs to this user before returning any data
+  const chatRepo = new ChatRepository(userId);
+  const dbConversation = await chatRepo.getConversation(id);
+  if (!dbConversation) {
+    return notFoundError(c, 'Conversation', id);
   }
 
   const agent = agentId ? await getAgent(agentId) : await getOrCreateDefaultAgent();
@@ -987,9 +995,17 @@ chatRoutes.get('/conversations/:id', async (c) => {
 chatRoutes.delete('/conversations/:id', async (c) => {
   const id = c.req.param('id');
   const agentId = c.req.query('agentId');
+  const userId = getUserId(c);
 
   if (await isDemoMode()) {
     return apiResponse(c, {});
+  }
+
+  // IDOR guard: verify conversation belongs to this user before deleting
+  const chatRepo = new ChatRepository(userId);
+  const dbConversation = await chatRepo.getConversation(id);
+  if (!dbConversation) {
+    return notFoundError(c, 'Conversation', id);
   }
 
   const agent = agentId ? await getAgent(agentId) : await getOrCreateDefaultAgent();
@@ -1005,8 +1021,7 @@ chatRoutes.delete('/conversations/:id', async (c) => {
     return notFoundError(c, 'Conversation', id);
   }
 
-  // Delete from database only after confirming it exists in memory
-  const chatRepo = new ChatRepository(getUserId(c));
+  // Delete from database — conversation ownership already verified above
   await chatRepo.deleteConversation(id);
 
   // Clean up the per-conversation prompt-init cache. `lastExecPermHash` is

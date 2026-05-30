@@ -10,32 +10,42 @@ import { getCircuitBreakerStats, resetAllCircuits } from '../middleware/circuit-
 
 export const debugRoutes = new Hono();
 
-// Debug endpoints are sensitive — require ADMIN_API_KEY or restrict to development
+// Debug endpoints are sensitive — always require ADMIN_API_KEY.
+// In non-production, localhost may bypass the key check as a dev convenience
+// only when ADMIN_API_KEY is not set (i.e., the binary has no key configured).
 const requireDebugAccess = createMiddleware(async (c, next) => {
-  // In production, require admin key
-  if (process.env.NODE_ENV === 'production') {
-    const adminKey = process.env.ADMIN_API_KEY;
-    if (!adminKey) {
+  const adminKey = process.env.ADMIN_API_KEY;
+  const isLocalhost =
+    c.req.header('origin') === `http://localhost:${process.env.UI_PORT ?? '8199'}` ||
+    c.req.header('referer')?.startsWith(`http://localhost:${process.env.UI_PORT ?? '8199'}`) ||
+    c.env?.LOCAL_DEV === 'true';
+
+  // If no key is configured at all, only allow localhost in dev/test
+  if (!adminKey) {
+    if (process.env.NODE_ENV === 'production' || !isLocalhost) {
       return apiError(
         c,
         {
           code: ERROR_CODES.SERVICE_UNAVAILABLE,
-          message: 'Debug endpoints require ADMIN_API_KEY in production',
+          message: 'Debug endpoints require ADMIN_API_KEY to be set',
         },
         503
       );
     }
-    const providedKey = c.req.header('X-Admin-Key') ?? '';
-    if (!safeKeyCompare(providedKey, adminKey)) {
-      return apiError(
-        c,
-        {
-          code: ERROR_CODES.ACCESS_DENIED,
-          message: 'Valid X-Admin-Key header required for debug endpoints',
-        },
-        403
-      );
-    }
+    return next();
+  }
+
+  // Key is configured — verify it on every environment
+  const providedKey = c.req.header('X-Admin-Key') ?? '';
+  if (!safeKeyCompare(providedKey, adminKey)) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.ACCESS_DENIED,
+        message: 'Valid X-Admin-Key header required for debug endpoints',
+      },
+      403
+    );
   }
   return next();
 });

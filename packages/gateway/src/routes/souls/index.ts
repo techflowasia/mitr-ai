@@ -39,11 +39,18 @@ soulRoutes.route('/', soulAgentRoutes);
 
 soulRoutes.get('/stats', async (c) => {
   try {
-    const rawUserId = c.get('userId') as string | undefined;
-    const userId = rawUserId && rawUserId !== 'default' ? rawUserId : null;
+    const userId = c.get('userId') as string | undefined;
+    // Reject unauthenticated requests — do not fall back to 'default'
+    if (!userId || userId === 'default') {
+      return apiError(
+        c,
+        { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
+        401
+      );
+    }
     const hbRepo = getHeartbeatLogRepository();
 
-    const stats = await hbRepo.getStatsByUser(userId ?? 'default');
+    const stats = await hbRepo.getStatsByUser(userId);
 
     return apiResponse(c, {
       totalCycles: stats.totalCycles,
@@ -60,11 +67,18 @@ soulRoutes.get('/stats', async (c) => {
 
 soulRoutes.get('/health', async (c) => {
   try {
-    const rawUserId = c.get('userId') as string | undefined;
-    const userId = rawUserId && rawUserId !== 'default' ? rawUserId : null;
+    const userId = c.get('userId') as string | undefined;
+    // Reject unauthenticated requests — do not fall back to 'default'
+    if (!userId || userId === 'default') {
+      return apiError(
+        c,
+        { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
+        401
+      );
+    }
     const hbRepo = getHeartbeatLogRepository();
 
-    const stats = await hbRepo.getStatsByUser(userId ?? 'default');
+    const stats = await hbRepo.getStatsByUser(userId);
 
     const signals: string[] = [];
     const recommendations: string[] = [];

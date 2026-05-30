@@ -77,7 +77,8 @@ type ApprovalFn =
   | undefined;
 export function wireStreamApproval(
   agent: { setRequestApproval: (fn: ApprovalFn) => void },
-  stream: { writeSSE: (data: { data: string; event: string }) => Promise<void> }
+  stream: { writeSSE: (data: { data: string; event: string }) => Promise<void> },
+  userId: string
 ) {
   agent.setRequestApproval(
     async (
@@ -98,7 +99,7 @@ export function wireStreamApproval(
         }),
         event: 'approval',
       });
-      return createApprovalRequest(approvalId);
+      return createApprovalRequest(approvalId, userId);
     }
   );
 }

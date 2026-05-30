@@ -346,10 +346,12 @@ describe('extractToolDisplay', () => {
 // =====================================================================
 
 describe('wireStreamApproval', () => {
+  const TEST_USER = 'test-user';
+
   it('calls setRequestApproval on the agent', () => {
     const agent = makeAgent();
     const stream = makeSSEStream();
-    wireStreamApproval(agent, stream);
+    wireStreamApproval(agent, stream, TEST_USER);
     expect(agent.setRequestApproval).toHaveBeenCalledOnce();
     expect(typeof agent.setRequestApproval.mock.calls[0]![0]).toBe('function');
   });
@@ -357,7 +359,7 @@ describe('wireStreamApproval', () => {
   it('generates an approvalId when approval callback fires', async () => {
     const agent = makeAgent();
     const stream = makeSSEStream();
-    wireStreamApproval(agent, stream);
+    wireStreamApproval(agent, stream, TEST_USER);
     const callback = agent.setRequestApproval.mock.calls[0]![0] as (
       ...args: unknown[]
     ) => Promise<boolean>;
@@ -371,7 +373,7 @@ describe('wireStreamApproval', () => {
   it('writes SSE approval event with correct data shape', async () => {
     const agent = makeAgent();
     const stream = makeSSEStream();
-    wireStreamApproval(agent, stream);
+    wireStreamApproval(agent, stream, TEST_USER);
     const callback = agent.setRequestApproval.mock.calls[0]![0] as (
       ...args: unknown[]
     ) => Promise<boolean>;
@@ -388,22 +390,22 @@ describe('wireStreamApproval', () => {
     expect(data.riskAnalysis).toBe('medium');
   });
 
-  it('creates an approval request with the generated ID', async () => {
+  it('creates an approval request with the generated ID and userId', async () => {
     const agent = makeAgent();
     const stream = makeSSEStream();
-    wireStreamApproval(agent, stream);
+    wireStreamApproval(agent, stream, TEST_USER);
     const callback = agent.setRequestApproval.mock.calls[0]![0] as (
       ...args: unknown[]
     ) => Promise<boolean>;
     await callback('exec', 'run', 'desc', {});
-    expect(mockCreateApprovalRequest).toHaveBeenCalledWith('test-approval-id');
+    expect(mockCreateApprovalRequest).toHaveBeenCalledWith('test-approval-id', TEST_USER);
   });
 
   it('returns the result of createApprovalRequest', async () => {
     mockCreateApprovalRequest.mockResolvedValueOnce(false);
     const agent = makeAgent();
     const stream = makeSSEStream();
-    wireStreamApproval(agent, stream);
+    wireStreamApproval(agent, stream, TEST_USER);
     const callback = agent.setRequestApproval.mock.calls[0]![0] as (
       ...args: unknown[]
     ) => Promise<boolean>;
@@ -414,7 +416,7 @@ describe('wireStreamApproval', () => {
   it('passes undefined for missing code/riskAnalysis params', async () => {
     const agent = makeAgent();
     const stream = makeSSEStream();
-    wireStreamApproval(agent, stream);
+    wireStreamApproval(agent, stream, TEST_USER);
     const callback = agent.setRequestApproval.mock.calls[0]![0] as (
       ...args: unknown[]
     ) => Promise<boolean>;
@@ -427,7 +429,7 @@ describe('wireStreamApproval', () => {
   it('passes the category param as _category (first arg) without using it in the SSE', async () => {
     const agent = makeAgent();
     const stream = makeSSEStream();
-    wireStreamApproval(agent, stream);
+    wireStreamApproval(agent, stream, TEST_USER);
     const callback = agent.setRequestApproval.mock.calls[0]![0] as (
       ...args: unknown[]
     ) => Promise<boolean>;
@@ -441,7 +443,7 @@ describe('wireStreamApproval', () => {
     mockGenerateApprovalId.mockReturnValueOnce('id-1').mockReturnValueOnce('id-2');
     const agent = makeAgent();
     const stream = makeSSEStream();
-    wireStreamApproval(agent, stream);
+    wireStreamApproval(agent, stream, TEST_USER);
     const callback = agent.setRequestApproval.mock.calls[0]![0] as (
       ...args: unknown[]
     ) => Promise<boolean>;
@@ -465,7 +467,7 @@ describe('wireStreamApproval', () => {
       callOrder.push('createApproval');
       return true;
     });
-    wireStreamApproval(agent, stream);
+    wireStreamApproval(agent, stream, TEST_USER);
     const callback = agent.setRequestApproval.mock.calls[0]![0] as (
       ...args: unknown[]
     ) => Promise<boolean>;

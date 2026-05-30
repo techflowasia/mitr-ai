@@ -83,6 +83,7 @@ app.post('/reset', async (c) => {
 app.post('/approvals/:id/resolve', async (c) => {
   const approvalId = c.req.param('id');
   const body = await c.req.json<{ approved: boolean }>();
+  const userId = getUserId(c);
 
   if (typeof body.approved !== 'boolean') {
     return apiError(
@@ -92,7 +93,8 @@ app.post('/approvals/:id/resolve', async (c) => {
     );
   }
 
-  const resolved = resolveApproval(approvalId, body.approved);
+  // IDOR guard: resolveApproval checks that caller owns this approval request
+  const resolved = resolveApproval(approvalId, body.approved, userId);
   if (!resolved) {
     return notFoundError(c, 'Approval request', approvalId);
   }

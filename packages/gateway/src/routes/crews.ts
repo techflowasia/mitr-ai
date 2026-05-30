@@ -139,9 +139,11 @@ crewRoutes.get('/health', async (c) => {
 
 // ── GET /templates — list crew templates (MUST be before /:id) ──
 
-crewRoutes.get('/templates', (_c) => {
+crewRoutes.get('/templates', (c) => {
+  // Auth check: calling getUserId enforces session/API-key auth
+  getUserId(c);
   const templates = listCrewTemplates();
-  return apiResponse(_c, templates);
+  return apiResponse(c, templates);
 });
 
 // ── GET /templates/:id — template details ───────────
@@ -695,6 +697,13 @@ crewRoutes.delete('/:id/memory/:memoryId', async (c) => {
 
     const { getCrewMemoryRepository } = await import('../db/repositories/crew/memory.js');
     const memRepo = getCrewMemoryRepository();
+
+    // Verify memory belongs to this crew before deleting (IDOR guard)
+    const memory = await memRepo.getById(memoryId);
+    if (!memory || memory.crewId !== crewId) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Memory entry not found' }, 404);
+    }
+
     const deleted = await memRepo.delete(memoryId);
     if (!deleted) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Memory entry not found' }, 404);

@@ -13,6 +13,10 @@ const log = getLog('safeFetch');
 
 const DEFAULT_MAX_REDIRECTS = 5;
 const DEFAULT_TIMEOUT_MS = 30_000;
+// Default 10MB max request body — declared before safeFetch so the
+// destructuring default `maxRequestBodySize = DEFAULT_MAX_REQUEST_BODY_SIZE`
+// (line ~48) is never evaluated in the Temporal Dead Zone.
+export const DEFAULT_MAX_REQUEST_BODY_SIZE = 10 * 1024 * 1024;
 
 /**
  * Options for safeFetch.
@@ -135,7 +139,7 @@ export async function safeFetch(url: string, options: SafeFetchOptions = {}): Pr
     // Should not reach here, but guard just in case
     throw new SafeFetchError('Redirect loop detected', 'TOO_MANY_REDIRECTS');
   } finally {
-    clearTimeout(timeout);
+    if (timeout) clearTimeout(timeout);
   }
 }
 
@@ -156,6 +160,3 @@ export class SafeFetchError extends Error {
     this.name = 'SafeFetchError';
   }
 }
-
-// Default 10MB max request body
-export const DEFAULT_MAX_REQUEST_BODY_SIZE = 10 * 1024 * 1024;

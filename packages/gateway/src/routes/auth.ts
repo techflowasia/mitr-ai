@@ -37,9 +37,15 @@ import {
   zodValidationError,
 } from './helpers.js';
 import { getLog } from '../services/log.js';
+import { uiSessionMiddleware } from '../middleware/ui-session.js';
 
 const log = getLog('AuthRoutes');
 const app = new Hono();
+
+// All provider-auth routes require an active UI session.
+// Mounted at /api/v1/provider-auth via .route() in platform.ts;
+// unlike app.use('/api/v1/*', ...) this does NOT inherit parent middleware.
+app.use('*', uiSessionMiddleware);
 
 const ProviderBody = z.object({ provider: z.string().min(1).max(64) });
 

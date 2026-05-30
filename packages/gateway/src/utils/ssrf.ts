@@ -34,9 +34,21 @@ export function isBlockedUrl(url: string): boolean {
     const h = parsed.hostname.toLowerCase();
     // Block numeric-only hostnames (IP obfuscation: 0x7f000001, 0177.0.0.1, 2130706433)
     if (/^(0x[0-9a-f]+|0[0-7]+|\d+)$/i.test(h)) return true;
-    // Block 172.16.0.0/12 range
+    // Block dot-separated decimal shorthand: 127.1 → 127.0.0.1, 127.2, 127.255, etc.
+    // Must check BEFORE the 172 check since all-decimal strings pass the 172 regex too.
+    if (/^\d{1,3}(\.\d{1,3})+$/.test(h)) {
+      const octets = h.split('.').map((o) => Number(o));
+      // Block any octet >= 224 ( multicast / reserved ) or leading-zero forms
+      // that survived the regex. Also block 127.x (loopback shorthand).
+      if (octets.some((o) => o > 255) || octets[0] === 127) return true;
+    }
+    // Block 172.16.0.0/12 range — parse octets to avoid zero-padding bypass:
+    // "016" → Number("016") = 14 (not >= 16), but 172.016.0.0 is still 172.16.0.0.
     const m172 = h.match(/^172\.(\d+)\./);
-    if (m172 && Number(m172[1]) >= 16 && Number(m172[1]) <= 31) return true;
+    if (m172) {
+      const second = Number(m172[1]); // Number("016") = 14 — strips leading zeros
+      if (second >= 16 && second <= 31) return true;
+    }
     return BLOCKED_HOSTS.some((b) => h === b || h.startsWith(b));
   } catch {
     return true;

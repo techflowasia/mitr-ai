@@ -592,7 +592,14 @@ agentCommandCenterRoutes.get('/activity', async (c) => {
 
 agentCommandCenterRoutes.post('/execute', async (c) => {
   try {
-    getUserId(c); // Auth check
+    const userId = getUserId(c);
+    if (!userId || userId === 'default') {
+      return apiError(
+        c,
+        { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
+        401
+      );
+    }
     const body = validateBody(agentExecuteSchema, await c.req.json());
 
     const { runAgentHeartbeat } = await import('../../services/heartbeat/soul-service.js');
