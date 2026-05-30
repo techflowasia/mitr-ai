@@ -20,7 +20,7 @@
  * 21 route files import from this facade — keep every symbol re-exported.
  */
 
-export { validateBody } from './schemas/common.js';
+export { validateBody, ValidationError } from './schemas/common.js';
 
 export {
   createAgentSchema,
@@ -155,3 +155,9 @@ export {
   broadcastNotificationSchema,
   notificationPreferencesSchema,
 } from './schemas/integrations.js';
+
+export {
+  createCanvasElementSchema,
+  updateCanvasElementSchema,
+  moveCanvasElementSchema,
+} from './schemas/canvas.js';

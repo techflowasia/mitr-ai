@@ -7,27 +7,23 @@
  */
 
 import { Hono } from 'hono';
-import type { CanvasElementType } from '@ownpilot/core';
 import { getCanvasServiceImpl } from '../services/canvas/service.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
+import {
+  getUserId,
+  apiResponse,
+  apiError,
+  getErrorMessage,
+  zodValidationError,
+} from './helpers.js';
+import {
+  validateBody,
+  ValidationError,
+  createCanvasElementSchema,
+  updateCanvasElementSchema,
+  moveCanvasElementSchema,
+} from '../middleware/validation.js';
 
 export const canvasRoutes = new Hono();
-
-const ELEMENT_TYPES: CanvasElementType[] = [
-  'text',
-  'note',
-  'heading',
-  'image',
-  'shape',
-  'markdown',
-  'html',
-];
-
-function numOrUndef(v: unknown): number | undefined {
-  if (v === undefined || v === null) return undefined;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : undefined;
-}
 
 // GET / - List canvases (distinct canvas ids + element counts)
 canvasRoutes.get('/', async (c) => {
@@ -57,31 +53,23 @@ canvasRoutes.post('/:canvasId/elements', async (c) => {
   try {
     const userId = getUserId(c);
     const canvasId = c.req.param('canvasId') || 'main';
-    const body = (await c.req.json()) as Record<string, unknown>;
-    const type = body.type as CanvasElementType;
-    if (!ELEMENT_TYPES.includes(type)) {
-      return apiError(
-        c,
-        {
-          code: ERROR_CODES.VALIDATION_ERROR,
-          message: `type must be one of: ${ELEMENT_TYPES.join(', ')}`,
-        },
-        400
-      );
-    }
+    const body = validateBody(createCanvasElementSchema, await c.req.json());
     const element = await getCanvasServiceImpl().addElement(userId, {
       canvasId,
-      type,
-      content: typeof body.content === 'string' ? body.content : undefined,
-      x: numOrUndef(body.x),
-      y: numOrUndef(body.y),
-      w: numOrUndef(body.w),
-      h: numOrUndef(body.h),
-      z: numOrUndef(body.z),
-      style: (body.style as Record<string, unknown> | null | undefined) ?? null,
+      type: body.type,
+      content: body.content,
+      x: body.x,
+      y: body.y,
+      w: body.w,
+      h: body.h,
+      z: body.z,
+      style: body.style ?? null,
     });
     return apiResponse(c, element, 201);
   } catch (err) {
+    if (err instanceof ValidationError) {
+      return zodValidationError(c, err.issues);
+    }
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
@@ -91,20 +79,16 @@ canvasRoutes.patch('/:canvasId/elements/:id', async (c) => {
   try {
     const userId = getUserId(c);
     const id = c.req.param('id');
-    const body = (await c.req.json()) as Record<string, unknown>;
-    const type = body.type as CanvasElementType | undefined;
-    if (type !== undefined && !ELEMENT_TYPES.includes(type)) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'invalid type' }, 400);
-    }
+    const body = validateBody(updateCanvasElementSchema, await c.req.json());
     const element = await getCanvasServiceImpl().updateElement(userId, id, {
-      type,
-      content: typeof body.content === 'string' ? body.content : undefined,
-      x: numOrUndef(body.x),
-      y: numOrUndef(body.y),
-      w: numOrUndef(body.w),
-      h: numOrUndef(body.h),
-      z: numOrUndef(body.z),
-      style: body.style === undefined ? undefined : (body.style as Record<string, unknown> | null),
+      type: body.type,
+      content: body.content,
+      x: body.x,
+      y: body.y,
+      w: body.w,
+      h: body.h,
+      z: body.z,
+      style: body.style === undefined ? undefined : (body.style ?? null),
     });
     if (!element) {
       return apiError(
@@ -115,6 +99,9 @@ canvasRoutes.patch('/:canvasId/elements/:id', async (c) => {
     }
     return apiResponse(c, element);
   } catch (err) {
+    if (err instanceof ValidationError) {
+      return zodValidationError(c, err.issues);
+    }
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
@@ -124,17 +111,8 @@ canvasRoutes.post('/:canvasId/elements/:id/move', async (c) => {
   try {
     const userId = getUserId(c);
     const id = c.req.param('id');
-    const body = (await c.req.json()) as { x?: unknown; y?: unknown };
-    const x = Number(body.x);
-    const y = Number(body.y);
-    if (!Number.isFinite(x) || !Number.isFinite(y)) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'x and y must be numbers' },
-        400
-      );
-    }
-    const element = await getCanvasServiceImpl().moveElement(userId, id, x, y);
+    const body = validateBody(moveCanvasElementSchema, await c.req.json());
+    const element = await getCanvasServiceImpl().moveElement(userId, id, body.x, body.y);
     if (!element) {
       return apiError(
         c,
@@ -144,6 +122,9 @@ canvasRoutes.post('/:canvasId/elements/:id/move', async (c) => {
     }
     return apiResponse(c, element);
   } catch (err) {
+    if (err instanceof ValidationError) {
+      return zodValidationError(c, err.issues);
+    }
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
