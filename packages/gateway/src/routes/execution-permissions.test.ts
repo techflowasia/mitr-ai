@@ -474,7 +474,7 @@ describe('Execution Permissions Routes', () => {
       expect(json.success).toBe(true);
       expect(json.data.resolved).toBe(true);
       expect(json.data.approved).toBe(true);
-      expect(mockResolveApproval).toHaveBeenCalledWith('approval-123', true);
+      expect(mockResolveApproval).toHaveBeenCalledWith('approval-123', true, 'test-user');
     });
 
     it('resolves approval when found (rejected)', async () => {
@@ -491,7 +491,7 @@ describe('Execution Permissions Routes', () => {
       expect(json.success).toBe(true);
       expect(json.data.resolved).toBe(true);
       expect(json.data.approved).toBe(false);
-      expect(mockResolveApproval).toHaveBeenCalledWith('approval-456', false);
+      expect(mockResolveApproval).toHaveBeenCalledWith('approval-456', false, 'test-user');
     });
 
     it('returns 404 when approval not found', async () => {

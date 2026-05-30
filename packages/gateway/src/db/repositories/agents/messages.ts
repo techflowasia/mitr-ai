@@ -97,12 +97,12 @@ export class AgentMessagesRepository extends BaseRepository {
       conditions.push(`status != 'read'`);
     }
     if (options?.types && options.types.length > 0) {
-      conditions.push(`type = ANY(${paramIdx})`);
+      conditions.push(`type = ANY($${paramIdx})`);
       params.push(options.types);
       paramIdx++;
     }
     if (options?.fromAgent) {
-      conditions.push(`from_agent_id = ${paramIdx}`);
+      conditions.push(`from_agent_id = $${paramIdx}`);
       params.push(options.fromAgent);
       paramIdx++;
     }

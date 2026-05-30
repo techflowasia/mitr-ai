@@ -76,13 +76,13 @@ describe('AgentMessagesRepository', () => {
   // =========================================================================
 
   describe('create', () => {
-    it('inserts into agent_messages with all 15 params', async () => {
+    it('inserts into agent_messages with all 16 params', async () => {
       const msg = makeMessage();
       await repo.create(msg);
       expect(mockAdapter.execute).toHaveBeenCalledOnce();
       const [sql, params] = mockAdapter.execute.mock.calls[0] as [string, unknown[]];
       expect(sql).toContain('INSERT INTO agent_messages');
-      expect(params).toHaveLength(15);
+      expect(params).toHaveLength(16);
       expect(params[0]).toBe('msg-1');
       expect(params[1]).toBe('agent-A');
       expect(params[2]).toBe('agent-B');
@@ -123,13 +123,13 @@ describe('AgentMessagesRepository', () => {
 
   describe('findForAgent', () => {
     it('returns empty array when no rows', async () => {
-      const result = await repo.findForAgent('agent-B', {});
+      const result = await repo.findForAgent('agent-B');
       expect(result).toEqual([]);
     });
 
     it('queries with to_agent_id filter and default limit 20', async () => {
       mockAdapter.query.mockResolvedValueOnce([makeMessageRow()]);
-      await repo.findForAgent('agent-B', {});
+      await repo.findForAgent('agent-B');
       const [sql, params] = mockAdapter.query.mock.calls[0] as [string, unknown[]];
       expect(sql).toContain('to_agent_id = $1');
       expect(params[0]).toBe('agent-B');
@@ -138,32 +138,32 @@ describe('AgentMessagesRepository', () => {
 
     it('adds unreadOnly filter when requested', async () => {
       mockAdapter.query.mockResolvedValueOnce([]);
-      await repo.findForAgent('agent-B', { unreadOnly: true });
+      await repo.findForAgent('agent-B', 'agent-B', { unreadOnly: true });
       const [sql] = mockAdapter.query.mock.calls[0] as [string, unknown[]];
       expect(sql).toContain("status != 'read'");
     });
 
     it('adds types filter when provided', async () => {
       mockAdapter.query.mockResolvedValueOnce([]);
-      await repo.findForAgent('agent-B', { types: ['task', 'instruction'] });
+      await repo.findForAgent('agent-B', 'agent-B', { types: ['task', 'instruction'] });
       const [sql, params] = mockAdapter.query.mock.calls[0] as [string, unknown[]];
-      expect(sql).toContain('type = ANY(');
-      expect(params).toContainEqual(['task', 'instruction']);
+      expect(sql).toContain('type = ANY($3)');
+      expect(params[2]).toEqual(['task', 'instruction']);
     });
 
     it('adds fromAgent filter when provided', async () => {
       mockAdapter.query.mockResolvedValueOnce([]);
-      await repo.findForAgent('agent-B', { fromAgent: 'agent-A' });
+      await repo.findForAgent('agent-B', 'agent-B', { fromAgent: 'agent-A' });
       const [sql, params] = mockAdapter.query.mock.calls[0] as [string, unknown[]];
-      expect(sql).toContain('from_agent_id =');
-      expect(params).toContain('agent-A');
+      expect(sql).toContain('from_agent_id = $3');
+      expect(params[2]).toBe('agent-A');
     });
 
     it('maps rows to AgentMessage with correct field names', async () => {
       mockAdapter.query.mockResolvedValueOnce([
         makeMessageRow({ from_agent_id: null, to_agent_id: null }),
       ]);
-      const result = await repo.findForAgent('agent-B', {});
+      const result = await repo.findForAgent('agent-B');
       expect(result[0].from).toBe('unknown');
       expect(result[0].to).toBe('unknown');
     });

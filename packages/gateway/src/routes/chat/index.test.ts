@@ -10,9 +10,11 @@ import { Hono } from 'hono';
 
 // ─── Mock Repository Instances ───────────────────────────────────
 
-const mockChatRepo = {
+// Use hoisted refs so the second mock (line ~415) can reference the same object
+const mockChatRepo = vi.hoisted(() => ({
   listConversations: vi.fn(),
   countConversations: vi.fn(),
+  getConversation: vi.fn(),
   getConversationWithMessages: vi.fn(),
   deleteConversation: vi.fn(),
   deleteConversations: vi.fn(),
@@ -21,16 +23,16 @@ const mockChatRepo = {
   updateConversation: vi.fn(),
   saveConversation: vi.fn(),
   saveMessage: vi.fn(),
-};
+}));
 
-const mockLogsRepo = {
+const mockLogsRepo = vi.hoisted(() => ({
   list: vi.fn(),
   getStats: vi.fn(),
   getLog: vi.fn(),
   clearAll: vi.fn(),
   deleteOldLogs: vi.fn(),
   create: vi.fn(),
-};
+}));
 
 // ─── Mock Dependencies ───────────────────────────────────────────
 
@@ -407,26 +409,13 @@ vi.mock('../../utils/ssrf.js', () => ({
   isPrivateUrlAsyncFresh: (...args: unknown[]) => mockIsPrivateUrlAsyncFresh(...args),
 }));
 
-// Mock ChatRepository so conversation ownership checks don't hit the real DB
-// Use hoisted refs so tests can override per-call behavior
-const mockGetConversation = vi.hoisted(() => vi.fn(async () => null));
-const mockDeleteConversation = vi.hoisted(() => vi.fn(async () => true));
-
-vi.mock('../../db/repositories/index.js', () => ({
-  ChatRepository: vi.fn(function () {
-    return {
-      getConversation: mockGetConversation,
-      deleteConversation: mockDeleteConversation,
-    };
-  }),
-}));
-
 // ─── Import route + mocked modules ──────────────────────────────
 
 import { chatRoutes } from './index.js';
 import { errorHandler } from '../../middleware/error-handler.js';
 import {
   getAgent,
+  getOrCreateDefaultAgent,
   getOrCreateChatAgent,
   isDemoMode,
   getDefaultModel,
@@ -442,6 +431,7 @@ import { resolveForProcess } from '../../services/llm/model-routing.js';
 function mockConversation(
   overrides: Partial<{
     id: string;
+    userId: string;
     title: string;
     agentId: string;
     agentName: string;
@@ -455,6 +445,7 @@ function mockConversation(
 ) {
   return {
     id: overrides.id ?? 'conv-1',
+    userId: overrides.userId ?? 'user-1',
     title: overrides.title ?? 'Test Conversation',
     agentId: overrides.agentId ?? 'agent-1',
     agentName: overrides.agentName ?? 'Test Agent',
@@ -512,6 +503,7 @@ describe('Chat Routes', () => {
     vi.mocked(isDemoMode).mockResolvedValue(false);
     vi.mocked(getDefaultModel).mockResolvedValue('gpt-4');
     vi.mocked(getAgent).mockResolvedValue(undefined);
+    vi.mocked(getOrCreateDefaultAgent).mockResolvedValue(mockAgent);
     vi.mocked(getOrCreateChatAgent).mockResolvedValue(mockAgent);
     vi.mocked(resetChatAgentContext).mockReturnValue({
       reset: true,
@@ -529,6 +521,7 @@ describe('Chat Routes', () => {
     // Reset repository mocks
     mockChatRepo.listConversations.mockResolvedValue([]);
     mockChatRepo.countConversations.mockResolvedValue(0);
+    mockChatRepo.getConversation.mockResolvedValue(null);
     mockChatRepo.getConversationWithMessages.mockResolvedValue(null);
     mockChatRepo.deleteConversation.mockResolvedValue(false);
     mockChatRepo.deleteConversations.mockResolvedValue(0);
@@ -655,6 +648,7 @@ describe('Chat Routes', () => {
     });
 
     it('should return 404 when agent not found', async () => {
+      mockChatRepo.getConversation.mockResolvedValue(mockConversation());
       vi.mocked(getAgent).mockResolvedValue(undefined);
 
       const res = await app.request('/chat/conversations/conv-1?agentId=nonexistent');
@@ -679,6 +673,7 @@ describe('Chat Routes', () => {
     });
 
     it('should return conversation with messages', async () => {
+      mockChatRepo.getConversation.mockResolvedValue(mockConversation());
       const mockConv = {
         id: 'conv-1',
         systemPrompt: 'Be helpful.',
@@ -732,8 +727,9 @@ describe('Chat Routes', () => {
     });
 
     it('should delete conversation successfully', async () => {
+      mockChatRepo.getConversation.mockResolvedValue(mockConversation());
       mockAgent.getMemory.mockReturnValue({
-        get: vi.fn(),
+        get: vi.fn(() => ({ id: 'conv-1', messages: [] })),
         delete: vi.fn(() => true),
       });
       mockChatRepo.deleteConversation.mockResolvedValue(true);
@@ -1624,6 +1620,7 @@ describe('Chat Routes', () => {
 
   describe('GET /chat/conversations/:id - with agentId returning agent', () => {
     it('should look up agent when agentId is provided and found', async () => {
+      mockChatRepo.getConversation.mockResolvedValue(mockConversation());
       vi.mocked(getAgent).mockResolvedValue(mockAgent);
       const mockConv = {
         id: 'conv-1',
@@ -1648,9 +1645,10 @@ describe('Chat Routes', () => {
 
   describe('DELETE /chat/conversations/:id - with agentId returning agent', () => {
     it('should look up agent when agentId is provided and found', async () => {
+      mockChatRepo.getConversation.mockResolvedValue(mockConversation());
       vi.mocked(getAgent).mockResolvedValue(mockAgent);
       mockAgent.getMemory.mockReturnValue({
-        get: vi.fn(),
+        get: vi.fn(() => ({ id: 'conv-1', messages: [] })),
         delete: vi.fn(() => true),
       });
       mockChatRepo.deleteConversation.mockResolvedValue(true);

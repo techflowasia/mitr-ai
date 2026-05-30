@@ -214,7 +214,7 @@ describe('executeSoulCommunicationTool', () => {
       await executeSoulCommunicationTool('read_agent_inbox', {}, 'agent-a');
 
       expect(mockRepo.findForAgent).toHaveBeenCalledOnce();
-      expect(mockRepo.findForAgent).toHaveBeenCalledWith('agent-a', {
+      expect(mockRepo.findForAgent).toHaveBeenCalledWith('agent-a', 'agent-a', {
         unreadOnly: true,
         fromAgent: undefined,
         limit: 20,
@@ -268,7 +268,7 @@ describe('executeSoulCommunicationTool', () => {
     it('passes unread_only=false as unreadOnly: false', async () => {
       await executeSoulCommunicationTool('read_agent_inbox', { unread_only: false }, 'agent-a');
 
-      expect(mockRepo.findForAgent).toHaveBeenCalledWith('agent-a', {
+      expect(mockRepo.findForAgent).toHaveBeenCalledWith('agent-a', 'agent-a', {
         unreadOnly: false,
         fromAgent: undefined,
         limit: 20,
@@ -278,7 +278,7 @@ describe('executeSoulCommunicationTool', () => {
     it('passes from_agent param through to findForAgent', async () => {
       await executeSoulCommunicationTool('read_agent_inbox', { from_agent: 'agent-b' }, 'agent-a');
 
-      expect(mockRepo.findForAgent).toHaveBeenCalledWith('agent-a', {
+      expect(mockRepo.findForAgent).toHaveBeenCalledWith('agent-a', 'agent-a', {
         unreadOnly: true,
         fromAgent: 'agent-b',
         limit: 20,
