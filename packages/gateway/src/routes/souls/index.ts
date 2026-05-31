@@ -41,7 +41,7 @@ soulRoutes.get('/stats', async (c) => {
   try {
     const userId = c.get('userId') as string | undefined;
     // Reject unauthenticated requests — do not fall back to 'default'
-    if (!userId || userId === 'default') {
+    if ((!userId || userId === 'default') && !c.get('sessionAuthenticated')) {
       return apiError(
         c,
         { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
@@ -50,7 +50,7 @@ soulRoutes.get('/stats', async (c) => {
     }
     const hbRepo = getHeartbeatLogRepository();
 
-    const stats = await hbRepo.getStatsByUser(userId);
+    const stats = await hbRepo.getStatsByUser(userId ?? 'default');
 
     return apiResponse(c, {
       totalCycles: stats.totalCycles,
@@ -69,7 +69,7 @@ soulRoutes.get('/health', async (c) => {
   try {
     const userId = c.get('userId') as string | undefined;
     // Reject unauthenticated requests — do not fall back to 'default'
-    if (!userId || userId === 'default') {
+    if ((!userId || userId === 'default') && !c.get('sessionAuthenticated')) {
       return apiError(
         c,
         { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
@@ -78,7 +78,7 @@ soulRoutes.get('/health', async (c) => {
     }
     const hbRepo = getHeartbeatLogRepository();
 
-    const stats = await hbRepo.getStatsByUser(userId);
+    const stats = await hbRepo.getStatsByUser(userId ?? 'default');
 
     const signals: string[] = [];
     const recommendations: string[] = [];
