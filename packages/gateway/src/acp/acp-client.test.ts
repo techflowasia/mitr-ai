@@ -12,6 +12,9 @@ const mockProcess = {
   on: vi.fn(),
   kill: vi.fn(),
   killed: false,
+  // Live process: not yet exited (mirrors ChildProcess before exit).
+  exitCode: null as number | null,
+  signalCode: null as string | null,
 };
 
 vi.mock('node:child_process', () => ({
@@ -328,6 +331,38 @@ describe('AcpClient', () => {
       await client.close();
       await client.close();
       expect(client.connectionState).toBe('closed');
+    });
+
+    it('SIGKILLs a process that ignores SIGTERM after the timeout', async () => {
+      vi.useFakeTimers();
+      try {
+        await client.connect();
+        await client.close();
+        expect(mockProcess.kill).toHaveBeenCalledWith('SIGTERM');
+        // Process is still alive (exitCode/signalCode null) — after 5s the
+        // force-kill must fire. Regression: previously `this.process` was
+        // nulled and the `.killed` guard was always true, so SIGKILL never ran.
+        expect(mockProcess.kill).not.toHaveBeenCalledWith('SIGKILL');
+        await vi.advanceTimersByTimeAsync(5001);
+        expect(mockProcess.kill).toHaveBeenCalledWith('SIGKILL');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('does NOT SIGKILL a process that already exited', async () => {
+      vi.useFakeTimers();
+      try {
+        await client.connect();
+        await client.close();
+        // Simulate clean exit before the force-kill timer fires.
+        mockProcess.exitCode = 0;
+        await vi.advanceTimersByTimeAsync(5001);
+        expect(mockProcess.kill).not.toHaveBeenCalledWith('SIGKILL');
+      } finally {
+        mockProcess.exitCode = null;
+        vi.useRealTimers();
+      }
     });
   });
 
