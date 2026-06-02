@@ -431,6 +431,14 @@ vi.mock('../services/log.js', () => ({
 // Global fetch mock for RSS tool executors
 vi.stubGlobal('fetch', vi.fn());
 
+// The RSS executors fetch feeds via safeFetch (SSRF-safe). Its real SSRF/DNS
+// checks are covered by safe-fetch.test.ts; here we delegate to the stubbed
+// global fetch so these tests exercise the feed-parsing logic, not networking.
+vi.mock('../utils/safe-fetch.js', () => ({
+  safeFetch: (url: string, opts?: RequestInit) => (globalThis.fetch as typeof fetch)(url, opts),
+  DEFAULT_MAX_REQUEST_BODY_SIZE: 10 * 1024 * 1024,
+}));
+
 // =============================================================================
 // Imports (after mocks)
 // =============================================================================
