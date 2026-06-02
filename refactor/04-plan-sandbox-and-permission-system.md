@@ -161,6 +161,7 @@ In `packages/gateway/src/services/permission/execution-approval.ts:11-17`:
 In `packages/gateway/src/services/permission/execution-approval.ts:28-43`:
 
 - Replace the read-then-write pattern with an atomic claim:
+
   ```ts
   const existing = pendingApprovals.get(approvalId);
   if (!existing) return { ok: false, reason: 'expired_or_missing' };
