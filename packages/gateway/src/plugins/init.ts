@@ -34,6 +34,7 @@ import { buildMatrixChannelPlugin } from '../channels/plugins/matrix/index.js';
 import { buildGatewayPlugin } from './gateway-plugin.js';
 import { buildComposioPlugin } from './composio.js';
 import { getLog } from '../services/log.js';
+import { safeFetch } from '../utils/safe-fetch.js';
 
 const log = getLog('Plugins');
 
@@ -217,9 +218,12 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
         let itemCount = 0;
         let feedTitle = feedUrl;
         try {
-          const response = await fetch(feedUrl, {
+          // SSRF: safeFetch re-validates every redirect hop (with a fresh DNS
+          // lookup) — a bare fetch would follow a 302 from a public feed URL to
+          // a private/metadata address (169.254.169.254) despite the pre-check.
+          const response = await safeFetch(feedUrl, {
             headers: { 'User-Agent': 'OwnPilot RSS Reader/1.0' },
-            signal: AbortSignal.timeout(10000),
+            timeoutMs: 10000,
           });
           const xml = await response.text();
 
@@ -398,9 +402,12 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
         }
 
         try {
-          const response = await fetch(feedUrl, {
+          // SSRF: safeFetch re-validates every redirect hop (with a fresh DNS
+          // lookup) — a bare fetch would follow a 302 from a public feed URL to
+          // a private/metadata address (169.254.169.254) despite the pre-check.
+          const response = await safeFetch(feedUrl, {
             headers: { 'User-Agent': 'OwnPilot RSS Reader/1.0' },
-            signal: AbortSignal.timeout(10000),
+            timeoutMs: 10000,
           });
           const xml = await response.text();
           const items = parseRssItems(xml);
