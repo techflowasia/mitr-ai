@@ -49,7 +49,13 @@ export class TelegramApprovalHandler {
       const id = data.slice(colonIdx + 1);
       const entry = this.pending.get(id);
 
-      if (!entry || entry.resolved) {
+      // Defense-in-depth: only honor a click that comes from the same chat the
+      // prompt was sent to. Approvals only ever appear in the owner's DM (group
+      // messages skip AI/tools), so this rejects any callback that did not
+      // originate from that exact chat.
+      const fromChatId = ctx.chat?.id !== undefined ? String(ctx.chat.id) : undefined;
+
+      if (!entry || entry.resolved || (fromChatId !== undefined && fromChatId !== entry.chatId)) {
         await ctx
           .answerCallbackQuery({ text: 'This approval has expired.' })
           .catch((e) => log.debug('Telegram callback error', { error: String(e) }));
