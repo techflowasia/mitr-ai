@@ -818,3 +818,61 @@ describe('PostgresAdapter', () => {
     });
   });
 });
+
+// Isolated module graph: this exercises the > 0 timeout path, which the shared
+// module-level defaults mock (timeouts = 0) cannot reach.
+describe('PostgresAdapter per-connection timeout startup options', () => {
+  it('applies timeouts via libpq options (no racing post-connect SET handler)', async () => {
+    vi.resetModules();
+    const poolCalls: Array<Record<string, unknown>> = [];
+    const localOn = vi.fn();
+    const localPool = {
+      connect: vi
+        .fn()
+        .mockResolvedValue({ query: vi.fn().mockResolvedValue({ rows: [] }), release: vi.fn() }),
+      query: vi.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
+      end: vi.fn().mockResolvedValue(undefined),
+      on: localOn,
+    };
+    vi.doMock('pg', () => ({
+      default: {
+        Pool: vi.fn(function (cfg: Record<string, unknown>) {
+          poolCalls.push(cfg);
+          return localPool;
+        }),
+        types: { setTypeParser: vi.fn() },
+      },
+    }));
+    vi.doMock('../../services/log.js', () => ({ getLog: vi.fn(() => mockLog) }));
+    vi.doMock('pgvector/pg', () => {
+      throw new Error('pgvector not installed');
+    });
+    vi.doMock('../../config/defaults.js', () => ({
+      DB_POOL_MAX: 10,
+      DB_IDLE_TIMEOUT_MS: 10000,
+      DB_CONNECT_TIMEOUT_MS: 5000,
+      DB_STATEMENT_TIMEOUT_MS: 30000,
+      DB_IDLE_TX_TIMEOUT_MS: 60000,
+    }));
+    try {
+      const { PostgresAdapter: FreshAdapter } = await import('./postgres-adapter.js');
+      const adapter = new FreshAdapter(makeConfig());
+      await adapter.initialize();
+
+      // Timeouts are set at connection startup via libpq options, not a SET
+      // query that would race the consumer's first query.
+      expect(poolCalls[0]?.options).toBe(
+        '-c statement_timeout=30000 -c idle_in_transaction_session_timeout=60000'
+      );
+      // The old racing post-connect SET handler must be gone.
+      const connectRegistrations = localOn.mock.calls.filter(([event]) => event === 'connect');
+      expect(connectRegistrations).toHaveLength(0);
+    } finally {
+      vi.doUnmock('pg');
+      vi.doUnmock('../../services/log.js');
+      vi.doUnmock('pgvector/pg');
+      vi.doUnmock('../../config/defaults.js');
+      vi.resetModules();
+    }
+  });
+});
