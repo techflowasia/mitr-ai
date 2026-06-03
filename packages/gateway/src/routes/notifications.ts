@@ -5,7 +5,7 @@
  */
 
 import { Hono } from 'hono';
-import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getErrorMessage, getUserId } from './helpers.js';
 import { getNotificationRouter, createNotification } from '../services/notification-router.js';
 import {
   validateBody,
@@ -34,7 +34,10 @@ app.post('/send', async (c) => {
     });
 
     const router = getNotificationRouter();
-    const userId = body.userId ?? 'default';
+    // Scope to the authenticated user — never trust a client-supplied
+    // body.userId, which would let one user push notifications onto another
+    // user's channels (spam / phishing via the victim's connected channels).
+    const userId = getUserId(c);
     const result = await router.notify(userId, notification);
 
     return apiResponse(c, { notification: { id: notification.id }, result });
@@ -123,7 +126,11 @@ app.post('/broadcast', async (c) => {
  */
 app.get('/preferences/:userId', async (c) => {
   try {
-    const userId = c.req.param('userId');
+    // Use the authenticated identity, NOT the :userId path param — otherwise
+    // any user could read another user's notification preferences (channel
+    // priorities, quiet hours) by changing the id in the URL. The param is
+    // retained for route shape / client compatibility but is not trusted.
+    const userId = getUserId(c);
     const router = getNotificationRouter();
     const prefs = await router.getPreferences(userId);
 
@@ -140,7 +147,10 @@ app.get('/preferences/:userId', async (c) => {
  */
 app.put('/preferences/:userId', async (c) => {
   try {
-    const userId = c.req.param('userId');
+    // Authenticated identity only — the :userId path param is not trusted, or
+    // any user could overwrite another user's notification preferences (e.g.
+    // raise minPriority to silence their alerts). See GET handler above.
+    const userId = getUserId(c);
     const body = validateBody(notificationPreferencesSchema, await c.req.json());
 
     const router = getNotificationRouter();
