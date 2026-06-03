@@ -226,6 +226,7 @@ export class ChannelUsersRepository extends BaseRepository {
    * List all channel users, optionally filtered.
    */
   async list(options?: {
+    ownpilotUserId?: string;
     platform?: string;
     isVerified?: boolean;
     limit?: number;
@@ -235,6 +236,12 @@ export class ChannelUsersRepository extends BaseRepository {
     const params: unknown[] = [];
     let paramIndex = 1;
 
+    // Scope to a single owner when provided — the management UI must only ever
+    // see the authenticated user's own linked channel accounts.
+    if (options?.ownpilotUserId) {
+      conditions.push(`ownpilot_user_id = $${paramIndex++}`);
+      params.push(options.ownpilotUserId);
+    }
     if (options?.platform) {
       conditions.push(`platform = $${paramIndex++}`);
       params.push(options.platform);
