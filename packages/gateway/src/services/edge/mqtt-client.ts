@@ -331,7 +331,14 @@ export class EdgeMqttClient {
 
     for (let i = 0; i < patternParts.length; i++) {
       if (patternParts[i] === '#') return true;
-      if (patternParts[i] === '+') continue;
+      // '+' matches exactly ONE level — which must actually exist. Without the
+      // bounds check, a pattern like `a/+/#` would wrongly match the shorter
+      // topic `a` (the '+' "matching" a non-existent level, then '#' returning
+      // true). Per the MQTT spec, '+' requires a present level.
+      if (patternParts[i] === '+') {
+        if (i >= topicParts.length) return false;
+        continue;
+      }
       if (i >= topicParts.length || patternParts[i] !== topicParts[i]) return false;
     }
 

@@ -237,6 +237,28 @@ describe('EdgeMqttClient', () => {
     expect(handler).toHaveBeenCalled();
   });
 
+  it('does NOT dispatch a `+/#` pattern to a topic missing the `+` level', () => {
+    // `a/+/#` requires a level for the '+'. Topic `a` has no such level, so it
+    // must NOT match (MQTT spec: '+' occupies exactly one present level).
+    connectWithMock(client, mockMqttClient);
+    const handler = vi.fn();
+    client.subscribe('a/+/#', handler);
+
+    mockMqttClient._emit('message', 'a', 'payload');
+
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('still dispatches `+/#` when the `+` level is present', () => {
+    connectWithMock(client, mockMqttClient);
+    const handler = vi.fn();
+    client.subscribe('a/+/#', handler);
+
+    mockMqttClient._emit('message', 'a/b/c/d', 'payload');
+
+    expect(handler).toHaveBeenCalled();
+  });
+
   it('does NOT dispatch to non-matching topic', () => {
     connectWithMock(client, mockMqttClient);
     const handler = vi.fn();
