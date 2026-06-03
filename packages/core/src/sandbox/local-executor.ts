@@ -94,6 +94,49 @@ function truncateOutput(output: string, maxSize: number): string {
   return output.slice(0, maxSize) + `\n\n... [Output truncated at ${maxSize} bytes]`;
 }
 
+/**
+ * Collect a child's stdout/stderr into memory with an upper bound.
+ *
+ * `maxOutputSize` previously only truncated the RETURNED result — the buffers
+ * themselves grew without limit while the process ran. A runaway writer (e.g.
+ * `while (true) console.log()`) could therefore exhaust host memory before the
+ * timeout SIGKILLs it. Once combined output exceeds `cap`, stop collecting and
+ * SIGKILL the child so memory stays bounded to ~cap plus one in-flight chunk.
+ * Mirrors the streaming-cap pattern used for plugin isolated-network responses.
+ */
+function collectCappedOutput(
+  child: ReturnType<typeof spawn>,
+  cap: number
+): { getStdout: () => string; getStderr: () => string; exceeded: () => boolean } {
+  let stdout = '';
+  let stderr = '';
+  let exceeded = false;
+
+  const guard = (): void => {
+    if (!exceeded && stdout.length + stderr.length > cap) {
+      exceeded = true;
+      child.kill('SIGKILL');
+    }
+  };
+
+  child.stdout?.on('data', (data: Buffer) => {
+    if (exceeded) return;
+    stdout += data.toString();
+    guard();
+  });
+  child.stderr?.on('data', (data: Buffer) => {
+    if (exceeded) return;
+    stderr += data.toString();
+    guard();
+  });
+
+  return {
+    getStdout: () => stdout,
+    getStderr: () => stderr,
+    exceeded: () => exceeded,
+  };
+}
+
 // =============================================================================
 // Executors
 // =============================================================================
@@ -118,17 +161,8 @@ export async function executeJavaScriptLocal(
       timeout,
     });
 
-    let stdout = '';
-    let stderr = '';
+    const output = collectCappedOutput(child, maxOutput);
     let timedOut = false;
-
-    child.stdout?.on('data', (data: Buffer) => {
-      stdout += data.toString();
-    });
-
-    child.stderr?.on('data', (data: Buffer) => {
-      stderr += data.toString();
-    });
 
     const timer = setTimeout(() => {
       timedOut = true;
@@ -137,14 +171,19 @@ export async function executeJavaScriptLocal(
 
     child.on('close', (exitCode) => {
       clearTimeout(timer);
+      const exceeded = output.exceeded();
       resolve({
-        success: !timedOut && exitCode === 0,
-        stdout: truncateOutput(stdout, maxOutput),
-        stderr: truncateOutput(stderr, maxOutput),
+        success: !timedOut && !exceeded && exitCode === 0,
+        stdout: truncateOutput(output.getStdout(), maxOutput),
+        stderr: truncateOutput(output.getStderr(), maxOutput),
         exitCode,
         executionTimeMs: Date.now() - startTime,
         timedOut,
-        error: timedOut ? `Execution timed out after ${timeout}ms` : undefined,
+        error: timedOut
+          ? `Execution timed out after ${timeout}ms`
+          : exceeded
+            ? `Output exceeded ${maxOutput} bytes; execution terminated.`
+            : undefined,
       });
     });
 
@@ -153,8 +192,8 @@ export async function executeJavaScriptLocal(
       const isNotFound = (err as NodeJS.ErrnoException).code === 'ENOENT';
       resolve({
         success: false,
-        stdout: truncateOutput(stdout, maxOutput),
-        stderr: truncateOutput(stderr, maxOutput),
+        stdout: truncateOutput(output.getStdout(), maxOutput),
+        stderr: truncateOutput(output.getStderr(), maxOutput),
         exitCode: null,
         executionTimeMs: Date.now() - startTime,
         error: isNotFound
@@ -191,17 +230,8 @@ export async function executePythonLocal(
       timeout,
     });
 
-    let stdout = '';
-    let stderr = '';
+    const output = collectCappedOutput(child, maxOutput);
     let timedOut = false;
-
-    child.stdout?.on('data', (data: Buffer) => {
-      stdout += data.toString();
-    });
-
-    child.stderr?.on('data', (data: Buffer) => {
-      stderr += data.toString();
-    });
 
     const timer = setTimeout(() => {
       timedOut = true;
@@ -210,14 +240,19 @@ export async function executePythonLocal(
 
     child.on('close', (exitCode) => {
       clearTimeout(timer);
+      const exceeded = output.exceeded();
       resolve({
-        success: !timedOut && exitCode === 0,
-        stdout: truncateOutput(stdout, maxOutput),
-        stderr: truncateOutput(stderr, maxOutput),
+        success: !timedOut && !exceeded && exitCode === 0,
+        stdout: truncateOutput(output.getStdout(), maxOutput),
+        stderr: truncateOutput(output.getStderr(), maxOutput),
         exitCode,
         executionTimeMs: Date.now() - startTime,
         timedOut,
-        error: timedOut ? `Execution timed out after ${timeout}ms` : undefined,
+        error: timedOut
+          ? `Execution timed out after ${timeout}ms`
+          : exceeded
+            ? `Output exceeded ${maxOutput} bytes; execution terminated.`
+            : undefined,
       });
     });
 
@@ -226,8 +261,8 @@ export async function executePythonLocal(
       const isNotFound = (err as NodeJS.ErrnoException).code === 'ENOENT';
       resolve({
         success: false,
-        stdout: truncateOutput(stdout, maxOutput),
-        stderr: truncateOutput(stderr, maxOutput),
+        stdout: truncateOutput(output.getStdout(), maxOutput),
+        stderr: truncateOutput(output.getStderr(), maxOutput),
         exitCode: null,
         executionTimeMs: Date.now() - startTime,
         error: isNotFound
@@ -276,17 +311,8 @@ export async function executeShellLocal(
       timeout,
     });
 
-    let stdout = '';
-    let stderr = '';
+    const output = collectCappedOutput(child, maxOutput);
     let timedOut = false;
-
-    child.stdout?.on('data', (data: Buffer) => {
-      stdout += data.toString();
-    });
-
-    child.stderr?.on('data', (data: Buffer) => {
-      stderr += data.toString();
-    });
 
     const timer = setTimeout(() => {
       timedOut = true;
@@ -295,14 +321,19 @@ export async function executeShellLocal(
 
     child.on('close', (exitCode) => {
       clearTimeout(timer);
+      const exceeded = output.exceeded();
       resolve({
-        success: !timedOut && exitCode === 0,
-        stdout: truncateOutput(stdout, maxOutput),
-        stderr: truncateOutput(stderr, maxOutput),
+        success: !timedOut && !exceeded && exitCode === 0,
+        stdout: truncateOutput(output.getStdout(), maxOutput),
+        stderr: truncateOutput(output.getStderr(), maxOutput),
         exitCode,
         executionTimeMs: Date.now() - startTime,
         timedOut,
-        error: timedOut ? `Execution timed out after ${timeout}ms` : undefined,
+        error: timedOut
+          ? `Execution timed out after ${timeout}ms`
+          : exceeded
+            ? `Output exceeded ${maxOutput} bytes; execution terminated.`
+            : undefined,
       });
     });
 
@@ -311,8 +342,8 @@ export async function executeShellLocal(
       const isNotFound = (err as NodeJS.ErrnoException).code === 'ENOENT';
       resolve({
         success: false,
-        stdout: truncateOutput(stdout, maxOutput),
-        stderr: truncateOutput(stderr, maxOutput),
+        stdout: truncateOutput(output.getStdout(), maxOutput),
+        stderr: truncateOutput(output.getStderr(), maxOutput),
         exitCode: null,
         executionTimeMs: Date.now() - startTime,
         error: isNotFound
