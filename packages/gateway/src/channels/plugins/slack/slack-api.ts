@@ -114,6 +114,13 @@ export class SlackChannelAPI implements ChannelPluginAPI {
   // ==========================================================================
 
   async connect(): Promise<void> {
+    // Idempotency guard (matches the Telegram plugin). ChannelService.connect
+    // does not dedupe, so a repeat connect() on an already-connected channel
+    // would open a SECOND Socket Mode connection and leak the first
+    // socketModeClient (its WebSocket stays live). Skip when already connected
+    // or connecting.
+    if (this.status === 'connected' || this.status === 'connecting') return;
+
     if (!this.config.bot_token) {
       throw new Error('Slack bot token is required');
     }
