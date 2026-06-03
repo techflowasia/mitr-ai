@@ -266,6 +266,26 @@ describe('Bridge Routes', () => {
       );
     });
 
+    it('rejects a ReDoS-prone filterPattern with 400 (does not persist it)', async () => {
+      const res = await app.request('/bridges', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceChannelId: 'channel.telegram',
+          targetChannelId: 'channel.whatsapp',
+          // Nested unbounded quantifier — catastrophic backtracking against
+          // crafted inbound text would hang the event loop.
+          filterPattern: '(a+)+$',
+        }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.success).toBe(false);
+      expect(json.error.code).toBe('VALIDATION_ERROR');
+      expect(mockRepo.save).not.toHaveBeenCalled();
+    });
+
     it('returns 400 when sourceChannelId is missing', async () => {
       const res = await app.request('/bridges', {
         method: 'POST',
@@ -340,7 +360,7 @@ describe('Bridge Routes', () => {
       expect(res.status).toBe(400);
       const json = await res.json();
       expect(json.success).toBe(false);
-      expect(json.error.message).toContain('Invalid filter pattern');
+      expect(json.error.message).toContain('filter pattern');
     });
 
     it('returns 500 on repository save error', async () => {
@@ -413,7 +433,7 @@ describe('Bridge Routes', () => {
       expect(res.status).toBe(400);
       const json = await res.json();
       expect(json.success).toBe(false);
-      expect(json.error.message).toContain('Invalid filter pattern');
+      expect(json.error.message).toContain('filter pattern');
     });
 
     it('returns 500 on repository update error', async () => {

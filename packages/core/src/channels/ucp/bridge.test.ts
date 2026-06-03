@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { UCPBridgeManager, type BridgeStore } from './bridge.js';
+import { UCPBridgeManager, isSafeRegexPattern, type BridgeStore } from './bridge.js';
 import type { UCPMessage, UCPBridgeConfig } from './types.js';
 
 // ============================================================================
@@ -289,6 +289,52 @@ describe('UCPBridgeManager', () => {
 
       await manager.loadBridges(store);
       expect(manager.getActiveBridges()).toHaveLength(2);
+    });
+
+    it('drops a ReDoS-prone stored filterPattern on load (does not run it)', async () => {
+      const store: BridgeStore = {
+        getAll: vi
+          .fn()
+          .mockResolvedValue([
+            makeBridge({ id: 'safe', filterPattern: 'hello' }),
+            makeBridge({ id: 'evil', filterPattern: '(a+)+$' }),
+          ]),
+        getById: vi.fn(),
+        getByChannel: vi.fn(),
+        save: vi.fn(),
+        update: vi.fn(),
+        remove: vi.fn(),
+      };
+
+      await manager.loadBridges(store);
+      const bridges = manager.getActiveBridges();
+      // The safe pattern is kept; the catastrophic one is neutralized so
+      // bridgeMessage never compiles/runs it against attacker text.
+      expect(bridges.find((b) => b.id === 'safe')?.filterPattern).toBe('hello');
+      expect(bridges.find((b) => b.id === 'evil')?.filterPattern).toBeUndefined();
+    });
+  });
+
+  describe('isSafeRegexPattern', () => {
+    it('accepts ordinary keyword / anchored / single-quantifier filters', () => {
+      for (const p of [
+        'hello',
+        '^foo',
+        'bar|baz',
+        '\\d+',
+        '(abc)+',
+        '(a|b)+',
+        'a{1,5}',
+        '(x{1,3})+',
+      ]) {
+        expect(isSafeRegexPattern(p)).toBe(true);
+      }
+    });
+
+    it('rejects nested unbounded quantifiers (ReDoS) and un-compilable patterns', () => {
+      for (const p of ['(a+)+$', '(a*)*', '(.*)*', '(\\d+)+', '((ab)+)+', '(a{1,})+', '(']) {
+        expect(isSafeRegexPattern(p)).toBe(false);
+      }
     });
   });
 });

@@ -87,6 +87,7 @@ export {
 
   // Bridge
   UCPBridgeManager,
+  isSafeRegexPattern,
   type BridgeStore,
   type BridgeSendFn,
 

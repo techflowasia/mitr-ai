@@ -10,6 +10,98 @@
  */
 
 import type { UCPBridgeConfig, UCPMessage, UCPContent } from './types.js';
+import { getLog } from '../../services/get-log.js';
+
+const log = getLog('UCPBridge');
+
+// ============================================================================
+// Filter pattern safety (ReDoS guard)
+// ============================================================================
+
+/**
+ * Reject regex patterns prone to catastrophic backtracking (ReDoS). The bridge
+ * filter is compiled and run with `RegExp.test` SYNCHRONOUSLY against inbound
+ * message text — which is attacker-influenceable (anyone who can message a
+ * bridged channel). A pathological owner pattern such as `(a+)+$` against
+ * crafted input would spin the event loop indefinitely, hanging the gateway.
+ *
+ * The check is a conservative, dependency-free "star height" heuristic: reject
+ * a pattern when one unbounded quantifier (`*`, `+`, or `{n,}`) is nested inside
+ * a group that is itself unbounded-quantified — the structural signature of
+ * exponential backtracking. It can over-reject an exotic-but-safe pattern, but
+ * bridge filters are simple keyword/substring matchers in practice, so the
+ * trade-off favours never letting one hang the process. A pattern that fails to
+ * compile is also unsafe.
+ */
+export function isSafeRegexPattern(pattern: string): boolean {
+  if (typeof pattern !== 'string') return false;
+  try {
+    new RegExp(pattern);
+  } catch {
+    return false;
+  }
+  return !hasNestedUnboundedQuantifier(pattern);
+}
+
+/** True if `s[i]` begins an unbounded quantifier: `*`, `+`, or `{n,}` (no upper bound). */
+function unboundedQuantifierAt(s: string, i: number): boolean {
+  const ch = s[i];
+  if (ch === '*' || ch === '+') return true;
+  if (ch === '{') return /^\{\d*,\}/.test(s.slice(i));
+  return false;
+}
+
+/** Scan a group body for an unbounded quantifier, skipping escapes and char classes. */
+function bodyHasUnboundedQuantifier(body: string): boolean {
+  for (let i = 0; i < body.length; i++) {
+    const ch = body[i];
+    if (ch === '\\') {
+      i++;
+      continue;
+    }
+    if (ch === '[') {
+      i++;
+      while (i < body.length && body[i] !== ']') {
+        if (body[i] === '\\') i++;
+        i++;
+      }
+      continue;
+    }
+    if (unboundedQuantifierAt(body, i)) return true;
+  }
+  return false;
+}
+
+/** Detect an unbounded-quantified group whose body also contains an unbounded quantifier. */
+function hasNestedUnboundedQuantifier(pattern: string): boolean {
+  const groupStarts: number[] = [];
+  for (let i = 0; i < pattern.length; i++) {
+    const ch = pattern[i];
+    if (ch === '\\') {
+      i++;
+      continue;
+    }
+    if (ch === '[') {
+      i++;
+      while (i < pattern.length && pattern[i] !== ']') {
+        if (pattern[i] === '\\') i++;
+        i++;
+      }
+      continue;
+    }
+    if (ch === '(') {
+      groupStarts.push(i);
+      continue;
+    }
+    if (ch === ')') {
+      const start = groupStarts.pop();
+      if (start === undefined) continue;
+      if (!unboundedQuantifierAt(pattern, i + 1)) continue;
+      if (bodyHasUnboundedQuantifier(pattern.slice(start + 1, i))) return true;
+    }
+  }
+  return false;
+}
 
 // ============================================================================
 // Bridge Store Interface
@@ -50,7 +142,21 @@ export class UCPBridgeManager {
    * Load bridge configurations from the store.
    */
   async loadBridges(store: BridgeStore): Promise<void> {
-    this.bridges = await store.getAll();
+    const loaded = await store.getAll();
+    // Re-validate every stored filterPattern on load. The create/update route
+    // rejects ReDoS-prone patterns, but a pattern persisted before that guard
+    // existed must not be able to hang the event loop in bridgeMessage. Drop the
+    // unsafe pattern (the bridge keeps forwarding, just unfiltered) rather than
+    // compiling and running it — the owner can re-add a safe filter.
+    for (const bridge of loaded) {
+      if (bridge.filterPattern && !isSafeRegexPattern(bridge.filterPattern)) {
+        log.warn('Dropping unsafe bridge filter pattern (ReDoS risk)', {
+          bridgeId: bridge.id,
+        });
+        bridge.filterPattern = undefined;
+      }
+    }
+    this.bridges = loaded;
   }
 
   /**
