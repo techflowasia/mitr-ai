@@ -6,6 +6,10 @@
 import { createHash, randomUUID, randomBytes } from 'node:crypto';
 import type { SandboxPermissions, ResourceLimits } from './types.js';
 import { DEFAULT_PERMISSIONS, DEFAULT_RESOURCE_LIMITS } from './types.js';
+// SSRF-safe fetch wrapper (manual redirect following + per-hop private/internal
+// address check via DNS-aware isPrivateUrlAsync). dynamic-tool-permissions is a
+// leaf module (node:dns + types only), so this import introduces no cycle.
+import { createSafeFetch } from '../agent/tools/dynamic-tool-sandbox.js';
 
 /**
  * Resource counter for tracking usage
@@ -418,12 +422,21 @@ export function buildSandboxContext(
     // Crypto utilities (if allowed)
     ...(perms.crypto ? { crypto: buildCrypto(true) } : {}),
 
-    // Network utilities (if allowed). `fetch` is wrapped so the returned host
-    // Response's `.constructor.constructor` cannot be walked into host Function.
-    // The constructors themselves are wrapped for the same reason.
+    // Network utilities (if allowed). The default `fetch` is SSRF-safe by
+    // construction (createSafeFetch: blocks private/internal/metadata addresses
+    // on every hop, follows redirects manually). Do NOT default to raw
+    // globalThis.fetch — a network-permitted sandbox could otherwise reach
+    // 169.254.169.254 (cloud metadata → credential theft), localhost, or
+    // internal services. The dynamic-tool executor still injects its own
+    // per-tool createSafeFetch via customGlobals (better error labelling); this
+    // default protects every OTHER consumer (worker-sandbox, extensions, future
+    // callers) that grants `network` without wiring one up. `fetch` is also
+    // wrapped by the harden() membrane below so the returned host Response's
+    // `.constructor.constructor` cannot be walked into host Function; the
+    // constructors themselves are wrapped for the same reason.
     ...(perms.network
       ? {
-          fetch: globalThis.fetch.bind(globalThis),
+          fetch: createSafeFetch('sandbox'),
           Response: globalThis.Response,
           Request: globalThis.Request,
           Headers: globalThis.Headers,
