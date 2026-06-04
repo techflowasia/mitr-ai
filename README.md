@@ -1,10 +1,10 @@
 # OwnPilot
 
-> Privacy-first personal AI assistant platform with Claw autonomous agents, soul agents, multi-agent orchestration, AI agent creator, tool orchestration, multi-provider support, MCP integration, voice pipeline, browser automation, IoT edge device control, and Telegram + WhatsApp connectivity.
+> Privacy-first personal AI assistant platform with Claw autonomous agents, soul agents, crews, AI agent creator, tool orchestration, multi-provider support, MCP integration, voice pipeline, browser automation, IoT edge device control, and Telegram + WhatsApp connectivity.
 >
 > **Self-hosted. Your data stays yours.**
 
-v0.4.0
+v0.6.0
 
 <p align="center">
   <img src="ownpilot_.jpeg" alt="OwnPilot — Privacy-First Personal AI Assistant Platform" width="100%" />
@@ -36,9 +36,7 @@ v0.4.0
 - [Agent System](#agent-system)
 - [Soul Agents](#soul-agents)
 - [Autonomous Hub](#autonomous-hub)
-- [Agent Orchestra](#agent-orchestra)
 - [Claw Agents](#claw-agents)
-- [Subagents](#subagents)
 - [Tool System](#tool-system)
 - [MCP Integration](#mcp-integration)
 - [Artifacts](#artifacts)
@@ -74,7 +72,7 @@ v0.4.0
 
 ### Tools & Extensions
 
-- **250+ Built-in Tools** across 32 categories (personal data, files, code execution, web, email, media, git, translation, weather, finance, automation, vector search, data extraction, utilities, orchestra, artifacts, browser, edge devices)
+- **250+ Built-in Tools** across 31 categories (personal data, files, code execution, web, email, media, git, translation, weather, finance, automation, vector search, data extraction, utilities, artifacts, browser, edge devices)
 - **Meta-tool Proxy** — Only 4 meta-tools sent to the LLM (`search_tools`, `get_tool_help`, `use_tool`, `batch_use_tool`); all tools remain available via dynamic discovery
 - **Tool Namespaces** — Qualified tool names with prefixes (`core.`, `custom.`, `plugin.`, `skill.`, `mcp.`) for clear origin tracking
 - **MCP Client** — Connect to external MCP servers (Filesystem, GitHub, Brave Search, etc.) and use their tools natively
@@ -144,21 +142,6 @@ v0.4.0
 - **6 Templates** — Research Agent, Code Reviewer, Data Analyst, Monitor & Alert, Content Creator, Event Reactor
 - **Resource Limits** — MAX_CONCURRENT_CLAWS=50, generous defaults (50 turns, 500 tool calls, 10min timeout, unlimited budget)
 
-### Subagents
-
-- **Parallel Task Delegation** — Chat agents and claw agents can spawn lightweight child agents for concurrent task execution
-- **Fire-and-Forget Model** — Spawn returns immediately with a session ID; parent polls for results via `check_subagent`/`get_subagent_result`
-- **Budget Enforcement** — Configurable concurrent limit (default 5), total spawn limit (default 20), and nesting depth cap (max 2 levels)
-- **Full Tool Access** — Subagents inherit the parent's full tool pipeline; optional `allowedTools` restriction
-- **Independent Model Selection** — Each subagent can use a different provider/model (e.g., expensive model for parent, cheap model for subagents)
-- **5 LLM-Callable Tools** — `spawn_subagent`, `check_subagent`, `get_subagent_result`, `cancel_subagent`, `list_subagents`
-
-### Agent Orchestra
-
-- **Multi-Agent Orchestration** — Fan-out/fan-in, race, pipeline, and voting strategies for concurrent multi-provider agent execution
-- **Real-time Progress** — WebSocket events for orchestra session lifecycle (started, step completed, finished)
-- **6 LLM Tools** — `create_orchestra`, `run_orchestra`, `list_orchestras`, `get_orchestra_result`, `cancel_orchestra`, `list_strategies`
-
 ### Artifacts
 
 - **Versioned Documents** — Create, update, and track markdown, code, JSON, HTML, CSV, SVG, and Mermaid diagram artifacts
@@ -210,12 +193,12 @@ v0.4.0
 - **Heartbeats** — Natural language to cron conversion for periodic tasks ("every weekday at 9am")
 - **Plans** — Multi-step autonomous execution with checkpoints, retry logic, and timeout handling
 - **Risk Assessment** — Automatic risk scoring for tool executions with approval workflows
-- **Model Routing** — Per-process model selection (chat, channel, pulse, subagent) with fallback chains
+- **Model Routing** — Per-process model selection (chat, channel, pulse) with fallback chains
 - **Extended Thinking** — Anthropic extended thinking support for deeper reasoning in complex tasks
 
 ### Communication
 
-- **Web UI** — React 19 + Vite 7 + Tailwind CSS 4 with dark mode, 64 pages, 140+ components, code-split
+- **Web UI** — React 19 + Vite 7 + Tailwind CSS 4 with dark mode, 63 pages, 175+ components, code-split
 - **Telegram Bot** — Full bot integration with user/chat filtering, message splitting, HTML/Markdown formatting
 - **WhatsApp (Baileys)** — QR code authentication (no Meta Business account needed), self-chat mode with loop prevention, session persistence, group message support with passive history sync
 - **Channel User Approval** — Multi-step verification: approval code flow, manual admin approval, user blocking/unblocking with real-time notifications
@@ -261,10 +244,9 @@ v0.4.0
               ├─────────────────┤
               │  MessageBus     │  Middleware Pipeline
               │  Agent Engine   │  Tool Orchestration
-              │  Orchestra      │  Multi-Agent Coordination
               │  Provider Router│  Smart Model Selection
               │  Claw Agents    │  Unified Autonomous Runtime
-              │  Background Agt │  Persistent Autonomous Agents
+              │  Soul Agents    │  Persistent Identity + Heartbeat
               │  Coding Agents  │  External AI CLIs
               │  Browser Agent  │  Headless Web Automation
               │  Voice Pipeline │  STT/TTS Integration
@@ -410,7 +392,6 @@ ownpilot/
 │   │   ├── src/
 │   │   │   ├── agent/           # Agent engine, orchestrator, providers
 │   │   │   │   ├── providers/   # Multi-provider implementations
-│   │   │   │   ├── orchestra/   # Multi-agent orchestration engine
 │   │   │   │   └── tools/       # 250+ built-in tool definitions
 │   │   │   ├── plugins/         # Plugin system with isolation, marketplace
 │   │   │   ├── events/          # EventBus, HookBus, ScopedBus
@@ -436,7 +417,7 @@ ownpilot/
 │   │   │   ├── db/
 │   │   │   │   ├── repositories/  # 67 data access repositories
 │   │   │   │   ├── adapters/      # PostgreSQL adapter
-│   │   │   │   ├── migrations/    # 26 schema migrations
+│   │   │   │   ├── migrations/    # 41 schema migrations
 │   │   │   │   └── seeds/         # Default data
 │   │   │   ├── channels/        # Telegram + WhatsApp channel plugins
 │   │   │   ├── plugins/         # Plugin initialization & registration
@@ -453,7 +434,7 @@ ownpilot/
 │   ├── ui/                      # React 19 web interface (~115K LOC)
 │   │   ├── src/
 │   │   │   ├── pages/           # 64 page components
-│   │   │   ├── components/      # 140 reusable components
+│   │   │   ├── components/      # 175 reusable components
 │   │   │   ├── hooks/           # Custom hooks (chat store, theme, WebSocket)
 │   │   │   ├── api/             # Typed fetch wrapper + endpoint modules
 │   │   │   ├── types/           # UI type definitions
@@ -486,7 +467,6 @@ The foundational runtime library. Contains the AI engine, tool system, plugin ar
 | Module             | Description                                                                                      |
 | ------------------ | ------------------------------------------------------------------------------------------------ |
 | `agent/`           | Agent engine with multi-provider support, orchestrator, tool-calling loop                        |
-| `agent/orchestra/` | Multi-agent orchestration (fan-out, race, pipeline, voting strategies)                           |
 | `agent/providers/` | Provider implementations (OpenAI, Anthropic, Google, Zhipu, OpenAI-compatible, 8 aggregators)    |
 | `agent/tools/`     | 250+ built-in tool definitions across 31 tool files                                              |
 | `plugins/`         | Plugin system with isolation, marketplace, signing, runtime                                      |
@@ -519,15 +499,15 @@ The API server built on [Hono](https://hono.dev/). Handles HTTP/WebSocket commun
 | **Automation**         | `triggers.ts`, `heartbeats.ts`, `plans.ts`, `autonomy.ts`, `workflows.ts`, `workflow-copilot.ts`, `souls.ts`                                                                      |
 | **Tools & Extensions** | `tools.ts`, `custom-tools.ts`, `plugins.ts`, `extensions.ts`, `skills.ts`, `mcp.ts`, `composio.ts`                                                                                |
 | **Coding & CLI**       | `coding-agents.ts`, `cli-tools.ts`, `cli-providers.ts`                                                                                                                            |
-| **Orchestration**      | `orchestra.ts`, `artifacts.ts`, `browser.ts`, `voice.ts`, `bridges.ts`                                                                                                            |
+| **Orchestration**      | `artifacts.ts`, `browser.ts`, `voice.ts`, `bridges.ts`                                                                                                                            |
 | **Edge / IoT**         | `edge.ts` (devices, commands, telemetry, MQTT status)                                                                                                                             |
 | **Channels**           | `channels.ts`, `channel-auth.ts`, `webhooks.ts`                                                                                                                                   |
 | **Configuration**      | `settings.ts`, `config-services.ts`, `ui-auth.ts`                                                                                                                                 |
 | **System**             | `health.ts`, `dashboard.ts`, `costs.ts`, `audit.ts`, `debug.ts`, `database.ts`, `profile.ts`, `workspaces.ts`, `file-workspaces.ts`, `execution-permissions.ts`, `error-codes.ts` |
 
-**Services (108):** MessageBus, ConfigCenter, ToolExecutor, ProviderService, McpClientService, McpServerService, ExtensionService, ComposioService, EmbeddingService, HeartbeatService, AuditService, PluginService, MemoryService, GoalService, TriggerService, PlanService, WorkspaceService, DatabaseService, SessionService, LogService, ResourceService, LocalDiscovery, WorkflowService, AgentSkillsParser, CodingAgentService, CodingAgentSessions, CliToolService, CliToolsDiscovery, ModelRouting, ExecutionApproval, ClawManager, ClawRunner, ChannelVerificationService, OrchestraEngine, ArtifactService, ArtifactDataResolver, VoiceService, BrowserService, EdgeService, EdgeMqttClient, SubagentService, SubagentManager, SoulService, CrewService, AgentMessagesService, and more.
+**Services (108):** MessageBus, ConfigCenter, ToolExecutor, ProviderService, McpClientService, McpServerService, ExtensionService, ComposioService, EmbeddingService, HeartbeatService, AuditService, PluginService, MemoryService, GoalService, TriggerService, PlanService, WorkspaceService, DatabaseService, SessionService, LogService, ResourceService, LocalDiscovery, WorkflowService, AgentSkillsParser, CodingAgentService, CodingAgentSessions, CliToolService, CliToolsDiscovery, ModelRouting, ExecutionApproval, ClawManager, ClawRunner, ChannelVerificationService, ArtifactService, ArtifactDataResolver, VoiceService, BrowserService, EdgeService, EdgeMqttClient, SoulService, CrewService, AgentMessagesService, and more.
 
-**Repositories (67):** agents, conversations, messages, tasks, notes, bookmarks, calendar, contacts, memories, goals, triggers, plans, expenses, custom-data, custom-tools, plugins, channels, channel-messages, channel-users, channel-sessions, channel-verification, costs, settings, config-services, pomodoro, habits, captures, workspaces, model-configs, execution-permissions, logs, mcp-servers, extensions, local-providers, heartbeats, embedding-cache, workflows, autonomy-log, coding-agent-results, cli-providers, cli-tool-policies, claws, orchestra, artifacts, channel-bridges, browser-workflows, edge-devices, edge-commands, edge-telemetry, subagent-history, souls, crews, agent-messages.
+**Repositories (67):** agents, conversations, messages, tasks, notes, bookmarks, calendar, contacts, memories, goals, triggers, plans, expenses, custom-data, custom-tools, plugins, channels, channel-messages, channel-users, channel-sessions, channel-verification, costs, settings, config-services, pomodoro, habits, captures, workspaces, model-configs, execution-permissions, logs, mcp-servers, extensions, local-providers, heartbeats, embedding-cache, workflows, autonomy-log, coding-agent-results, cli-providers, cli-tool-policies, claws, artifacts, channel-bridges, browser-workflows, edge-devices, edge-commands, edge-telemetry, souls, crews, agent-messages.
 
 ### UI (`@ownpilot/ui`)
 
@@ -541,7 +521,7 @@ Modern web interface built with React 19, Vite 7, and Tailwind CSS 4. Minimal de
 | Tailwind CSS         | 4.2.0   |
 | prism-react-renderer | 2.4.1   |
 
-**Pages (64):**
+**Pages (63):**
 
 | Page                                                | Description                                                                                |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
@@ -578,7 +558,7 @@ Modern web interface built with React 19, Vite 7, and Tailwind CSS 4. Minimal de
 | **System**                                          | Database backup/restore, sandbox status, theme, notifications                              |
 | **Profile / Logs / About**                          | User profile, request logs, system info                                                    |
 
-**Key Components (140):** Layout, ChatInput, MessageList, ContextBar, ContextDetailModal, ToolExecutionDisplay, TraceDisplay, CodeBlock, MarkdownContent, ExecutionApprovalDialog, ExecutionSecurityPanel, SuggestionChips, MemoryCards, WorkspaceSelector, ToastProvider, ConfirmDialog, DynamicConfigForm, ErrorBoundary, SetupWizard, and more.
+**Key Components (175):** Layout, ChatInput, MessageList, ContextBar, ContextDetailModal, ToolExecutionDisplay, TraceDisplay, CodeBlock, MarkdownContent, ExecutionApprovalDialog, ExecutionSecurityPanel, SuggestionChips, MemoryCards, WorkspaceSelector, ToastProvider, ConfirmDialog, DynamicConfigForm, ErrorBoundary, SetupWizard, and more.
 
 **State Management (Context + Hooks):**
 
@@ -626,7 +606,7 @@ All API keys are managed via the **Config Center UI** (Settings page) or the `ow
 
 ### Supported Providers
 
-**104 providers** with auto-synced model catalogs from [models.dev](https://models.dev). Key providers:
+**140 providers** with auto-synced model catalogs from [models.dev](https://models.dev). Key providers:
 
 | Provider           | Integration Type         | Key Models                                                              |
 | ------------------ | ------------------------ | ----------------------------------------------------------------------- |
@@ -795,57 +775,6 @@ The creator uses a dedicated agent with a specialized system prompt, ensuring it
 
 ---
 
-## Subagents
-
-Ephemeral child agents for parallel task delegation. Unlike claw agents (which are persistent and cycle-based), subagents run once to completion and are discarded.
-
-### How It Works
-
-```
-Parent Agent (chat or claw agent)
-  ├─ spawn_subagent("Research pricing")  →  SubagentRunner #1
-  ├─ spawn_subagent("Analyze competitors") → SubagentRunner #2
-  ├─ spawn_subagent("Draft summary")     →  SubagentRunner #3
-  │
-  ├─ check_subagent(#1) → running...
-  ├─ get_subagent_result(#1) → "Pricing analysis: ..."
-  └─ Synthesize final answer from all results
-```
-
-### LLM Tools
-
-| Tool                  | Description                                      |
-| --------------------- | ------------------------------------------------ |
-| `spawn_subagent`      | Spawn an autonomous subagent for a specific task |
-| `check_subagent`      | Check the status of a running subagent           |
-| `get_subagent_result` | Get the final result of a completed subagent     |
-| `cancel_subagent`     | Cancel a running subagent                        |
-| `list_subagents`      | List all subagents in the current session        |
-
-### Session Lifecycle
-
-| State       | Description               |
-| ----------- | ------------------------- |
-| `pending`   | Created, waiting to start |
-| `running`   | Actively executing        |
-| `completed` | Finished successfully     |
-| `failed`    | Encountered an error      |
-| `cancelled` | Cancelled by parent       |
-| `timeout`   | Exceeded time limit       |
-
-### Budget & Limits
-
-| Setting          | Default | Description                                 |
-| ---------------- | ------- | ------------------------------------------- |
-| `maxConcurrent`  | 5       | Max active subagents per parent             |
-| `maxTotalSpawns` | 20      | Total spawn limit per session               |
-| `maxTurns`       | 20      | Max LLM round-trips per subagent            |
-| `maxToolCalls`   | 100     | Max tool invocations per subagent           |
-| `timeoutMs`      | 120,000 | Per-subagent timeout (2 min)                |
-| Nesting depth    | 2       | Subagents can spawn sub-subagents (1 level) |
-
----
-
 ## Tool System
 
 ### Overview
@@ -890,7 +819,6 @@ OwnPilot has **250+ tools** organized into **32 categories**. Rather than sendin
 | **Utilities (Gen)**  | generate_uuid, hash_text, random_number                                  |
 | **CLI Tools**        | run_cli_tool, list_cli_tools, install_cli_tool                           |
 | **Coding Agents**    | run_coding_task, list_coding_agents, get_task_result                     |
-| **Orchestra**        | create_orchestra, run_orchestra, get_orchestra_result                    |
 | **Artifacts**        | create_artifact, update_artifact, list_artifacts, get_artifact           |
 | **Browser**          | browser_navigate, browser_click, browser_type, browser_screenshot        |
 | **Edge Devices**     | list_edge_devices, get_device_status, read_sensor, control_actuator      |
@@ -1439,16 +1367,6 @@ Sliding window algorithm with configurable window (default 60s), max requests (d
 | `GET`    | `/api/v1/claws/:id/audit`              | Per-tool-call audit log             |
 | `POST`   | `/api/v1/claws/:id/approve-escalation` | Approve pending escalation          |
 
-### Subagents
-
-| Method   | Endpoint                    | Description                 |
-| -------- | --------------------------- | --------------------------- |
-| `GET`    | `/api/v1/subagents`         | List active subagents       |
-| `POST`   | `/api/v1/subagents`         | Spawn a new subagent        |
-| `GET`    | `/api/v1/subagents/:id`     | Get subagent session/result |
-| `DELETE` | `/api/v1/subagents/:id`     | Cancel a running subagent   |
-| `GET`    | `/api/v1/subagents/history` | Paginated execution history |
-
 ### CLI Tools
 
 | Method   | Endpoint                         | Description                    |
@@ -1503,7 +1421,6 @@ Real-time broadcasts via WebSocket at `ws://localhost:8080/ws` (attached to the 
 | `channel:user:*`          | User events (first_seen, pending, blocked, etc.)  |
 | `trigger:executed`        | Trigger execution result                          |
 | `coding-agent:session:*`  | Coding agent session lifecycle and output         |
-| `subagent:*`              | Subagent spawned, progress, and completion        |
 | `pulse:activity`          | Pulse system proactive activity                   |
 | `claw:*`                  | Claw lifecycle, cycle results, output, escalation |
 
@@ -1724,7 +1641,7 @@ pnpm ci                     # Alias for pnpm release:verify
 
 ## Release Process
 
-OwnPilot uses semantic versioning. The current release train is `0.4.0`, prepared as a minor release from `0.3.2`.
+OwnPilot uses semantic versioning. The current release train is `0.6.0`; subsequent work is tracked under the `[Unreleased]` heading in `CHANGELOG.md` until the next version is cut.
 
 For a normal minor release:
 
@@ -1739,7 +1656,7 @@ pnpm release:publish        # pushes the current branch and tag; GitHub Actions 
 
 Release automation is tag-driven. Pushing a `v*` tag runs `.github/workflows/release.yml`, builds the multi-arch Docker image, publishes `ghcr.io/ownpilot/ownpilot`, and creates the GitHub Release.
 
-For this release, `CHANGELOG.md` already contains the `0.4.0` entry. If another minor bump is needed before publishing, run `pnpm version:minor`, refresh the changelog heading, and rerun `pnpm release:check`.
+Before publishing the next version, run `pnpm version:minor` (or `:patch`), rename the `[Unreleased]` changelog heading to the new version with today's date, and rerun `pnpm release:check`.
 
 ### Tech Stack
 

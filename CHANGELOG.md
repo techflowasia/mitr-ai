@@ -7,9 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-04
+
+### Security
+
+A sustained hardening campaign (manual audits 2026-05-30 → 2026-06-04) across all four packages. Highlights:
+
+- **Core sandbox host-Function RCE escape closed.** A second escape path (beyond the 0.5.1 constructor-chain fix) let sandboxed code reach the host `Function` constructor; now blocked at both the context-injection and code-validator layers.
+- **Critical RCE + High findings remediated** from the 2026-06-01 scan (CI actions pinned to commit SHAs, OpenAPI docs disabled in production by default, persisted error-stack length capped, dev UI container hardened).
+- **IDOR sweep.** Owner-scoping enforced on previously-unscoped endpoints: notification send + preferences, CLI providers `PUT`/`DELETE`/`test`, channel-user management (`approve`/`block`/`unblock`/`unverify`/`delete`), plus IDOR-004 through IDOR-019. The single-user `default` owner guard no longer 401-loops legitimate access.
+- **SSRF.** Sandbox network `fetch` now defaults to an SSRF-safe wrapper instead of raw `globalThis.fetch`; IPv4-mapped IPv6 addresses are treated as private; RSS feed fetches routed through `safeFetch` to close a redirect-based SSRF.
+- **Filesystem sandbox.** Scoped-fs workspace jail resolves symlinks (including for non-existent paths); PDF and image tool I/O confined to the workspace; local-executor output bounded during streaming.
+- **Channels.** `/connect` single-use tokens claimed atomically (TOCTOU); redelivered inbound webhooks deduplicated before paid AI routing; bridge filter patterns rejected when ReDoS-prone; Telegram tool-approval clicks must originate from the prompt's own chat; pairing key no longer disclosed to unclaimed-bot messagers; Discord/Slack/Matrix `connect()` guarded against double-connect handle leaks.
+- **Auth / transport.** WebSocket auth key-length timing side-channel closed (timing-safe compare); password-change cutoff enforced on the session cache-hit path; WS self-origins forced to HTTPS with a production origin warning.
+- **Coding agents / CLI.** Gateway secrets no longer leak into spawned CLI environments (both `child_process` and Claude Code SDK paths); Windows `cmd.exe` arguments escaped to prevent command injection.
+- **Privacy.** PII detector match loop guarded against infinite loops; overlapping matches coalesced so redaction can't leak through gaps.
+- **Plugins / skills.** Isolated-fetch response size cap enforced while streaming; npm skill installer redirects capped to prevent infinite recursion; a loud warning is emitted when a signed manifest is verified without an integrity check.
+- **Budget.** Pre-spend enforcement added on the chat route (BUDGET-001/002); soul monthly budget cap now enforced (previously only the daily cap was).
+
+### Added
+
+- **Capability accessor architecture.** Every `Services.X` registry token now has a matching `getXService()` / `setXService()` / `hasXService()` accessor (30/30). A new `RuntimeContext` bundles the horizontal capabilities (LLM router, channels, config, events, permissions, memory, audit) that every autonomous runtime needs; Claw and Soul Heartbeat consume it explicitly for mockable dependencies.
+- **Dynamic provider discovery.** Provider listings now read the `data/providers/` directory (140 synced model catalogs from models.dev) instead of a hardcoded list, so newly-synced providers surface without code changes.
+- **Claw guardrail enforcement + learning loop.** `ClawAutonomyPolicy` is now enforced at tool-call time (was prompt-only); completed runs are auto-distilled into reusable `claw-learned` skills (`claw_save_skill` / `claw_recall_skill`), with ShareGPT trajectory export, browser accessibility-tree mode, and programmatic tool calling (`claw_execute`).
+- **Startup security enforcement.** `enforceSecurityConfig()` is wired into server boot — mode-aware Docker requirement (hard-fails only when `EXECUTION_MODE=docker`) plus dangerous-env-var checks in production.
+- **Browser tools** — `browser_navigate_back` and `browser_hover`.
+- **Cross-channel bridges** — UCP bridges wired into the live message pipeline with bot-origin + self-target loop guards.
+
+### Changed
+
+- **Single-tenant model.** Gateway route handlers use a fixed `LOCAL_OWNER_ID` (`'default'`) instead of per-request user resolution; residual ownership guards are retained so cross-owner resources still 404.
+- **Cost pricing** falls back to synced provider-JSON pricing for models absent from the static table (so e.g. Cohere bills at real price instead of $0); the static table stays primary.
+- **Source tree reorganized** into family subdirectories under `services/`, `routes/`, `tools/`, and `db/repositories/`; file prefixes dropped inside each family.
+
+### Fixed
+
+- **Extensions** — removal-marker queries cast params to `::text` to fix Postgres "could not determine data type of parameter" errors (the feature was silently non-functional).
+- **Plans** — a user-aborted running plan is persisted as `cancelled`, not overwritten to `failed`.
+- **Autonomy** — the pulse timer re-arms when a scheduled tick overlaps a manual pulse (previously the autonomous loop silently died until restart).
+- **Workflow** — approval pauses are no longer finalized as `failed` (approvals were entirely broken); conditional/switch skips no longer swallow downstream rejoin/merge nodes; the execution lock is released when run setup throws.
+- **Triggers** — schedule and condition triggers advance their cursor on failure too, so a throwing trigger no longer hot-loops every poll.
+- **Channels** — error paths replace the dangling "Thinking…" placeholder instead of orphaning it; SMS/Matrix long replies are split instead of truncated; `/model` and cost tracking use the real resolved model.
+- **Coding agents** — `terminateSession` fires completion callbacks (waiters no longer hang); the PTY is disposed on error/timeout, not just clean exit; ACP terminal state is guarded against overwrite; cancellation is honored instead of being overwritten with `completed`.
+- **ACP** — `AcpClient.close()` and `TerminalManager` now have working SIGKILL fallbacks.
+- **WebSocket** — idle-session reaping unsubscribes EventBus listeners (was leaking up to 50 listeners per dropped client); the UI no longer auto-reconnects after an intentional close.
+- **Edge** — MQTT `+` wildcard requires a present level; reconnect ends the prior client and guards stale handlers.
+- **Claw** — mid-cycle inbox messages are preserved when the inbox is at its cap.
+- **Concurrency** — the scheduler never runs the same task concurrently with itself; the job pool serializes `pollWorker` so a worker can't exceed its concurrency; batch embeddings enforce a 1:1 input/output count.
+- **Compaction** — the DB mirror is skipped when there's nothing older to summarize.
+- **Postgres** — per-connection timeouts are applied via libpq `options` startup params instead of a racing `SET`.
+- **Extensions** — `recover()` clears the error state after a successful reload.
+
 ### Removed
 
 - **Fleet, Subagent, and Orchestra subsystems removed.** These three autonomous-agent surfaces overlapped with existing primitives without adding unique value: Fleet's "worker army" was covered by Claw's concurrent cycles + `claw_spawn_subclaw` and Workflow's `parallelNode`; Subagent's ephemeral spawn was covered by `claw_spawn_subclaw` and Crew's `delegate_task`; Orchestra was tightly coupled to Subagent and couldn't survive its removal. Migration 038 drops `fleets`, `fleet_sessions`, `fleet_tasks`, `fleet_worker_history`, `subagent_history`, and `orchestra_executions`. The mental model is now **Agent (base) → Claw (unified runtime) → Soul/Crew/Heartbeat (persistent team identity)** with Workflow and Coding Agents as separate paradigms.
+- **Dead-code sweep** — a Knip-driven pass removed ~1,700 lines of unused exports, dead singletons, and phantom dependencies (gateway unused exports: 225 → 27).
+
+### Dependencies
+
+- `react-router-dom` → `^7.16.0` (resolves 5 CVEs).
 
 ## [0.5.1] - 2026-05-22
 
@@ -524,6 +580,9 @@ Initial release of OwnPilot.
 - Docker multi-arch image (amd64 + arm64) published to `ghcr.io/ownpilot/ownpilot`
 - PostgreSQL with pgvector for vector search
 
+[0.6.0]: https://github.com/ownpilot/ownpilot/releases/tag/v0.6.0
+[0.5.1]: https://github.com/ownpilot/ownpilot/releases/tag/v0.5.1
+[0.5.0]: https://github.com/ownpilot/ownpilot/releases/tag/v0.5.0
 [0.4.0]: https://github.com/ownpilot/ownpilot/releases/tag/v0.4.0
 [0.2.9]: https://github.com/ownpilot/ownpilot/releases/tag/v0.2.9
 [0.1.10]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.10
