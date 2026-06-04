@@ -222,7 +222,23 @@ export class EmbeddingService implements IEmbeddingService {
     }
 
     // Sort by index to maintain order
-    return data.data.sort((a, b) => a.index - b.index).map((d) => d.embedding);
+    const embeddings = data.data.sort((a, b) => a.index - b.index).map((d) => d.embedding);
+
+    // Enforce the 1:1 input/output contract. A partial or truncated response
+    // (or an OpenAI-compatible provider that silently drops items) would
+    // otherwise return fewer embeddings than inputs, leaving `undefined` holes
+    // in the pre-sized `results` array of generateBatchEmbeddings. The embedding
+    // queue dereferences those holes outside its per-item guard, throwing an
+    // uncaught error that permanently leaks the affected memories' dedup keys
+    // (they can never be re-queued). Failing here instead turns a silent
+    // partial-poison into a clean full-batch retry via the caller's catch.
+    if (embeddings.length !== inputs.length) {
+      throw new Error(
+        `Embedding API returned ${embeddings.length} embeddings for ${inputs.length} inputs`
+      );
+    }
+
+    return embeddings;
   }
 
   /**

@@ -51,4 +51,13 @@ export interface ManagedClaw {
    * hour and respond faster to steer requests.
    */
   priority: number;
+  /**
+   * Count of head-of-queue inbox messages evicted by trimInbox since the
+   * current cycle started. executeCycle resets this at cycle start and uses it
+   * to compute how many snapshot messages the cycle actually consumed:
+   * `consumed = snapshotLength - inboxEvictedDuringCycle`. Without it, a
+   * snapshot-length slice would over-remove and silently drop messages that
+   * arrived mid-cycle whenever the inbox hit its cap and evicted from the head.
+   */
+  inboxEvictedDuringCycle: number;
 }

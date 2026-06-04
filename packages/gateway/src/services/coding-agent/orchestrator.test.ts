@@ -34,6 +34,7 @@ const mockService = {
   createSession: vi.fn(async () => mockSession),
   waitForCompletion: vi.fn(async () => ({ exitCode: 0 })),
   getOutputBuffer: vi.fn(() => 'Build succeeded. All tests pass.'),
+  terminateSession: vi.fn(),
 };
 
 const mockBroadcast = vi.fn();
@@ -264,6 +265,52 @@ describe('Coding Agent Orchestrator', () => {
 
       await cancelOrchestration('orch_abc123', USER_ID);
       expect(mockBroadcast).toHaveBeenCalledWith('orchestration:cancelled', { id: 'orch_abc123' });
+    });
+
+    it('does not overwrite the cancelled status with completed when cancelled mid-step', async () => {
+      // Non-analysis run: after a step completes the loop calls
+      // finishRun(..., 'completed'). If a cancel lands while the step is in
+      // flight, that must NOT undo the 'cancelled' status.
+      const record = makeRunRecord({ enableAnalysis: false });
+      // startOrchestration generates its own runId and keys activeRuns by it;
+      // the real repo preserves that id, so echo it back (run.id must equal the
+      // activeRuns key or the loop's abort controller wouldn't be found).
+      mockRunsRepo.create.mockImplementation(async (input: { id: string }) => ({
+        ...record,
+        id: input.id,
+      }));
+      mockResultsRepo.getBySessionId.mockResolvedValue(null);
+
+      // Hold the step inside waitForCompletion until we cancel + release it.
+      let release!: () => void;
+      const gate = new Promise<void>((r) => {
+        release = r;
+      });
+      mockService.waitForCompletion.mockImplementationOnce(async () => {
+        await gate;
+        return { exitCode: 0 };
+      });
+
+      await startOrchestration(
+        { goal: 'Build a REST API', provider: 'claude-code', cwd: '/project', autoMode: true },
+        USER_ID
+      );
+      const runId = (mockRunsRepo.create.mock.calls[0][0] as { id: string }).id;
+      mockRunsRepo.getById.mockResolvedValue({ ...record, id: runId });
+
+      // Let the loop reach waitForCompletion (session created, abort not yet set).
+      await new Promise((r) => setTimeout(r, 15));
+
+      // Cancel while the step is in flight, then let the (terminated) session resolve.
+      await cancelOrchestration(runId, USER_ID);
+      release();
+      await new Promise((r) => setTimeout(r, 25));
+
+      const statuses = mockRunsRepo.updateStatus.mock.calls.map((c) => c[2]);
+      expect(statuses).toContain('cancelled');
+      expect(statuses).not.toContain('completed');
+      // The in-flight session must have been terminated by the cancel.
+      expect(mockService.terminateSession).toHaveBeenCalledWith('sess-1', USER_ID);
     });
   });
 

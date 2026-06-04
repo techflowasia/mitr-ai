@@ -334,12 +334,25 @@ export class AcpClient {
     this.clientHandler = null;
 
     if (this.process && !this.process.killed) {
-      this.process.kill('SIGTERM');
+      const proc = this.process;
+      proc.kill('SIGTERM');
 
-      // Force kill after 5 seconds
+      // Force-kill after 5s if SIGTERM didn't terminate it. Two things this
+      // must get right (both were previously wrong, so SIGKILL never fired):
+      //   1. Capture `proc` in a local — `this.process` is nulled below, so a
+      //      closure over the field would always see null when the timer runs.
+      //   2. Guard on exitCode/signalCode, NOT `.killed`: Node sets `.killed`
+      //      true the instant SIGTERM is *sent* (not when the process dies), so
+      //      a `!killed` check is always false here. exitCode === null &&
+      //      signalCode === null means the process is genuinely still alive,
+      //      which also avoids SIGKILL-ing a reused PID after a clean exit.
       const forceKillTimer = setTimeout(() => {
-        if (this.process && !this.process.killed) {
-          this.process.kill('SIGKILL');
+        if (proc.exitCode === null && proc.signalCode === null) {
+          try {
+            proc.kill('SIGKILL');
+          } catch {
+            /* already gone */
+          }
         }
       }, 5000);
       forceKillTimer.unref();

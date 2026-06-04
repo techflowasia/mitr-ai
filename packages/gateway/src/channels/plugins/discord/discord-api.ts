@@ -81,6 +81,13 @@ export class DiscordChannelAPI implements ChannelPluginAPI {
   // ==========================================================================
 
   async connect(): Promise<void> {
+    // Idempotency guard (matches the Telegram plugin). ChannelService.connect
+    // does not dedupe, so a repeat connect() on an already-connected channel
+    // would build a SECOND discord.js Client over this.client and leak the
+    // first one (its gateway WebSocket + heartbeat timers + listeners stay
+    // live). Skip when already connected or connecting.
+    if (this.status === 'connected' || this.status === 'connecting') return;
+
     if (!this.config.bot_token) {
       throw new Error('Discord bot token is required');
     }

@@ -100,6 +100,13 @@ export class MatrixChannelAPI implements ChannelPluginAPI {
   // ==========================================================================
 
   async connect(): Promise<void> {
+    // Idempotency guard (matches the Telegram plugin). ChannelService.connect
+    // does not dedupe, so a repeat connect() on an already-connected channel
+    // would start a SECOND startSync() loop and orphan the first
+    // syncAbortController — an unreachable controller whose loop polls the
+    // homeserver forever. Skip when already connected or connecting.
+    if (this.status === 'connected' || this.status === 'connecting') return;
+
     if (!this.config.homeserver_url || !this.config.access_token || !this.config.user_id) {
       this.status = 'error';
       this.emitConnectionEvent('error');

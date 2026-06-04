@@ -46,11 +46,32 @@ export class PostgresAdapter implements DatabaseAdapter {
    * Initialize the database connection pool
    */
   async initialize(): Promise<void> {
+    // H-D10 fix: install per-connection statement_timeout and
+    // idle_in_transaction_session_timeout. These are applied via the libpq
+    // `options` startup parameter (`-c name=value`) rather than a post-connect
+    // `SET` query. The SET approach raced the consumer's first query: pg-pool
+    // does NOT await `connect` listeners, so it handed the fresh client to a
+    // caller whose first query ran *concurrently* with the not-yet-finished
+    // SET — that both triggered pg's "client is already executing a query"
+    // deprecation warning AND let the first query on every new connection run
+    // before statement_timeout was in effect. Startup options apply server-side
+    // before any query, so there is no race and the first query is protected.
+    // Values are milliseconds (Postgres GUC default unit), matching the prior
+    // `SET statement_timeout = <ms>` semantics. 0 disables (option omitted).
+    const startupOptions: string[] = [];
+    if (DB_STATEMENT_TIMEOUT_MS > 0) {
+      startupOptions.push(`-c statement_timeout=${DB_STATEMENT_TIMEOUT_MS}`);
+    }
+    if (DB_IDLE_TX_TIMEOUT_MS > 0) {
+      startupOptions.push(`-c idle_in_transaction_session_timeout=${DB_IDLE_TX_TIMEOUT_MS}`);
+    }
+
     this.pool = new Pool({
       connectionString: this.config.postgresUrl,
       max: this.config.postgresPoolSize || DB_POOL_MAX,
       idleTimeoutMillis: DB_IDLE_TIMEOUT_MS,
       connectionTimeoutMillis: DB_CONNECT_TIMEOUT_MS,
+      ...(startupOptions.length > 0 ? { options: startupOptions.join(' ') } : {}),
     });
 
     // Handle idle client errors gracefully — without this listener,
@@ -59,26 +80,6 @@ export class PostgresAdapter implements DatabaseAdapter {
     this.pool.on('error', (err: Error) => {
       log.warn('[PostgreSQL] Idle client error (pool will reconnect):', err.message);
     });
-
-    // H-D10 fix: install per-connection statement_timeout and
-    // idle_in_transaction_session_timeout. Setting these via SET at connect
-    // time scopes them to the connection (no global server change required)
-    // and applies to every query issued through the pool. Setting to 0
-    // disables the timeout (matches Postgres semantics).
-    if (DB_STATEMENT_TIMEOUT_MS > 0 || DB_IDLE_TX_TIMEOUT_MS > 0) {
-      this.pool.on('connect', (client) => {
-        const statements: string[] = [];
-        if (DB_STATEMENT_TIMEOUT_MS > 0) {
-          statements.push(`SET statement_timeout = ${DB_STATEMENT_TIMEOUT_MS}`);
-        }
-        if (DB_IDLE_TX_TIMEOUT_MS > 0) {
-          statements.push(`SET idle_in_transaction_session_timeout = ${DB_IDLE_TX_TIMEOUT_MS}`);
-        }
-        client.query(statements.join('; ')).catch((err: Error) => {
-          log.warn('[PostgreSQL] Failed to apply per-connection timeouts:', err.message);
-        });
-      });
-    }
 
     // Test connection and register pgvector types
     const client = await this.pool.connect();

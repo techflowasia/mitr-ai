@@ -326,6 +326,21 @@ describe('EmbeddingService', () => {
       expect(results.every((r) => !r.cached)).toBe(true);
     });
 
+    it('throws when the API returns fewer embeddings than inputs (no silent holes)', async () => {
+      mockEmbeddingCacheRepo.lookup.mockResolvedValue(null);
+      // Partial/truncated response: 2 embeddings for 3 uncached inputs. Without
+      // the 1:1 count check this leaves an `undefined` hole in the pre-sized
+      // results array, which the embedding queue dereferences outside its
+      // per-item guard — throwing an uncaught error that permanently poisons
+      // the affected memories' dedup keys. Failing here turns that silent
+      // partial-poison into a clean full-batch retry via the caller's catch.
+      mockFetch.mockResolvedValue(mockFetchResponse([fakeEmbedding(), fakeEmbedding()]));
+
+      await expect(service.generateBatchEmbeddings(['a', 'b', 'c'])).rejects.toThrow(
+        /returned 2 embeddings for 3 inputs/
+      );
+    });
+
     it('chunks API calls by EMBEDDING_MAX_BATCH_SIZE', async () => {
       // Mock with MAX_BATCH_SIZE = 100 from defaults mock.
       // We use a service with a small batch size to test chunking.

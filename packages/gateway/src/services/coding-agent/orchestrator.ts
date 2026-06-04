@@ -367,10 +367,14 @@ async function runOrchestrationLoop(run: OrchestrationRun, userId: string): Prom
   broadcast('orchestration:status', { id: run.id, status: 'running' });
 
   while (run.currentStep < run.maxSteps) {
-    // Check abort
+    // Check abort. cancelOrchestration has already persisted 'cancelled' and
+    // cleaned up the session — just stop. Returning (not breaking) is essential:
+    // the post-loop path calls finishRun(..., 'completed'), which would overwrite
+    // the cancelled status.
     if (ctrl?.abort) {
       log.info(`Orchestration ${run.id} aborted by user`);
-      break;
+      activeRuns.delete(run.id);
+      return;
     }
 
     // Check time limit
@@ -436,6 +440,16 @@ async function runOrchestrationLoop(run: OrchestrationRun, userId: string): Prom
       const completed = await service.waitForCompletion(session.id, userId, STEP_TIMEOUT_MS);
       if (ctrl) ctrl.currentSessionId = undefined;
 
+      // Cancellation terminates the in-flight session, which makes
+      // waitForCompletion resolve right here. Bail before marking the step
+      // 'completed', running a (paid) analysis, or hitting finishRun('completed')
+      // — cancelOrchestration already persisted 'cancelled'.
+      if (ctrl?.abort) {
+        log.info(`Orchestration ${run.id} aborted during step ${stepIndex}`);
+        activeRuns.delete(run.id);
+        return;
+      }
+
       step.exitCode = completed.exitCode;
       step.completedAt = new Date().toISOString();
       step.durationMs = step.startedAt ? Date.now() - new Date(step.startedAt).getTime() : 0;
@@ -466,6 +480,15 @@ async function runOrchestrationLoop(run: OrchestrationRun, userId: string): Prom
           run.provider,
           run.model
         );
+
+        // A cancel can land while the analysis LLM call is in flight; don't let
+        // its goalComplete/next-step decision drive finishRun('completed') or a
+        // waiting_user transition over the already-persisted 'cancelled' status.
+        if (ctrl?.abort) {
+          log.info(`Orchestration ${run.id} aborted during analysis of step ${stepIndex}`);
+          activeRuns.delete(run.id);
+          return;
+        }
 
         step.analysis = analysis;
         step.outputSummary = analysis.summary;

@@ -28,8 +28,15 @@ const { notificationRoutes } = await import('./notifications.js');
 
 // ── App ──
 
-function createApp() {
+function createApp(authUserId?: string) {
   const app = new Hono();
+  // Simulate the auth middleware having established an identity.
+  if (authUserId !== undefined) {
+    app.use('*', async (c, next) => {
+      c.set('userId', authUserId);
+      await next();
+    });
+  }
   app.route('/notifications', notificationRoutes);
   return app;
 }
@@ -78,14 +85,16 @@ describe('POST /notifications/send', () => {
     expect(res.status).toBe(400);
   });
 
-  it('passes userId when provided', async () => {
-    const app = createApp();
+  it('ignores client-supplied body.userId and scopes to the authenticated user (IDOR)', async () => {
+    const app = createApp('alice');
     await app.request('/notifications/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: 'user-42', title: 'Hi', body: 'There' }),
+      // Attacker tries to push a notification onto 'victim' channels.
+      body: JSON.stringify({ userId: 'victim', title: 'Hi', body: 'There' }),
     });
-    expect(mockRouter.notify).toHaveBeenCalledWith('user-42', expect.anything());
+    expect(mockRouter.notify).toHaveBeenCalledWith('alice', expect.anything());
+    expect(mockRouter.notify).not.toHaveBeenCalledWith('victim', expect.anything());
   });
 });
 
@@ -147,21 +156,23 @@ describe('POST /notifications/broadcast', () => {
 });
 
 describe('GET /notifications/preferences/:userId', () => {
-  it('returns preferences for user', async () => {
-    const app = createApp();
-    const res = await app.request('/notifications/preferences/user-1');
+  it('reads preferences scoped to the authenticated user, ignoring the :userId param (IDOR)', async () => {
+    const app = createApp('alice');
+    // Attacker requests another user's preferences via the URL param.
+    const res = await app.request('/notifications/preferences/victim');
 
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.data.preferences.channelPriority).toEqual(['web']);
-    expect(mockRouter.getPreferences).toHaveBeenCalledWith('user-1');
+    expect(mockRouter.getPreferences).toHaveBeenCalledWith('alice');
+    expect(mockRouter.getPreferences).not.toHaveBeenCalledWith('victim');
   });
 });
 
 describe('PUT /notifications/preferences/:userId', () => {
-  it('updates preferences', async () => {
-    const app = createApp();
-    const res = await app.request('/notifications/preferences/user-1', {
+  it('writes preferences scoped to the authenticated user, ignoring the :userId param (IDOR)', async () => {
+    const app = createApp('alice');
+    const res = await app.request('/notifications/preferences/victim', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ channelPriority: ['telegram', 'web'], minPriority: 'normal' }),
@@ -169,7 +180,10 @@ describe('PUT /notifications/preferences/:userId', () => {
 
     expect(res.status).toBe(200);
     expect(mockRouter.setPreferences).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: 'user-1', minPriority: 'normal' })
+      expect.objectContaining({ userId: 'alice', minPriority: 'normal' })
+    );
+    expect(mockRouter.setPreferences).not.toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'victim' })
     );
   });
 });

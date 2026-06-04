@@ -220,6 +220,20 @@ describe('local-executor', () => {
       expect(result.stdout.length).toBeLessThan(200);
       expect(result.stdout).toContain(`... [Output truncated at ${maxOutputSize} bytes]`);
     }, 10000);
+
+    it('terminates a runaway writer instead of accumulating output unbounded', async () => {
+      // setInterval keeps the process alive while flooding stdout. Without a
+      // streaming cap the buffer grows until the timeout fires; with it, the
+      // child is killed as soon as output crosses the cap. We assert the latter
+      // by the dedicated error message and a fast termination, not the timeout.
+      const code = "setInterval(() => process.stdout.write('x'.repeat(1000)), 0)";
+      const result = await executeJavaScriptLocal(code, { maxOutputSize: 500, timeout: 5000 });
+
+      expect(result.success).toBe(false);
+      expect(result.timedOut).toBe(false);
+      expect(result.error).toMatch(/Output exceeded 500 bytes/);
+      expect(result.executionTimeMs).toBeLessThan(4000);
+    }, 10000);
   });
 
   // ===========================================================================

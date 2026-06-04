@@ -283,6 +283,35 @@ describe('ClawManager', () => {
 
       expect(manager.getSession('claw-1')?.inbox).toEqual(['New mid-cycle message']);
     });
+
+    it('preserves mid-cycle arrivals when the inbox is at its cap (head eviction)', async () => {
+      // Regression: the post-cycle consume-slice used to remove
+      // `min(snapshotLength, currentLength)` messages from the head. When the
+      // inbox was at its cap, each mid-cycle arrival evicted a snapshot message
+      // from the head, so a snapshot-length slice over-removed and silently
+      // dropped the brand-new messages. The fix discounts the eviction count.
+      setupRepo(makeConfig({ mode: 'continuous' }));
+      await manager.startClaw('claw-1', 'user-1');
+
+      // Fill the inbox to the 100-message cap so any new arrival forces a head
+      // eviction inside trimInbox.
+      const session = manager.getSession('claw-1')!;
+      session.inbox = Array.from({ length: 100 }, (_, i) => `old-${i}`);
+
+      mockRunCycle.mockImplementation(async () => {
+        // Three operator messages land while the cycle runs; each tips the
+        // inbox over the cap and evicts one head (snapshot) message.
+        await manager.sendMessage('claw-1', 'mid-1');
+        await manager.sendMessage('claw-1', 'mid-2');
+        await manager.sendMessage('claw-1', 'mid-3');
+        return makeCycleResult();
+      });
+
+      await vi.advanceTimersByTimeAsync(600);
+
+      // All three mid-cycle messages survive; the consumed snapshot is gone.
+      expect(manager.getSession('claw-1')?.inbox).toEqual(['mid-1', 'mid-2', 'mid-3']);
+    });
   });
 
   describe('single-shot mode', () => {

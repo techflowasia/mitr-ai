@@ -165,6 +165,7 @@ describe('Channel Auth Routes', () => {
 
   describe('POST /auth/block/:platform/:platformUserId', () => {
     it('should block a user successfully', async () => {
+      mockChannelUsersRepo.findByPlatform.mockResolvedValue(mockUser());
       mockVerificationService.blockUser.mockResolvedValue(true);
 
       const res = await app.request('/auth/block/telegram/tg-12345', {
@@ -177,16 +178,28 @@ describe('Channel Auth Routes', () => {
       expect(mockVerificationService.blockUser).toHaveBeenCalledWith('telegram', 'tg-12345');
     });
 
-    it('should return false when user not found', async () => {
-      mockVerificationService.blockUser.mockResolvedValue(false);
+    it('should 404 when the target channel user does not exist', async () => {
+      mockChannelUsersRepo.findByPlatform.mockResolvedValue(null);
 
       const res = await app.request('/auth/block/telegram/unknown-user', {
         method: 'POST',
       });
 
-      expect(res.status).toBe(200);
-      const data = await res.json();
-      expect(data.data.blocked).toBe(false);
+      expect(res.status).toBe(404);
+      expect(mockVerificationService.blockUser).not.toHaveBeenCalled();
+    });
+
+    it('should 404 (no block) when the channel user belongs to another owner', async () => {
+      mockChannelUsersRepo.findByPlatform.mockResolvedValue(
+        mockUser({ ownpilotUserId: 'someone-else' })
+      );
+
+      const res = await app.request('/auth/block/telegram/tg-12345', {
+        method: 'POST',
+      });
+
+      expect(res.status).toBe(404);
+      expect(mockVerificationService.blockUser).not.toHaveBeenCalled();
     });
   });
 
@@ -194,6 +207,7 @@ describe('Channel Auth Routes', () => {
 
   describe('POST /auth/unblock/:platform/:platformUserId', () => {
     it('should unblock a user successfully', async () => {
+      mockChannelUsersRepo.findByPlatform.mockResolvedValue(mockUser());
       mockVerificationService.unblockUser.mockResolvedValue(true);
 
       const res = await app.request('/auth/unblock/telegram/tg-12345', {
@@ -204,6 +218,19 @@ describe('Channel Auth Routes', () => {
       const data = await res.json();
       expect(data.success).toBe(true);
       expect(mockVerificationService.unblockUser).toHaveBeenCalledWith('telegram', 'tg-12345');
+    });
+
+    it('should 404 (no unblock) when the channel user belongs to another owner', async () => {
+      mockChannelUsersRepo.findByPlatform.mockResolvedValue(
+        mockUser({ ownpilotUserId: 'someone-else' })
+      );
+
+      const res = await app.request('/auth/unblock/telegram/tg-12345', {
+        method: 'POST',
+      });
+
+      expect(res.status).toBe(404);
+      expect(mockVerificationService.unblockUser).not.toHaveBeenCalled();
     });
   });
 
@@ -252,11 +279,22 @@ describe('Channel Auth Routes', () => {
       await app.request('/auth/users?platform=telegram&verified=true&limit=10&offset=5');
 
       expect(mockChannelUsersRepo.list).toHaveBeenCalledWith({
+        ownpilotUserId: 'default',
         platform: 'telegram',
         isVerified: true,
         limit: 10,
         offset: 5,
       });
+    });
+
+    it('scopes the listing to the authenticated owner (no cross-owner leak)', async () => {
+      mockChannelUsersRepo.list.mockResolvedValue([]);
+
+      await app.request('/auth/users');
+
+      expect(mockChannelUsersRepo.list).toHaveBeenCalledWith(
+        expect.objectContaining({ ownpilotUserId: 'default' })
+      );
     });
 
     it('should pass verified=false filter', async () => {
@@ -298,11 +336,22 @@ describe('Channel Auth Routes', () => {
     });
 
     it('should return 404 when user not found', async () => {
-      mockVerificationService.approveUser.mockResolvedValue(false);
+      mockChannelUsersRepo.getById.mockResolvedValue(null);
 
       const res = await app.request('/auth/users/missing/approve', { method: 'POST' });
 
       expect(res.status).toBe(404);
+    });
+
+    it('should 404 (no approve) for a user owned by another OwnPilot user', async () => {
+      mockChannelUsersRepo.getById.mockResolvedValue(
+        mockUser({ id: 'u-1', ownpilotUserId: 'someone-else' })
+      );
+
+      const res = await app.request('/auth/users/u-1/approve', { method: 'POST' });
+
+      expect(res.status).toBe(404);
+      expect(mockVerificationService.approveUser).not.toHaveBeenCalled();
     });
   });
 
@@ -359,6 +408,7 @@ describe('Channel Auth Routes', () => {
 
   describe('POST /auth/users/:id/unverify', () => {
     it('should unverify a user by ID', async () => {
+      mockChannelUsersRepo.getById.mockResolvedValue(mockUser({ id: 'u-1' }));
       mockVerificationService.unverifyUser.mockResolvedValue(true);
 
       const res = await app.request('/auth/users/u-1/unverify', { method: 'POST' });
@@ -370,11 +420,22 @@ describe('Channel Auth Routes', () => {
     });
 
     it('should return 404 when user not found', async () => {
-      mockVerificationService.unverifyUser.mockResolvedValue(false);
+      mockChannelUsersRepo.getById.mockResolvedValue(null);
 
       const res = await app.request('/auth/users/missing/unverify', { method: 'POST' });
 
       expect(res.status).toBe(404);
+    });
+
+    it('should 404 (no unverify) for a user owned by another OwnPilot user', async () => {
+      mockChannelUsersRepo.getById.mockResolvedValue(
+        mockUser({ id: 'u-1', ownpilotUserId: 'someone-else' })
+      );
+
+      const res = await app.request('/auth/users/u-1/unverify', { method: 'POST' });
+
+      expect(res.status).toBe(404);
+      expect(mockVerificationService.unverifyUser).not.toHaveBeenCalled();
     });
   });
 
@@ -382,6 +443,7 @@ describe('Channel Auth Routes', () => {
 
   describe('DELETE /auth/users/:id', () => {
     it('should delete a user by ID', async () => {
+      mockChannelUsersRepo.getById.mockResolvedValue(mockUser({ id: 'u-1' }));
       mockVerificationService.deleteUser.mockResolvedValue(true);
 
       const res = await app.request('/auth/users/u-1', { method: 'DELETE' });
@@ -397,11 +459,22 @@ describe('Channel Auth Routes', () => {
     });
 
     it('should return 404 when user not found', async () => {
-      mockVerificationService.deleteUser.mockResolvedValue(false);
+      mockChannelUsersRepo.getById.mockResolvedValue(null);
 
       const res = await app.request('/auth/users/missing', { method: 'DELETE' });
 
       expect(res.status).toBe(404);
+    });
+
+    it('should 404 (no delete) for a user owned by another OwnPilot user', async () => {
+      mockChannelUsersRepo.getById.mockResolvedValue(
+        mockUser({ id: 'u-1', ownpilotUserId: 'someone-else' })
+      );
+
+      const res = await app.request('/auth/users/u-1', { method: 'DELETE' });
+
+      expect(res.status).toBe(404);
+      expect(mockVerificationService.deleteUser).not.toHaveBeenCalled();
     });
   });
 });

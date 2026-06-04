@@ -37,6 +37,15 @@ interface RunningWorker {
   handler: JobHandler;
   activeJobs: Set<string>;
   stopped: boolean;
+  /**
+   * Re-entrancy guard. pollWorker is invoked concurrently for the SAME worker
+   * from three sources (the 1 Hz pollAll, the immediate start poll, and each
+   * job's finally re-poll). Without this, two overlapping claim-loops both read
+   * the pre-claim activeJobs.size and can collectively claim up to 2×concurrency
+   * jobs before either adds to the set — over-subscribing the worker. Only one
+   * claim-loop may run per worker at a time.
+   */
+  polling: boolean;
 }
 
 /**
@@ -111,6 +120,7 @@ export class JobQueueService {
       handler,
       activeJobs: new Set(),
       stopped: false,
+      polling: false,
     };
 
     this.workers.set(workerId, worker);
@@ -151,20 +161,28 @@ export class JobQueueService {
   }
 
   private async pollWorker(worker: RunningWorker): Promise<void> {
-    if (worker.stopped) return;
+    if (worker.stopped || worker.polling) return;
     if (worker.activeJobs.size >= worker.concurrency) return;
 
-    const availableSlots = worker.concurrency - worker.activeJobs.size;
-    for (let i = 0; i < availableSlots; i++) {
-      if (worker.stopped) break;
-      const job = await this.repo.claimJob(worker.queue, 0);
-      if (!job) break;
+    // Serialize claim-loops per worker so activeJobs.size is read consistently
+    // across the await on claimJob — otherwise an overlapping poll claims jobs
+    // against a stale count and the worker exceeds its concurrency cap.
+    worker.polling = true;
+    try {
+      const availableSlots = worker.concurrency - worker.activeJobs.size;
+      for (let i = 0; i < availableSlots; i++) {
+        if (worker.stopped) break;
+        const job = await this.repo.claimJob(worker.queue, 0);
+        if (!job) break;
 
-      worker.activeJobs.add(job.id);
-      this.executeJob(worker, job).finally(() => {
-        worker.activeJobs.delete(job.id);
-        this.pollWorker(worker);
-      });
+        worker.activeJobs.add(job.id);
+        this.executeJob(worker, job).finally(() => {
+          worker.activeJobs.delete(job.id);
+          this.pollWorker(worker);
+        });
+      }
+    } finally {
+      worker.polling = false;
     }
   }
 

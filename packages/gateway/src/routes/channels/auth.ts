@@ -14,6 +14,19 @@ import { wsGateway } from '../../ws/server.js';
 export const channelAuthRoutes = new Hono();
 
 /**
+ * Load a channel user by id and enforce that it belongs to the authenticated
+ * owner. Returns null when the user does not exist OR is owned by someone else
+ * — callers map both to a 404 so cross-owner ids are indistinguishable from
+ * missing ones (no existence leak). Mirrors the ownership guard already on
+ * GET /status.
+ */
+async function getOwnedChannelUserById(id: string, ownerUserId: string) {
+  const user = await channelUsersRepo.getById(id);
+  if (!user || user.ownpilotUserId !== ownerUserId) return null;
+  return user;
+}
+
+/**
  * POST /channels/auth/generate-token
  * Generate a verification PIN/token for linking a channel account.
  * Uses the authenticated user's ID from context (security: prevents generating tokens for other users).
@@ -81,7 +94,12 @@ channelAuthRoutes.get('/status/:platform/:platformUserId', async (c) => {
  * Block a channel user.
  */
 channelAuthRoutes.post('/block/:platform/:platformUserId', async (c) => {
+  const userId = getUserId(c);
   const { platform, platformUserId } = c.req.param();
+  const target = await channelUsersRepo.findByPlatform(platform, platformUserId);
+  if (!target || target.ownpilotUserId !== userId) {
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'User not found' }, 404);
+  }
   const service = getChannelVerificationService();
   const blocked = await service.blockUser(platform, platformUserId);
 
@@ -93,7 +111,12 @@ channelAuthRoutes.post('/block/:platform/:platformUserId', async (c) => {
  * Unblock a channel user.
  */
 channelAuthRoutes.post('/unblock/:platform/:platformUserId', async (c) => {
+  const userId = getUserId(c);
   const { platform, platformUserId } = c.req.param();
+  const target = await channelUsersRepo.findByPlatform(platform, platformUserId);
+  if (!target || target.ownpilotUserId !== userId) {
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'User not found' }, 404);
+  }
   const service = getChannelVerificationService();
   const unblocked = await service.unblockUser(platform, platformUserId);
 
@@ -105,11 +128,14 @@ channelAuthRoutes.post('/unblock/:platform/:platformUserId', async (c) => {
  * List all channel users with optional filters.
  */
 channelAuthRoutes.get('/users', async (c) => {
+  const userId = getUserId(c);
   const platform = c.req.query('platform');
   const verified = c.req.query('verified');
   const { limit, offset } = getPaginationParams(c, 100);
 
   const users = await channelUsersRepo.list({
+    // Scope to the authenticated owner — never expose other users' linked accounts.
+    ownpilotUserId: userId,
     platform: platform ?? undefined,
     isVerified: verified !== undefined ? verified === 'true' : undefined,
     limit,
@@ -145,7 +171,13 @@ channelAuthRoutes.get('/users', async (c) => {
  * Approve a pending channel user.
  */
 channelAuthRoutes.post('/users/:id/approve', async (c) => {
+  const userId = getUserId(c);
   const id = c.req.param('id');
+  const owned = await getOwnedChannelUserById(id, userId);
+  if (!owned) {
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'User not found' }, 404);
+  }
+
   const service = getChannelVerificationService();
   const approved = await service.approveUser(id);
 
@@ -171,8 +203,9 @@ channelAuthRoutes.post('/users/:id/approve', async (c) => {
  * Block a channel user by ID.
  */
 channelAuthRoutes.post('/users/:id/block', async (c) => {
+  const userId = getUserId(c);
   const id = c.req.param('id');
-  const user = await channelUsersRepo.getById(id);
+  const user = await getOwnedChannelUserById(id, userId);
   if (!user) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'User not found' }, 404);
   }
@@ -188,8 +221,9 @@ channelAuthRoutes.post('/users/:id/block', async (c) => {
  * Unblock a channel user by ID.
  */
 channelAuthRoutes.post('/users/:id/unblock', async (c) => {
+  const userId = getUserId(c);
   const id = c.req.param('id');
-  const user = await channelUsersRepo.getById(id);
+  const user = await getOwnedChannelUserById(id, userId);
   if (!user) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'User not found' }, 404);
   }
@@ -205,7 +239,13 @@ channelAuthRoutes.post('/users/:id/unblock', async (c) => {
  * Revoke verification for a channel user by ID.
  */
 channelAuthRoutes.post('/users/:id/unverify', async (c) => {
+  const userId = getUserId(c);
   const id = c.req.param('id');
+  const owned = await getOwnedChannelUserById(id, userId);
+  if (!owned) {
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'User not found' }, 404);
+  }
+
   const service = getChannelVerificationService();
   const result = await service.unverifyUser(id);
 
@@ -223,7 +263,13 @@ channelAuthRoutes.post('/users/:id/unverify', async (c) => {
  * Delete a channel user by ID.
  */
 channelAuthRoutes.delete('/users/:id', async (c) => {
+  const userId = getUserId(c);
   const id = c.req.param('id');
+  const owned = await getOwnedChannelUserById(id, userId);
+  if (!owned) {
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'User not found' }, 404);
+  }
+
   const service = getChannelVerificationService();
   const deleted = await service.deleteUser(id);
 

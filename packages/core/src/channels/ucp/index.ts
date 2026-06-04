@@ -35,7 +35,12 @@ export { UCPChannelAdapter } from './adapter.js';
 export { UCPPipeline } from './pipeline.js';
 
 // Bridge
-export { UCPBridgeManager, type BridgeStore, type BridgeSendFn } from './bridge.js';
+export {
+  UCPBridgeManager,
+  isSafeRegexPattern,
+  type BridgeStore,
+  type BridgeSendFn,
+} from './bridge.js';
 
 // Middleware
 export {

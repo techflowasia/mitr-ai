@@ -389,6 +389,29 @@ describe('buildSandboxContext', () => {
     });
   });
 
+  describe('network fetch is SSRF-safe by default', () => {
+    it('exposes a fetch only when the network permission is granted', () => {
+      expect(buildSandboxContext({ network: false }, {}, {}).context.fetch).toBeUndefined();
+      expect(typeof buildSandboxContext({ network: true }, {}, {}).context.fetch).toBe('function');
+    });
+
+    it('blocks the cloud-metadata address (no override needed)', async () => {
+      const { context } = buildSandboxContext({ network: true }, {}, {});
+      const fetch = context.fetch as (url: string) => Promise<Response>;
+      // 169.254.169.254 is rejected synchronously (literal link-local IP) — no
+      // real network call — so a missing host override can never SSRF.
+      await expect(fetch('http://169.254.169.254/latest/meta-data/')).rejects.toThrow(
+        /SSRF|private|internal/i
+      );
+    });
+
+    it('blocks localhost / loopback', async () => {
+      const { context } = buildSandboxContext({ network: true }, {}, {});
+      const fetch = context.fetch as (url: string) => Promise<Response>;
+      await expect(fetch('http://127.0.0.1:8080/')).rejects.toThrow(/SSRF|private|internal/i);
+    });
+  });
+
   it('blocks dangerous globals as undefined', () => {
     const { context } = buildSandboxContext();
     expect(context.process).toBeUndefined();

@@ -22,18 +22,22 @@
  */
 
 import { z } from 'zod';
+import { isSafeRegexPattern } from '@ownpilot/core';
 
 // ─── Bridges ─────────────────────────────────────────────────────
 
 const bridgeDirectionEnum = z.enum(['source_to_target', 'target_to_source', 'both']);
 
 const validRegex = (val: string, ctx: z.RefinementCtx) => {
-  try {
-    new RegExp(val);
-  } catch {
+  // Reject both un-compilable AND ReDoS-prone patterns. The bridge filter runs
+  // RegExp.test synchronously on attacker-influenceable inbound text, so a
+  // pattern with nested unbounded quantifiers (e.g. `(a+)+$`) could hang the
+  // event loop. isSafeRegexPattern covers the compile check too.
+  if (!isSafeRegexPattern(val)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'Invalid filter pattern (must be valid regex)',
+      message:
+        'Invalid or unsafe filter pattern (must be a valid regex without nested unbounded quantifiers)',
     });
   }
 };

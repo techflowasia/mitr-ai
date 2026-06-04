@@ -319,6 +319,7 @@ export class ClawManager {
       steerPending: false,
       dirty: true,
       priority: config.priority ?? 3,
+      inboxEvictedDuringCycle: 0,
     };
 
     this.claws.set(clawId, managed);
@@ -562,7 +563,7 @@ export class ClawManager {
     if (!managed) return false;
 
     managed.session.inbox.push(message);
-    this.trimInbox(managed.session);
+    this.trimInbox(managed);
     this.markDirty(managed);
 
     const repo = getClawsRepository();
@@ -654,7 +655,7 @@ export class ClawManager {
     // Surface the steer prominently so the next prompt treats it as a directive.
     const steerMsg = `[STEER] ${message}`;
     managed.session.inbox.push(steerMsg);
-    this.trimInbox(managed.session);
+    this.trimInbox(managed);
     this.markDirty(managed);
     const repo = getClawsRepository();
     await repo.appendToInbox(clawId, steerMsg);
@@ -683,10 +684,11 @@ export class ClawManager {
     }, 0);
   }
 
-  private trimInbox(session: ClawSession): void {
+  private trimInbox(managed: ManagedClaw): void {
     // O(n): compute per-message byte cost once, then drop from the head until
     // both the byte and count caps are satisfied. Avoids the prior O(n²)
     // stringify-on-every-shift pattern that scales poorly with chatty inboxes.
+    const session = managed.session;
     if (session.inbox.length === 0) return;
     const sizes = session.inbox.map((m) => Buffer.byteLength(m, 'utf8') + 4); // +4 for JSON quoting/comma
     let totalBytes = sizes.reduce((s, n) => s + n, 0);
@@ -700,6 +702,12 @@ export class ClawManager {
     }
     if (head > 0) {
       session.inbox.splice(0, head);
+      // Record head evictions so executeCycle can tell how many of the
+      // cycle's snapshot messages were dropped from the queue while it ran —
+      // see inboxEvictedDuringCycle. New messages only ever append to the
+      // tail, so the eviction count is exactly what the consume-slice must
+      // discount to avoid eating mid-cycle arrivals.
+      managed.inboxEvictedDuringCycle += head;
     }
   }
 
@@ -988,9 +996,12 @@ export class ClawManager {
         }
       }
 
-      // Snapshot inbox for this cycle but do NOT clear it —
-      // runCycle reads session.inbox to build the prompt.
-      const inboxSnapshot = [...managed.session.inbox];
+      // Record how many messages the cycle will consume but do NOT clear them —
+      // runCycle reads session.inbox to build the prompt. Reset the eviction
+      // counter so trimInbox can report how many of these snapshot messages get
+      // dropped from the head while the cycle runs (see consume-slice below).
+      const inboxLengthAtStart = managed.session.inbox.length;
+      managed.inboxEvictedDuringCycle = 0;
 
       // Fresh AbortController per cycle so pause/stop can cancel mid-cycle.
       managed.abortController = new AbortController();
@@ -1002,12 +1013,16 @@ export class ClawManager {
       // present at cycle start. Messages that arrived during the
       // cycle remain for the next cycle.
       //
-      // Bound the slice arg by current length: trimInbox can run during the
-      // cycle (sendMessage push, periodic persist) and may have evicted
-      // head-of-queue messages if the cap was exceeded. Without this guard,
-      // slicing past inbox.length would silently drop legitimately-newer
-      // mid-cycle messages.
-      const consumed = Math.min(inboxSnapshot.length, managed.session.inbox.length);
+      // The cycle consumed the messages present at start, but trimInbox may
+      // have evicted some of them from the head while the cycle ran
+      // (sendMessage / steer pushes that tipped the inbox over its cap, or the
+      // periodic persist). New messages only ever append to the tail, so the
+      // count actually still in the queue from the snapshot is
+      // `snapshotLength - evicted`; slicing exactly that many off the front
+      // discards the consumed messages while preserving every mid-cycle
+      // arrival. (A plain snapshot-length slice would over-remove by `evicted`
+      // and silently drop newer messages.)
+      const consumed = Math.max(0, inboxLengthAtStart - managed.inboxEvictedDuringCycle);
       managed.session.inbox = managed.session.inbox.slice(consumed);
 
       // Update session
@@ -1632,7 +1647,7 @@ export class ClawManager {
 
   private async persistSession(clawId: string, managed: ManagedClaw): Promise<void> {
     // Trim inbox before persisting to keep DB bounded
-    this.trimInbox(managed.session);
+    this.trimInbox(managed);
 
     const repo = getClawsRepository();
     await repo.saveSession(clawId, {

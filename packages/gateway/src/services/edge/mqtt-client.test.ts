@@ -237,6 +237,28 @@ describe('EdgeMqttClient', () => {
     expect(handler).toHaveBeenCalled();
   });
 
+  it('does NOT dispatch a `+/#` pattern to a topic missing the `+` level', () => {
+    // `a/+/#` requires a level for the '+'. Topic `a` has no such level, so it
+    // must NOT match (MQTT spec: '+' occupies exactly one present level).
+    connectWithMock(client, mockMqttClient);
+    const handler = vi.fn();
+    client.subscribe('a/+/#', handler);
+
+    mockMqttClient._emit('message', 'a', 'payload');
+
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('still dispatches `+/#` when the `+` level is present', () => {
+    connectWithMock(client, mockMqttClient);
+    const handler = vi.fn();
+    client.subscribe('a/+/#', handler);
+
+    mockMqttClient._emit('message', 'a/b/c/d', 'payload');
+
+    expect(handler).toHaveBeenCalled();
+  });
+
   it('does NOT dispatch to non-matching topic', () => {
     connectWithMock(client, mockMqttClient);
     const handler = vi.fn();
@@ -464,6 +486,31 @@ describe('EdgeMqttClient', () => {
       expect((client as any).client).toBe(reconnectClient);
       // Delay doubled (line 164)
       expect((client as any).reconnectDelay).toBe(delayBefore * 2);
+    });
+
+    it('ends the previous client on reconnect and neutralizes its stale handlers', async () => {
+      const reconnectClient = makeMockMqttClient();
+      connectWithMock(client, mockMqttClient);
+      vi.useFakeTimers();
+
+      (client as any).connectFn = () => reconnectClient;
+
+      mockMqttClient._emit('close'); // schedule reconnect
+      await vi.advanceTimersByTimeAsync((client as any).reconnectDelay + 1);
+
+      // Previous client was torn down (no socket/fd leak).
+      expect(mockMqttClient.end).toHaveBeenCalledWith(true);
+      expect((client as any).client).toBe(reconnectClient);
+
+      // A stale event from the OLD client must NOT reach handlers or schedule
+      // another reconnect now that it has been replaced.
+      const staleHandler = vi.fn();
+      client.subscribe('ownpilot/+/devices/+/telemetry', staleHandler);
+      const timersBefore = vi.getTimerCount();
+      mockMqttClient._emit('message', 'ownpilot/u1/devices/d1/telemetry', 'stale');
+      mockMqttClient._emit('close');
+      expect(staleHandler).not.toHaveBeenCalled();
+      expect(vi.getTimerCount()).toBe(timersBefore);
     });
 
     it('reconnect delay caps at maxReconnectDelay', async () => {
