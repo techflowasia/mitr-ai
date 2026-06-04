@@ -212,6 +212,18 @@ describe('getModelPricing', () => {
     expect(result).not.toBeNull();
     expect(result!.provider).toBe('google');
   });
+
+  it('resolves pricing from synced provider config for a model absent from the static table', () => {
+    // cohere has a synced data/providers/cohere.json but no static MODEL_PRICING
+    // entry, so this exercises the synced-config fallback exclusively. Before the
+    // fallback existed this returned null and the model billed at $0.
+    const result = getModelPricing('cohere' as AIProvider, 'command-a-translate-08-2025');
+    expect(result).not.toBeNull();
+    expect(result!.provider).toBe('cohere');
+    expect(result!.modelId).toBe('command-a-translate-08-2025');
+    expect(result!.inputPricePerMillion).toBe(2.5);
+    expect(result!.outputPricePerMillion).toBe(10);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -244,6 +256,18 @@ describe('calculateCost', () => {
   it('returns 0 cost for local model', () => {
     const cost = calculateCost('local', 'local-model', 100_000, 50_000);
     expect(cost).toBe(0);
+  });
+
+  it('calculates cost from synced provider config for a model absent from the static table', () => {
+    // cohere command-a-translate: input $2.5/M, output $10/M (from synced JSON).
+    // Previously billed at $0 because the static table has no cohere entry.
+    const cost = calculateCost(
+      'cohere' as AIProvider,
+      'command-a-translate-08-2025',
+      1_000_000,
+      1_000_000
+    );
+    expect(cost).toBeCloseTo(2.5 + 10, 6);
   });
 
   it('handles large token counts', () => {
