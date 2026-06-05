@@ -24,7 +24,7 @@ export function getConvTitle(conv: Conversation): string {
   return 'New Conversation';
 }
 
-export interface DateGroup {
+interface DateGroup {
   label: string;
   items: Conversation[];
 }
@@ -62,7 +62,7 @@ function groupByDate(convs: Conversation[]): DateGroup[] {
 
 export type SourceFilter = 'all' | 'web' | 'whatsapp' | 'telegram';
 
-export interface SidebarRecentsState {
+interface SidebarRecentsState {
   conversations: Conversation[];
   groups: DateGroup[];
   total: number;

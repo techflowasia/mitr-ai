@@ -105,13 +105,13 @@ export interface AcpPlan {
   updatedAt: string;
 }
 
-export interface AcpData {
+interface AcpData {
   toolCalls: AcpToolCall[];
   plan: AcpPlan | null;
   isAcp: boolean;
 }
 
-export interface AcpPromptResult {
+interface AcpPromptResult {
   stopReason: string;
   output: string;
 }

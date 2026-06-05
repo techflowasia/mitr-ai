@@ -10,7 +10,7 @@ import { agentsApi, modelsApi, toolsApi } from '../api';
 import { useModalClose } from '../hooks';
 import type { Agent, Tool, ModelInfo, AgentDetail } from '../types';
 
-export interface EditAgentModalProps {
+interface EditAgentModalProps {
   agentId: string;
   onClose: () => void;
   onUpdated: (agent: Agent) => void;

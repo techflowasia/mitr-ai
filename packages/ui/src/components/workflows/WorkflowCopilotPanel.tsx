@@ -30,7 +30,7 @@ interface CopilotMessage {
 
 export type { WorkflowDefinition } from './workflowDefinition';
 
-export interface WorkflowCopilotPanelProps {
+interface WorkflowCopilotPanelProps {
   workflowName: string;
   nodes: Node[];
   edges: Edge[];

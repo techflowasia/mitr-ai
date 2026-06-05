@@ -20,7 +20,7 @@ export interface TransformerNodeData extends Record<string, unknown> {
   executionOutput?: unknown;
 }
 
-export type TransformerNodeType = Node<TransformerNodeData>;
+type TransformerNodeType = Node<TransformerNodeData>;
 
 const statusStyles: Record<NodeExecutionStatus, { border: string; bg: string }> = {
   pending: { border: 'border-amber-300 dark:border-amber-700', bg: '' },

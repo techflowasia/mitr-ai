@@ -80,7 +80,7 @@ export interface HabitWithTodayStatus extends Habit {
   todayCount: number;
 }
 
-export interface HabitLog {
+interface HabitLog {
   id: string;
   habitId: string;
   date: string;
@@ -125,7 +125,7 @@ export interface PomodoroSession {
   completedAt?: string;
 }
 
-export interface PomodoroSettings {
+interface PomodoroSettings {
   workDuration: number;
   shortBreakDuration: number;
   longBreakDuration: number;

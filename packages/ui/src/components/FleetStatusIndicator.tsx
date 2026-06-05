@@ -25,9 +25,9 @@ import { useGateway } from '../hooks/useWebSocket';
 const REFLECT_THRESHOLD = 2;
 const STALL_THRESHOLD = 5;
 
-export type AttentionReason = 'escalation' | 'reflection' | 'stalled' | 'failed';
+type AttentionReason = 'escalation' | 'reflection' | 'stalled' | 'failed';
 
-export interface AttentionBreakdown {
+interface AttentionBreakdown {
   escalation: number;
   reflection: number;
   stalled: number;
@@ -35,7 +35,7 @@ export interface AttentionBreakdown {
   total: number;
 }
 
-export interface AttentionEntry {
+interface AttentionEntry {
   claw: ClawConfig;
   reason: AttentionReason;
   /** Short context for the row ("3 consecutive errors", "7 cycles stuck"). */

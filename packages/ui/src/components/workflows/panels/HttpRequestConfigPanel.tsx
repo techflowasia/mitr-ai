@@ -32,7 +32,7 @@ interface KeyValuePair {
   value: string;
 }
 
-interface HttpRequestNodeData {
+export interface HttpRequestNodeData {
   label?: string;
   method?: HttpMethod;
   url?: string;

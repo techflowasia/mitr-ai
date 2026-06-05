@@ -14,7 +14,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { fileWorkspacesApi, codingAgentsApi, clawsApi } from '../api';
 
-export interface PageContext {
+interface PageContext {
   type: 'workspace' | 'coding-agent' | 'claw' | null;
   name?: string;
   path?: string;

@@ -71,7 +71,7 @@ export function validateCron(cron: string): { valid: boolean; error?: string } {
   return { valid: true };
 }
 
-export interface TriggerModalProps {
+interface TriggerModalProps {
   trigger: Trigger | null;
   onClose: () => void;
   onSave: () => void;

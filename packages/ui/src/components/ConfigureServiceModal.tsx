@@ -47,7 +47,7 @@ function getCategoryColor(category: string): string {
 // ConfigureServiceModal
 // ---------------------------------------------------------------------------
 
-export interface ConfigureServiceModalProps {
+interface ConfigureServiceModalProps {
   service: ConfigServiceView;
   activeEntryId: string | null;
   entryFormValues: Record<string, unknown>;

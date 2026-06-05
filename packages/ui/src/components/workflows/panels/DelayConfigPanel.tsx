@@ -23,7 +23,7 @@ import {
 
 type DelayUnit = 'seconds' | 'minutes' | 'hours';
 
-interface DelayNodeData {
+export interface DelayNodeData {
   label?: string;
   duration?: string;
   unit?: DelayUnit;

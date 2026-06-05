@@ -5,7 +5,7 @@
 import { useEffect, useRef } from 'react';
 import { useGateway } from '../../../hooks/useWebSocket';
 
-export interface AgentUpdatePayload {
+interface AgentUpdatePayload {
   agentId: string;
   state: string;
   cyclesCompleted: number;

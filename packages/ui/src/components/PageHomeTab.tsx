@@ -12,24 +12,24 @@ import { Zap, CheckCircle2 } from './icons';
 // Types
 // =============================================================================
 
-export interface HeroIcon {
+interface HeroIcon {
   icon: ComponentType<{ className?: string }>;
   color: string; // e.g. 'text-primary bg-primary/10'
 }
 
-export interface FeatureCard {
+interface FeatureCard {
   icon: ComponentType<{ className?: string }>;
   color: string; // icon wrapper classes e.g. 'text-violet-500 bg-violet-500/10'
   title: string;
   description: string;
 }
 
-export interface GettingStartedStep {
+interface GettingStartedStep {
   title: string;
   detail: string;
 }
 
-export interface QuickAction {
+interface QuickAction {
   icon: ComponentType<{ className?: string }>;
   label: string;
   description: string;
@@ -37,14 +37,14 @@ export interface QuickAction {
   onClick: () => void;
 }
 
-export interface InfoBox {
+interface InfoBox {
   icon: ComponentType<{ className?: string }>;
   title: string;
   description: string;
   color: 'blue' | 'amber' | 'green' | 'violet';
 }
 
-export interface PageHomeTabProps {
+interface PageHomeTabProps {
   /** 3 hero icon badges */
   heroIcons: [HeroIcon, HeroIcon, HeroIcon];
   /** Main headline */

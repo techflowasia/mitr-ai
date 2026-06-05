@@ -31,7 +31,7 @@ export interface TriggerNodeData extends Record<string, unknown> {
   executionStatus?: string;
 }
 
-export type TriggerNodeType = Node<TriggerNodeData>;
+type TriggerNodeType = Node<TriggerNodeData>;
 
 const triggerIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   manual: Play,

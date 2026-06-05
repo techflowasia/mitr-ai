@@ -7,7 +7,7 @@ interface Props {
   title?: string;
 }
 
-interface ChartData {
+export interface ChartData {
   type: 'bar' | 'line' | 'pie' | 'area' | 'scatter' | 'donut';
   data: unknown[];
   xKey?: string;

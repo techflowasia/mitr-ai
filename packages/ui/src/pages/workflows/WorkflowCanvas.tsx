@@ -16,7 +16,7 @@ import {
 
 import { nodeTypes, defaultEdgeOptions } from './shared';
 
-export interface WorkflowCanvasProps {
+interface WorkflowCanvasProps {
   nodes: Node[];
   edges: Edge[];
   isExecuting: boolean;

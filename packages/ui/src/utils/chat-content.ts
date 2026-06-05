@@ -118,7 +118,7 @@ export interface ParsedMarkerWidget {
   markerText: string;
 }
 
-export interface ParsedMarkerSuggestion {
+interface ParsedMarkerSuggestion {
   type: 'suggestion';
   items: Array<{ title: string; detail: string }>;
   markerText: string;

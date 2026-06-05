@@ -8,7 +8,7 @@ import type { AgentSoul, AgentCrew } from '../../../api/endpoints/souls';
 import { fromSoul } from '../types';
 import type { UnifiedAgent } from '../types';
 
-export interface UseAgentsResult {
+interface UseAgentsResult {
   agents: UnifiedAgent[];
   souls: AgentSoul[];
   crews: AgentCrew[];

@@ -5,7 +5,7 @@ import { useModalClose } from '../hooks';
 import { ChevronDown, ChevronRight, ChevronLeft } from './icons';
 import { LoadingSpinner } from './LoadingSpinner';
 
-export interface TriggerHistoryModalProps {
+interface TriggerHistoryModalProps {
   triggerId: string;
   triggerName: string;
   history: TriggerHistoryEntry[];

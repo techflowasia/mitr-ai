@@ -20,7 +20,7 @@ import { formatToolName } from '../../utils/formatters';
 import { autoArrangeNodes } from '../../components/workflows';
 import { getEdgeLabelProps } from './shared';
 
-export interface WorkflowCanvasParams {
+interface WorkflowCanvasParams {
   nodes: Node[];
   edges: Edge[];
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>;

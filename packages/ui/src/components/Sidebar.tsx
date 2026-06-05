@@ -43,7 +43,7 @@ import { ignoreError } from '../utils/ignore-error';
 /** Data sections get a divider before them (if not first visible section) */
 const DATA_GROUPS = new Set(['data', 'ai', 'tools', 'personal', 'system']);
 
-export interface SidebarProps {
+interface SidebarProps {
   isMobile: boolean;
   isOpen: boolean;
   onClose: () => void;

@@ -17,21 +17,21 @@ import { onSessionChanged } from '../utils/session-events';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 
-export interface WSMessage<T = unknown> {
+interface WSMessage<T = unknown> {
   type: string;
   payload: T;
   timestamp: string;
   correlationId?: string;
 }
 
-export interface UseWebSocketOptions {
+interface UseWebSocketOptions {
   url?: string;
   reconnect?: boolean;
   reconnectDelay?: number;
   maxReconnectAttempts?: number;
 }
 
-export interface UseWebSocketResult {
+interface UseWebSocketResult {
   status: ConnectionStatus;
   sessionId: string | null;
   send: <T>(type: string, payload: T) => void;

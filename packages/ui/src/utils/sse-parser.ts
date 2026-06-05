@@ -5,7 +5,7 @@
  * Shared between useChatStore and useChat hooks.
  */
 
-export type SSEEventType =
+type SSEEventType =
   | { kind: 'progress'; data: { type: string; [key: string]: unknown } }
   | {
       kind: 'approval';

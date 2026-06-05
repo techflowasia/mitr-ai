@@ -5,7 +5,7 @@
 import { useEffect } from 'react';
 import type { Edge, Node } from '@xyflow/react';
 
-export interface WorkflowKeyboardParams {
+interface WorkflowKeyboardParams {
   nodes: Node[];
   edges: Edge[];
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>;

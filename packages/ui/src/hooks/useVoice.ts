@@ -9,7 +9,7 @@ import { useState, useRef, useCallback } from 'react';
 import { voiceApi } from '../api/endpoints/voice';
 import { useVoiceAvailability } from './useVoiceAvailability';
 
-export interface UseVoiceReturn {
+interface UseVoiceReturn {
   isRecording: boolean;
   isTranscribing: boolean;
   isSupported: boolean;

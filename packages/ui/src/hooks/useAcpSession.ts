@@ -36,7 +36,7 @@ export interface AcpPermissionRequest {
   timestamp: string;
 }
 
-export interface AcpSessionState {
+interface AcpSessionState {
   /** Whether this session uses ACP */
   isAcp: boolean;
   /** All tool calls (accumulated) */

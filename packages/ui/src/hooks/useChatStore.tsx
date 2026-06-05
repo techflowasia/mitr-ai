@@ -99,7 +99,7 @@ interface ChatState {
 }
 
 /** Serialized snapshot of a conversation's UI state (stored when switching away) */
-export interface ChatSessionSnapshot {
+interface ChatSessionSnapshot {
   messages: Message[];
   sessionId: string | null;
   sessionInfo: SessionInfo | null;
@@ -117,7 +117,7 @@ export interface ChatSessionSnapshot {
 }
 
 /** Tab entry for the session tab bar */
-export interface SessionTab {
+interface SessionTab {
   id: string;
   title: string;
   createdAt: number;

@@ -11,7 +11,7 @@ export interface TunnelStatus {
   startedAt?: string | null;
 }
 
-export interface TunnelStartResponse {
+interface TunnelStartResponse {
   url: string;
   status: string;
 }

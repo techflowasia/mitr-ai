@@ -15,7 +15,7 @@ import { useLocation } from 'react-router-dom';
 import { PAGE_COPILOT_REGISTRY } from '../constants/page-copilot-registry';
 import type { PageCopilotConfig, PageContextData } from '../types/page-copilot';
 
-export interface UsePageCopilotContextResult {
+interface UsePageCopilotContextResult {
   config: PageCopilotConfig | null;
   contextData: PageContextData | null;
   isLoading: boolean;
