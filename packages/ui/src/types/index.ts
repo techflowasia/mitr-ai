@@ -219,10 +219,3 @@ export interface ChatResponse {
   /** Final thinking/reasoning content for models that send it in the done event */
   thinkingContent?: string;
 }
-
-export interface StreamChunk {
-  type: 'text' | 'tool_call' | 'done' | 'error';
-  content?: string;
-  toolCall?: ToolCall;
-  error?: string;
-}

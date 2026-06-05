@@ -42,12 +42,12 @@ export interface IoTDevice {
   description: string;
 }
 
-export interface DeviceSeparator {
+interface DeviceSeparator {
   id: string;
   type: 'separator';
 }
 
-export type EdgeDeviceEntry = MachineDevice | IoTDevice | DeviceSeparator;
+type EdgeDeviceEntry = MachineDevice | IoTDevice | DeviceSeparator;
 
 function isSeparator(
   entry: BookmarkEntry | EdgeDeviceEntry

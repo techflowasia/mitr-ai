@@ -1,13 +1,13 @@
 import type { ComponentType } from 'react';
 
-export interface EmptyStateAction {
+interface EmptyStateAction {
   label: string;
   onClick: () => void;
   icon?: ComponentType<{ className?: string }>;
   variant?: 'primary' | 'secondary' | 'ghost';
 }
 
-export interface EmptyStateProps {
+interface EmptyStateProps {
   icon: ComponentType<{ className?: string }>;
   title: string;
   description?: string;

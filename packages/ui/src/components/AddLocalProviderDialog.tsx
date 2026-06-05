@@ -6,7 +6,7 @@ import type { LocalProviderTemplate } from '../api';
 // Types
 // ============================================================================
 
-export interface AddLocalProviderDialogProps {
+interface AddLocalProviderDialogProps {
   templates: LocalProviderTemplate[];
   onAdd: (template: LocalProviderTemplate, customUrl?: string, customApiKey?: string) => void;
   onClose: () => void;

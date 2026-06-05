@@ -20,7 +20,7 @@ import {
 // Types
 // ============================================================================
 
-interface ErrorHandlerNodeData {
+export interface ErrorHandlerNodeData {
   label?: string;
   description?: string;
   continueOnSuccess?: boolean;

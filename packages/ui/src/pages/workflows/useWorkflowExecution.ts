@@ -11,7 +11,7 @@ import type { Workflow, WorkflowProgressEvent } from '../../api';
 import type { TriggerNodeData } from '../../components/workflows';
 import { serializeWorkflowCanvas } from './workflowPersistence';
 
-export interface WorkflowExecutionParams {
+interface WorkflowExecutionParams {
   id: string | undefined;
   workflow: Workflow | null;
   nodes: Node[];

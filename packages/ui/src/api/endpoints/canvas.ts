@@ -29,7 +29,7 @@ export interface CanvasElement {
   updatedAt: string;
 }
 
-export interface CreateCanvasElementInput {
+interface CreateCanvasElementInput {
   type: CanvasElementType;
   content?: string;
   x?: number;
@@ -40,7 +40,7 @@ export interface CreateCanvasElementInput {
   style?: Record<string, unknown> | null;
 }
 
-export interface UpdateCanvasElementInput {
+interface UpdateCanvasElementInput {
   type?: CanvasElementType;
   content?: string;
   x?: number;

@@ -9,7 +9,7 @@ export type WorkflowLogStatus =
   | 'awaiting_approval';
 export type NodeExecutionStatus = 'pending' | 'running' | 'success' | 'error' | 'skipped';
 
-export interface WorkflowNodeDataCommon {
+interface WorkflowNodeDataCommon {
   label: string;
   description?: string;
   retryCount?: number;
@@ -80,7 +80,7 @@ export interface WorkflowTransformerNodeData {
   timeoutMs?: number;
 }
 
-export interface WorkflowForEachNodeData {
+interface WorkflowForEachNodeData {
   label: string;
   arrayExpression: string;
   itemVariable?: string;
@@ -92,7 +92,7 @@ export interface WorkflowForEachNodeData {
   outputAlias?: string;
 }
 
-export interface WorkflowHttpRequestNodeData extends WorkflowNodeDataCommon {
+interface WorkflowHttpRequestNodeData extends WorkflowNodeDataCommon {
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   url: string;
   headers?: Record<string, string>;
@@ -109,81 +109,81 @@ export interface WorkflowHttpRequestNodeData extends WorkflowNodeDataCommon {
   maxResponseSize?: number;
 }
 
-export interface WorkflowDelayNodeData extends WorkflowNodeDataCommon {
+interface WorkflowDelayNodeData extends WorkflowNodeDataCommon {
   duration: string;
   unit: 'seconds' | 'minutes' | 'hours';
 }
 
-export interface WorkflowSwitchNodeData extends WorkflowNodeDataCommon {
+interface WorkflowSwitchNodeData extends WorkflowNodeDataCommon {
   expression: string;
   cases: Array<{ label: string; value: string }>;
 }
 
-export interface WorkflowErrorHandlerNodeData extends WorkflowNodeDataCommon {
+interface WorkflowErrorHandlerNodeData extends WorkflowNodeDataCommon {
   continueOnSuccess?: boolean;
 }
 
-export interface WorkflowSubWorkflowNodeData extends WorkflowNodeDataCommon {
+interface WorkflowSubWorkflowNodeData extends WorkflowNodeDataCommon {
   subWorkflowId?: string;
   subWorkflowName?: string;
   inputMapping?: Record<string, string>;
   maxDepth?: number;
 }
 
-export interface WorkflowApprovalNodeData extends WorkflowNodeDataCommon {
+interface WorkflowApprovalNodeData extends WorkflowNodeDataCommon {
   approvalMessage?: string;
   timeoutMinutes?: number;
 }
 
-export interface WorkflowStickyNoteNodeData {
+interface WorkflowStickyNoteNodeData {
   label: string;
   text?: string;
   color?: string;
 }
 
-export interface WorkflowNotificationNodeData extends WorkflowNodeDataCommon {
+interface WorkflowNotificationNodeData extends WorkflowNodeDataCommon {
   message?: string;
   severity?: 'info' | 'warning' | 'error' | 'success';
 }
 
-export interface WorkflowParallelNodeData extends WorkflowNodeDataCommon {
+interface WorkflowParallelNodeData extends WorkflowNodeDataCommon {
   branchCount: number;
   branchLabels?: string[];
 }
 
-export interface WorkflowMergeNodeData extends WorkflowNodeDataCommon {
+interface WorkflowMergeNodeData extends WorkflowNodeDataCommon {
   mode?: 'waitAll' | 'firstCompleted';
 }
 
-export interface WorkflowDataStoreNodeData extends WorkflowNodeDataCommon {
+interface WorkflowDataStoreNodeData extends WorkflowNodeDataCommon {
   operation: 'get' | 'set' | 'delete' | 'list' | 'has';
   key?: string;
   value?: unknown;
   namespace?: string;
 }
 
-export interface WorkflowSchemaValidatorNodeData extends WorkflowNodeDataCommon {
+interface WorkflowSchemaValidatorNodeData extends WorkflowNodeDataCommon {
   schema: Record<string, unknown>;
   strict?: boolean;
 }
 
-export interface WorkflowFilterNodeData extends WorkflowNodeDataCommon {
+interface WorkflowFilterNodeData extends WorkflowNodeDataCommon {
   arrayExpression: string;
   condition: string;
 }
 
-export interface WorkflowMapNodeData extends WorkflowNodeDataCommon {
+interface WorkflowMapNodeData extends WorkflowNodeDataCommon {
   arrayExpression: string;
   expression: string;
 }
 
-export interface WorkflowAggregateNodeData extends WorkflowNodeDataCommon {
+interface WorkflowAggregateNodeData extends WorkflowNodeDataCommon {
   arrayExpression: string;
   operation: 'sum' | 'count' | 'avg' | 'min' | 'max' | 'groupBy' | 'flatten' | 'unique';
   field?: string;
 }
 
-export interface WorkflowWebhookResponseNodeData extends WorkflowNodeDataCommon {
+interface WorkflowWebhookResponseNodeData extends WorkflowNodeDataCommon {
   statusCode?: number;
   body?: string;
   headers?: Record<string, string>;

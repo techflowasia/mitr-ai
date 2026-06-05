@@ -52,7 +52,7 @@ export type SidebarPinnedConfig =
 export const MAX_PINNED_ITEMS = 15;
 
 /** Built-in sidebar section identifiers (footer is structural, not configurable) */
-export type SidebarSectionId =
+type SidebarSectionId =
   // Core (always-visible UI controls)
   | 'search'
   | 'scheduled'

@@ -30,7 +30,7 @@ import {
   Send,
 } from '../icons';
 
-export interface SearchableItem {
+interface SearchableItem {
   type: 'node' | 'tool';
   nodeType?: string;
   toolName?: string;

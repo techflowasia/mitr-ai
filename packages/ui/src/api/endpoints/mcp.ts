@@ -74,7 +74,7 @@ export interface McpServerInfo {
   >;
 }
 
-export type McpPresetEnvKind = 'secret' | 'plain';
+type McpPresetEnvKind = 'secret' | 'plain';
 
 export interface McpPresetEnvVar {
   name: string;

@@ -22,9 +22,9 @@ import {
 import { Check, X, AlertCircle, AlertTriangle, Info } from './icons';
 
 // Re-export types for external usage
-export type ToastType = 'success' | 'error' | 'warning' | 'info';
+type ToastType = 'success' | 'error' | 'warning' | 'info';
 
-export interface NotificationHistoryItem {
+interface NotificationHistoryItem {
   id: string;
   type: ToastType;
   title?: string;

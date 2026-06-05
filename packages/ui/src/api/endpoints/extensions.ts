@@ -5,7 +5,7 @@
 import { apiClient } from '../client';
 import type { ExtensionInfo } from '../types';
 
-export interface LlmAuditRisk {
+interface LlmAuditRisk {
   severity: 'low' | 'medium' | 'high' | 'critical';
   description: string;
   mitigation?: string;
@@ -53,7 +53,7 @@ export interface FileTreeResult {
   tree: FileEntry[];
 }
 
-export interface FileContentResult {
+interface FileContentResult {
   path: string;
   content: string;
   language: string;

@@ -21,7 +21,7 @@ export interface CodeNodeData extends Record<string, unknown> {
   executionOutput?: unknown;
 }
 
-export type CodeNodeType = Node<CodeNodeData>;
+type CodeNodeType = Node<CodeNodeData>;
 
 const languageConfig: Record<string, { label: string; color: string; bg: string }> = {
   javascript: { label: 'JS', color: 'text-amber-300', bg: 'bg-amber-500/20' },

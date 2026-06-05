@@ -38,14 +38,3 @@ let toolDraftCounter = 0;
 export function nextToolDraftId(): string {
   return `tool-${Date.now()}-${++toolDraftCounter}`;
 }
-
-export interface ToolDraft {
-  id: string;
-  name: string;
-  description: string;
-  parameters: string;
-  code: string;
-  permissions: string[];
-  requiresApproval: boolean;
-  expanded: boolean;
-}

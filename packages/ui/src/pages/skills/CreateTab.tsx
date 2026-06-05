@@ -22,7 +22,7 @@ const STEPS: { id: WizardStep; label: string; optional?: boolean }[] = [
 
 const DRAFT_STORAGE_KEY = 'skills-hub-wizard-draft';
 
-interface WizardDraft {
+export interface WizardDraft {
   format: SkillFormat | null;
   draftContent: string;
   draftName: string;

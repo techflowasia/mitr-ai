@@ -118,7 +118,7 @@ export const workflowsApi = {
     apiClient.get<WorkflowLog>(`/workflows/${id}/run/${logId}`),
 };
 
-export interface WorkflowCopilotRequest {
+interface WorkflowCopilotRequest {
   messages: Array<{ role: 'user' | 'assistant'; content: string }>;
   currentWorkflow?: { name: string; nodes: unknown[]; edges: unknown[] };
   availableTools?: string[];

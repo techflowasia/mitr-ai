@@ -22,7 +22,7 @@ export interface ConditionNodeData extends Record<string, unknown> {
   branchTaken?: string;
 }
 
-export type ConditionNodeType = Node<ConditionNodeData>;
+type ConditionNodeType = Node<ConditionNodeData>;
 
 const statusStyles: Record<NodeExecutionStatus, { border: string; bg: string }> = {
   pending: { border: 'border-emerald-300 dark:border-emerald-700', bg: '' },

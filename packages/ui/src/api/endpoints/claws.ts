@@ -184,12 +184,12 @@ export interface ClawHistoryEntry {
   executedAt: string;
 }
 
-export interface ShareGPTTurn {
+interface ShareGPTTurn {
   from: 'system' | 'human' | 'gpt' | 'tool';
   value: string;
 }
 
-export interface ShareGPTTrajectory {
+interface ShareGPTTrajectory {
   id: string;
   mission: string;
   conversations: ShareGPTTurn[];
@@ -319,7 +319,7 @@ export interface ClawDoctorResponse {
   skipped: string[];
 }
 
-export interface ClawApplyRecommendationsResponse {
+interface ClawApplyRecommendationsResponse {
   applied: string[];
   skipped: string[];
   claw: ClawConfig;

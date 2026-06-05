@@ -121,7 +121,7 @@ interface MarkdownTable {
   nextIndex: number;
 }
 
-interface ParsedWidget {
+export interface ParsedWidget {
   name: string;
   data: unknown;
 }

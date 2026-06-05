@@ -10,7 +10,7 @@ import { apiClient, triggersApi } from '../../api';
 import { formatToolName } from '../../utils/formatters';
 import type { TriggerNodeData } from '../../components/workflows';
 
-export interface WorkflowNodesParams {
+interface WorkflowNodesParams {
   nodes: Node[];
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>;
   setSelectedNodeId: (id: string | null) => void;

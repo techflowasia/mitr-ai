@@ -21,7 +21,7 @@ import { usePageCopilotContext } from './usePageCopilotContext';
 import { cleanStreamingChatContent, stripChatInternalTags } from '../utils/chat-content';
 import { ignoreError } from '../utils/ignore-error';
 
-export interface SidebarMessage {
+interface SidebarMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;

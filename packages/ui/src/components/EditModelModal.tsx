@@ -34,7 +34,7 @@ const CAPABILITY_ICONS: Record<ModelCapability, React.ReactNode> = {
 // Types
 // ============================================================================
 
-export interface EditModelModalProps {
+interface EditModelModalProps {
   model: MergedModel;
   capabilities: CapabilityDef[];
   onSave: (model: MergedModel, updates: Record<string, unknown>) => void;

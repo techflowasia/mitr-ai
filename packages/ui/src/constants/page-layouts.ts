@@ -7,13 +7,13 @@
  * Add new pages incrementally — unlisted pages show "Layout not mapped yet".
  */
 
-export interface PageSubComponent {
+interface PageSubComponent {
   name: string;
   file: string;
   lines: number; // approximate total lines
 }
 
-export interface PageSection {
+interface PageSection {
   id: string;
   label: string;
   lines: [number, number]; // [startLine, endLine] in main file
@@ -22,7 +22,7 @@ export interface PageSection {
   subComponents?: PageSubComponent[];
 }
 
-export interface PageLayout {
+interface PageLayout {
   path: string; // route path (e.g. "/")
   label: string; // display name (e.g. "Chat")
   file: string; // main file relative to packages/ui/src/

@@ -19,7 +19,7 @@ import {
   Layout,
 } from '../../components/icons';
 
-export interface WorkflowEditorToolbarProps {
+interface WorkflowEditorToolbarProps {
   workflowName: string;
   setWorkflowName: (name: string) => void;
   hasUnsavedChanges: boolean;

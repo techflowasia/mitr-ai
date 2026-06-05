@@ -7,7 +7,7 @@ import type { Edge, Node } from '@xyflow/react';
 
 const MAX_HISTORY = 50;
 
-export interface WorkflowHistoryParams {
+interface WorkflowHistoryParams {
   nodes: Node[];
   edges: Edge[];
   variables: Record<string, unknown>;

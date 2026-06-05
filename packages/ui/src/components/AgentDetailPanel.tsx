@@ -7,7 +7,7 @@
 import { Bot, Play } from './icons';
 import type { Agent } from '../types';
 
-export interface AgentDetailPanelProps {
+interface AgentDetailPanelProps {
   agent: Agent;
   onClose: () => void;
   onChat: () => void;

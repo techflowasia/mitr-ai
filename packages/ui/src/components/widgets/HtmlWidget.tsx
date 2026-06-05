@@ -13,7 +13,7 @@ interface Props {
   title?: string;
 }
 
-interface HtmlData {
+export interface HtmlData {
   html: string;
   title?: string;
 }

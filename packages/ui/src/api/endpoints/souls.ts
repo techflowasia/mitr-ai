@@ -227,7 +227,7 @@ export interface CrewTemplate {
 // Souls API
 // =============================================================================
 
-export interface DeploySoulInput {
+interface DeploySoulInput {
   identity: {
     name: string;
     emoji?: string;
@@ -283,7 +283,7 @@ export interface DeploySoulInput {
   };
 }
 
-export interface DeploySoulResponse {
+interface DeploySoulResponse {
   agentId: string;
   soul: AgentSoul;
   provider: string;
@@ -291,7 +291,7 @@ export interface DeploySoulResponse {
   triggerCreated: boolean;
 }
 
-export interface ToolInfo {
+interface ToolInfo {
   name: string;
   description?: string;
   category: string;
@@ -299,7 +299,7 @@ export interface ToolInfo {
   provider?: string;
 }
 
-export interface ToolsResponse {
+interface ToolsResponse {
   tools: ToolInfo[];
   allowed: string[];
   blocked: string[];
@@ -311,7 +311,7 @@ export interface ToolsResponse {
   };
 }
 
-export interface CommandResponse {
+interface CommandResponse {
   command: {
     id: string;
     timestamp: string;
@@ -323,7 +323,7 @@ export interface CommandResponse {
   agentId: string;
 }
 
-export interface AgentStatsResponse {
+interface AgentStatsResponse {
   agentId: string;
   soulVersion: number;
   heartbeat: {
