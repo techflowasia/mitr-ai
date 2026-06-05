@@ -1,6 +1,9 @@
 {
   "$schema": "https://unpkg.com/knip@latest/schema.json",
   "workspaces": {
+    ".": {
+      "entry": ["scripts/*.mjs", "scripts/generate-provider-configs.ts"]
+    },
     "packages/gateway": {
       "entry": [
         "src/index.ts",
@@ -8,6 +11,12 @@
         "src/mcp/e2e-test.ts",
         "scripts/migration-smoke-test.ts"
       ]
+    },
+    "packages/ui": {
+      "entry": ["src/main.tsx", "dev-proxy.mjs", "e2e/**/*.ts"]
+    },
+    "website": {
+      "entry": ["src/main.tsx"]
     }
   }
 }
