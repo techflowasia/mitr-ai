@@ -9,10 +9,10 @@
  * instead of the default 'semi-trusted' used for third-party plugins.
  */
 
-import { createPlugin } from './index.js';
+import { createPlugin } from './registry.js';
 import { ALL_TOOLS } from '../agent/tools/index.js';
 import { CORE_TOOLS, CORE_EXECUTORS } from '../agent/tools.js';
-import type { PluginManifest, Plugin } from './index.js';
+import type { PluginManifest, Plugin } from './types.js';
 
 /**
  * Build the CorePlugin manifest + implementation.

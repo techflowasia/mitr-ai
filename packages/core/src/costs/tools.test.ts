@@ -5,10 +5,17 @@ import type { ToolContext } from '../agent/types.js';
 // Mocks
 // ---------------------------------------------------------------------------
 
-vi.mock('./index.js', () => ({
+vi.mock('./helpers.js', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   formatCost: vi.fn((v: number) => `$${v.toFixed(2)}`),
   formatTokens: vi.fn((v: number) => `${v}`),
+}));
+vi.mock('./recommendations.js', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   generateRecommendations: vi.fn(),
+}));
+vi.mock('./model-pricing.js', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   MODEL_PRICING: [
     {
       provider: 'openai',
@@ -74,7 +81,7 @@ import {
   createCostToolExecutors,
   createCostTools,
 } from './tools.js';
-import { generateRecommendations } from './index.js';
+import { generateRecommendations } from './recommendations.js';
 
 // ---------------------------------------------------------------------------
 // Helpers

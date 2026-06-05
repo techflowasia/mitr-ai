@@ -5,8 +5,12 @@
  */
 
 import type { ToolDefinition, ToolExecutor, ToolContext } from '../agent/types.js';
-import type { UsageTracker, BudgetManager, UsageSummary } from './index.js';
-import { formatCost, formatTokens, generateRecommendations, MODEL_PRICING } from './index.js';
+import type { UsageTracker } from './usage-tracker.js';
+import type { BudgetManager } from './budget-manager.js';
+import type { UsageSummary } from './types.js';
+import { formatCost, formatTokens } from './helpers.js';
+import { generateRecommendations } from './recommendations.js';
+import { MODEL_PRICING } from './model-pricing.js';
 
 // =============================================================================
 // Tool Definitions
