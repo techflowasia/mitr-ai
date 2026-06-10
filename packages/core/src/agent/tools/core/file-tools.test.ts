@@ -91,7 +91,7 @@ describe('FILE_EXECUTORS.create_folder', () => {
 
   it('returns error when path resolves outside workspace', async () => {
     mockResolveWorkspacePath.mockReturnValue(null);
-    const result = await fn({ path: '../../etc' });
+    const result = await fn({ path: '../../../etc' });
     expect(result.isError).toBe(true);
     expect(result.content).toContain('Invalid path');
   });
@@ -143,7 +143,7 @@ describe('FILE_EXECUTORS.write_file', () => {
 
   it('returns error when path resolves outside workspace', async () => {
     mockResolveWorkspacePath.mockReturnValue(null);
-    const result = await fn({ path: '../file.txt', content: 'data' });
+    const result = await fn({ path: '../../file.txt', content: 'data' });
     expect(result.isError).toBe(true);
     expect(result.content).toContain('Invalid path');
   });
@@ -199,7 +199,7 @@ describe('FILE_EXECUTORS.read_file', () => {
 
   it('returns error when path resolves outside workspace', async () => {
     mockResolveWorkspacePath.mockReturnValue(null);
-    const result = await fn({ path: '../../etc/passwd' });
+    const result = await fn({ path: '../../../etc/passwd' });
     expect(result.isError).toBe(true);
     expect(result.content).toContain('Invalid path');
   });
@@ -251,7 +251,7 @@ describe('FILE_EXECUTORS.list_files', () => {
 
   it('returns error when path resolves outside workspace', async () => {
     mockResolveWorkspacePath.mockReturnValue(null);
-    const result = await fn({ path: '../../' });
+    const result = await fn({ path: '../../../' });
     expect(result.isError).toBe(true);
     expect(result.content).toContain('Invalid path');
   });
@@ -399,7 +399,7 @@ describe('FILE_EXECUTORS.delete_file', () => {
 
   it('returns error when path resolves outside workspace', async () => {
     mockResolveWorkspacePath.mockReturnValue(null);
-    const result = await fn({ path: '../secret' });
+    const result = await fn({ path: '../../secret' });
     expect(result.isError).toBe(true);
     expect(result.content).toContain('Invalid path');
   });
@@ -476,14 +476,14 @@ describe('FILE_EXECUTORS.move_file', () => {
 
   it('returns error when source path is invalid', async () => {
     mockResolveWorkspacePath.mockReturnValueOnce(null).mockReturnValueOnce('/workspace/dest');
-    const result = await fn({ source: '../../etc', destination: 'dest.txt' });
+    const result = await fn({ source: '../../../etc', destination: 'dest.txt' });
     expect(result.isError).toBe(true);
     expect(result.content).toContain('Invalid source path');
   });
 
   it('returns error when destination path is invalid', async () => {
     mockResolveWorkspacePath.mockReturnValueOnce('/workspace/src').mockReturnValueOnce(null);
-    const result = await fn({ source: 'src.txt', destination: '../../etc' });
+    const result = await fn({ source: 'src.txt', destination: '../../../etc' });
     expect(result.isError).toBe(true);
     expect(result.content).toContain('Invalid destination path');
   });

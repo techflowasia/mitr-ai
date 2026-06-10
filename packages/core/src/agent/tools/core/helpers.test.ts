@@ -85,7 +85,7 @@ describe('resolveWorkspacePath', () => {
   });
 
   it('returns null for directory traversal with ../', () => {
-    const result = resolveWorkspacePath('../../etc/passwd');
+    const result = resolveWorkspacePath('../../../etc/passwd');
     expect(result).toBeNull();
   });
 

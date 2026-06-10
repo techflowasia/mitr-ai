@@ -9,8 +9,7 @@ import { ValidationError, NotFoundError, PluginError } from '../types/errors.js'
 import { createToolId, type ToolId, type PluginId } from '../types/branded.js';
 import { getLog } from '../services/get-log.js';
 import { getErrorMessage } from '../services/error-utils.js';
-import { CORE_TOOLS } from './tool-defs/index.js';
-import { CORE_EXECUTORS } from './executors/index.js';
+import { CORE_TOOLS, CORE_EXECUTORS } from './tools/core/index.js';
 import { getExecContext } from './exec-context.js';
 
 const log = getLog('ToolRegistry');
@@ -1029,8 +1028,7 @@ export function createToolRegistry(): ToolRegistry {
 }
 
 // Core tool definitions (extracted for maintainability)
-export { CORE_TOOLS } from './tool-defs/index.js';
-export { CORE_EXECUTORS } from './executors/index.js';
+export { CORE_TOOLS, CORE_EXECUTORS } from './tools/core/index.js';
 
 /**
  * Register core tools in a registry
