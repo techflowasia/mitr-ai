@@ -5,7 +5,7 @@
  * caching, dependency tracking, config resolution, and statistics.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 import { createMockAdapter } from '../../test-helpers.js';
 
 // ---------------------------------------------------------------------------
@@ -20,6 +20,13 @@ vi.mock('../adapters/index.js', () => ({
 }));
 
 import { ConfigServicesRepository } from './config-services.js';
+import {
+  decryptJsonData,
+  encryptJsonData,
+  isEncryptedEnvelope,
+  resetDataEncryptionKeyCache,
+  type EncryptedJsonEnvelope,
+} from '../data-encryption.js';
 
 // ---------------------------------------------------------------------------
 // Sample data helpers
@@ -70,7 +77,15 @@ describe('ConfigServicesRepository', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Pin the at-rest encryption key so tests are hermetic (no key file IO)
+    process.env.OWNPILOT_ENCRYPTION_KEY = 'config-services-test-key';
+    resetDataEncryptionKeyCache();
     repo = new ConfigServicesRepository();
+  });
+
+  afterAll(() => {
+    delete process.env.OWNPILOT_ENCRYPTION_KEY;
+    resetDataEncryptionKeyCache();
   });
 
   // =========================================================================
@@ -126,6 +141,96 @@ describe('ConfigServicesRepository', () => {
       await repo.initialize();
 
       expect(repo.list()).toEqual([]);
+    });
+  });
+
+  // =========================================================================
+  // At-rest encryption
+  // =========================================================================
+
+  describe('at-rest encryption', () => {
+    it('decrypts encrypted entry rows on load', async () => {
+      const encryptedRow = makeEntryRow({
+        data: JSON.stringify(encryptJsonData({ api_key: 'sk-encrypted-at-rest' })),
+      });
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow()])
+        .mockResolvedValueOnce([encryptedRow]);
+
+      await repo.initialize();
+
+      expect(repo.getApiKey('openai')).toBe('sk-encrypted-at-rest');
+    });
+
+    it('degrades to an empty entry when the encryption key is wrong', async () => {
+      // Encrypt under a different key, then load with the test key
+      process.env.OWNPILOT_ENCRYPTION_KEY = 'some-other-key';
+      resetDataEncryptionKeyCache();
+      const foreignRow = makeEntryRow({
+        data: JSON.stringify(encryptJsonData({ api_key: 'sk-unreachable' })),
+      });
+      process.env.OWNPILOT_ENCRYPTION_KEY = 'config-services-test-key';
+      resetDataEncryptionKeyCache();
+
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow()])
+        .mockResolvedValueOnce([foreignRow]);
+
+      // Boot must not throw
+      await repo.initialize();
+
+      const entries = repo.getEntries('openai');
+      expect(entries).toHaveLength(1);
+      expect(entries[0]!.data).toEqual({});
+      expect(repo.getApiKey('openai')).toBeUndefined();
+    });
+
+    it('re-encrypts legacy plaintext rows during initialize', async () => {
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow()]) // services
+        .mockResolvedValueOnce([makeEntryRow()]) // entries (cache)
+        .mockResolvedValueOnce([
+          { id: 'entry-1', data: JSON.stringify({ api_key: 'sk-test-123' }) },
+        ]); // legacy-encryption scan
+
+      await repo.initialize();
+
+      const updateCall = mockAdapter.execute.mock.calls.find(
+        (c) =>
+          typeof c[0] === 'string' && (c[0] as string).startsWith('UPDATE config_entries SET data')
+      );
+      expect(updateCall).toBeDefined();
+      const [serialized, id] = updateCall![1] as [string, string];
+      expect(id).toBe('entry-1');
+      const stored = JSON.parse(serialized) as EncryptedJsonEnvelope;
+      expect(isEncryptedEnvelope(stored)).toBe(true);
+      expect(decryptJsonData(stored)).toEqual({ api_key: 'sk-test-123' });
+    });
+
+    it('skips already-encrypted rows during the legacy scan', async () => {
+      const envelope = encryptJsonData({ api_key: 'sk-already-enc' });
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow()])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ id: 'entry-1', data: JSON.stringify(envelope) }]);
+
+      await repo.initialize();
+
+      expect(mockAdapter.execute).not.toHaveBeenCalled();
+    });
+
+    it('skips the legacy scan entirely when encryption is disabled', async () => {
+      process.env.OWNPILOT_DISABLE_DATA_ENCRYPTION = '1';
+      try {
+        mockAdapter.query.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+
+        await repo.initialize();
+
+        // Only the two refreshCache queries — no legacy scan
+        expect(mockAdapter.query).toHaveBeenCalledTimes(2);
+      } finally {
+        delete process.env.OWNPILOT_DISABLE_DATA_ENCRYPTION;
+      }
     });
   });
 
@@ -806,7 +911,11 @@ describe('ConfigServicesRepository', () => {
       await repo.createEntry('openai', { data: { api_key: 'key', url: 'http://example.com' } });
 
       const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
-      expect(params[3]).toBe('{"api_key":"key","url":"http://example.com"}');
+      // Data is stored as an encrypted envelope, never as plaintext JSON
+      const stored = JSON.parse(params[3] as string) as EncryptedJsonEnvelope;
+      expect(params[3]).not.toContain('key');
+      expect(isEncryptedEnvelope(stored)).toBe(true);
+      expect(decryptJsonData(stored)).toEqual({ api_key: 'key', url: 'http://example.com' });
     });
   });
 
@@ -897,7 +1006,10 @@ describe('ConfigServicesRepository', () => {
       await repo.updateEntry('entry-1', { data: { new_field: 'value' } });
 
       const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
-      expect(params[0]).toBe('{"new_field":"value"}');
+      // Data is stored as an encrypted envelope, never as plaintext JSON
+      const stored = JSON.parse(params[0] as string) as EncryptedJsonEnvelope;
+      expect(isEncryptedEnvelope(stored)).toBe(true);
+      expect(decryptJsonData(stored)).toEqual({ new_field: 'value' });
     });
 
     it('should include is_active in SET clause when isActive provided (lines 502-503)', async () => {
@@ -1690,8 +1802,8 @@ describe('ConfigServicesRepository', () => {
 
       await initializeConfigServicesRepo();
 
-      // initialize() triggers two DB queries (services + entries)
-      expect(mockAdapter.query).toHaveBeenCalledTimes(2);
+      // initialize() triggers three DB queries (services + entries + legacy-encryption scan)
+      expect(mockAdapter.query).toHaveBeenCalledTimes(3);
     });
   });
 });

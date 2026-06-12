@@ -20,3 +20,9 @@ vi.mock('./services/log.js', () => ({
     debug: vi.fn(),
   }),
 }));
+
+// Pin the at-rest encryption key so any test that touches encrypted columns
+// stays hermetic — without this, the first encrypt would auto-generate a
+// real key file under the user's data directory.
+// (data-encryption.test.ts manages this env var itself for key-resolution tests.)
+process.env.OWNPILOT_ENCRYPTION_KEY ??= 'gateway-test-suite-encryption-key';

@@ -17,6 +17,12 @@ import type {
   ConfigServiceDefinition,
   ConfigEntry,
 } from '@ownpilot/core';
+import {
+  deserializeEncryptedJson,
+  isDataEncryptionEnabled,
+  isEncryptedEnvelope,
+  serializeEncryptedJson,
+} from '../data-encryption.js';
 import { getLog } from '../../services/log.js';
 
 const log = getLog('ConfigServicesRepo');
@@ -125,11 +131,24 @@ function rowToService(row: ConfigServiceRow): ConfigServiceDefinition {
 }
 
 function rowToEntry(row: ConfigEntryRow): ConfigEntry {
+  let data: Record<string, unknown>;
+  try {
+    data = deserializeEncryptedJson(parseJsonField<unknown>(row.data, {}));
+  } catch {
+    // Wrong or missing encryption key — degrade to an empty entry so the
+    // gateway still boots; the service shows as unconfigured until the
+    // user re-enters its values.
+    log.error(
+      `[ConfigServices] Cannot decrypt config entry ${row.id} (${row.service_name}/${row.label}) — ` +
+        'encryption key changed or missing. Re-enter this configuration.'
+    );
+    data = {};
+  }
   return {
     id: row.id,
     serviceName: row.service_name,
     label: row.label,
-    data: parseJsonField<Record<string, unknown>>(row.data, {}),
+    data,
     isDefault: parseBool(row.is_default),
     isActive: parseBool(row.is_active),
   };
@@ -150,6 +169,41 @@ export class ConfigServicesRepository extends BaseRepository {
    */
   async initialize(): Promise<void> {
     await this.refreshCache();
+    await this.encryptLegacyPlaintextEntries();
+  }
+
+  /**
+   * One-time at-rest migration: re-write any plaintext config_entries rows
+   * as encrypted envelopes. Idempotent — already-encrypted rows are skipped.
+   * The in-memory cache is unaffected (it always holds decrypted values).
+   */
+  private async encryptLegacyPlaintextEntries(): Promise<void> {
+    if (!isDataEncryptionEnabled()) return;
+
+    const rows = await this.query<Pick<ConfigEntryRow, 'id' | 'data'>>(
+      'SELECT id, data FROM config_entries'
+    );
+
+    let migrated = 0;
+    for (const row of rows) {
+      const parsed = parseJsonField<unknown>(row.data, {});
+      if (isEncryptedEnvelope(parsed)) continue;
+      if (typeof parsed !== 'object' || parsed === null) continue;
+
+      try {
+        await this.execute('UPDATE config_entries SET data = $1 WHERE id = $2', [
+          serializeEncryptedJson(parsed as Record<string, unknown>),
+          row.id,
+        ]);
+        migrated++;
+      } catch (error) {
+        log.error(`[ConfigServices] Failed to encrypt legacy entry ${row.id}: ${String(error)}`);
+      }
+    }
+
+    if (migrated > 0) {
+      log.info(`[ConfigServices] Encrypted ${migrated} legacy plaintext config entries at rest`);
+    }
   }
 
   /**
@@ -459,7 +513,7 @@ export class ConfigServicesRepository extends BaseRepository {
         id,
         serviceName,
         input.label ?? 'Default',
-        JSON.stringify(input.data ?? {}),
+        serializeEncryptedJson(input.data ?? {}),
         isDefault,
         input.isActive !== false,
         now,
@@ -517,7 +571,7 @@ export class ConfigServicesRepository extends BaseRepository {
     }
     if (input.data !== undefined) {
       updates.push(`data = $${paramIndex++}`);
-      values.push(JSON.stringify(input.data));
+      values.push(serializeEncryptedJson(input.data));
     }
     if (input.isDefault !== undefined) {
       updates.push(`is_default = $${paramIndex++}`);
