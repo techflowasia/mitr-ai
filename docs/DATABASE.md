@@ -1012,18 +1012,25 @@ Service definitions with typed configuration schemas.
 
 Actual configuration values for each service.
 
-| Column         | Type      | Constraints                | Description          |
-| -------------- | --------- | -------------------------- | -------------------- |
-| `id`           | TEXT      | PRIMARY KEY                | Entry UUID           |
-| `service_name` | TEXT      | NOT NULL                   | Parent service name  |
-| `label`        | TEXT      | NOT NULL DEFAULT 'Default' | Entry label          |
-| `data`         | JSONB     | NOT NULL DEFAULT '{}'      | Configuration values |
-| `is_default`   | BOOLEAN   | NOT NULL DEFAULT FALSE     | Default entry flag   |
-| `is_active`    | BOOLEAN   | NOT NULL DEFAULT TRUE      | Active flag          |
-| `created_at`   | TIMESTAMP | NOT NULL DEFAULT NOW()     | Creation time        |
-| `updated_at`   | TIMESTAMP | NOT NULL DEFAULT NOW()     | Last update          |
+| Column         | Type      | Constraints                | Description                      |
+| -------------- | --------- | -------------------------- | -------------------------------- |
+| `id`           | TEXT      | PRIMARY KEY                | Entry UUID                       |
+| `service_name` | TEXT      | NOT NULL                   | Parent service name              |
+| `label`        | TEXT      | NOT NULL DEFAULT 'Default' | Entry label                      |
+| `data`         | JSONB     | NOT NULL DEFAULT '{}'      | Configuration values (encrypted) |
+| `is_default`   | BOOLEAN   | NOT NULL DEFAULT FALSE     | Default entry flag               |
+| `is_active`    | BOOLEAN   | NOT NULL DEFAULT TRUE      | Active flag                      |
+| `created_at`   | TIMESTAMP | NOT NULL DEFAULT NOW()     | Creation time                    |
+| `updated_at`   | TIMESTAMP | NOT NULL DEFAULT NOW()     | Last update                      |
 
 Has a partial unique index: only one entry per `service_name` where `is_default = TRUE`.
+
+**Encryption at rest**: `data` is stored as an AES-256-GCM envelope
+(`{"__enc":"v1","iv":...,"tag":...,"ct":...}`) because it holds secrets such as
+provider API keys. The key comes from `OWNPILOT_ENCRYPTION_KEY` (SHA-256-derived)
+or an auto-generated key file at `<data>/credentials/data-encryption.key`.
+Legacy plaintext rows are re-encrypted automatically at gateway startup.
+See `packages/gateway/src/db/data-encryption.ts`.
 
 ---
 
