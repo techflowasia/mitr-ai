@@ -8,11 +8,11 @@
 
 import {
   createChannelPlugin,
-  getConfigCenter,
-  getChannelService,
   type PluginCapability,
   type PluginPermission,
-} from '@ownpilot/core';
+} from '@ownpilot/core/channels';
+import { getConfigCenter } from '@ownpilot/core/services';
+import { getChannelService } from '@ownpilot/core/channels';
 import { EmailChannelAPI } from './email-api.js';
 
 export function buildEmailChannelPlugin() {

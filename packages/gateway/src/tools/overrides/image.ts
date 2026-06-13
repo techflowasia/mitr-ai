@@ -8,7 +8,7 @@
 
 import type { ToolRegistry, ToolExecutor, ToolExecutionResult } from '@ownpilot/core';
 import { createProvider, type ProviderConfig, type Message } from '@ownpilot/core';
-import { getConfigCenter } from '@ownpilot/core';
+import { getConfigCenter } from '@ownpilot/core/services';
 import { resolveDefaultProviderAndModel } from '../../services/app-settings.js';
 import {
   getProviderApiKey,

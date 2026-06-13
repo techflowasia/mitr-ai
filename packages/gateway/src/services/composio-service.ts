@@ -5,7 +5,7 @@
  * Config Center integration, and caching.
  */
 
-import { getConfigCenter } from '@ownpilot/core';
+import { getConfigCenter } from '@ownpilot/core/services';
 import { getLog } from './log.js';
 
 const log = getLog('Composio');

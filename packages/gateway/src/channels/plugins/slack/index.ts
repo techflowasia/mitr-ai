@@ -9,11 +9,11 @@
 
 import {
   createChannelPlugin,
-  getConfigCenter,
-  getChannelService,
   type PluginCapability,
   type PluginPermission,
-} from '@ownpilot/core';
+} from '@ownpilot/core/channels';
+import { getConfigCenter } from '@ownpilot/core/services';
+import { getChannelService } from '@ownpilot/core/channels';
 import { SlackChannelAPI } from './slack-api.js';
 
 export function buildSlackChannelPlugin() {

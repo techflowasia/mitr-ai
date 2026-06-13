@@ -28,7 +28,7 @@ import { getLog } from '../log.js';
 import { resolveForProcess } from '../llm/model-routing.js';
 import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from './cache.js';
 import { resolveAuthForRequest } from '../auth/oauth-flow.js';
-import { getLLMRouter, getConfigCenter, estimateCost } from '@ownpilot/core';
+import { getLLMRouter, getConfigCenter, estimateCost } from '@ownpilot/core/services';
 import { budgetManager } from '../usage-tracking.js';
 import {
   registerGatewayTools,

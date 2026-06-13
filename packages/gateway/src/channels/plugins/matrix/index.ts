@@ -9,11 +9,11 @@
 
 import {
   createChannelPlugin,
-  getConfigCenter,
-  getChannelService,
   type PluginCapability,
   type PluginPermission,
-} from '@ownpilot/core';
+} from '@ownpilot/core/channels';
+import { getConfigCenter } from '@ownpilot/core/services';
+import { getChannelService } from '@ownpilot/core/channels';
 import { MatrixChannelAPI } from './matrix-api.js';
 
 export function buildMatrixChannelPlugin() {

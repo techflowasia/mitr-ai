@@ -10,8 +10,8 @@
  *   - delete_email:  Delete/trash via imapflow
  */
 
-import type { ToolRegistry, ToolExecutor, ToolExecutionResult } from '@ownpilot/core';
-import { getConfigCenter, isPathAllowedAsync } from '@ownpilot/core';
+import type { ToolRegistry, ToolExecutor, ToolExecutionResult } from '@ownpilot/core/agent';
+import { getConfigCenter, isPathAllowedAsync } from '@ownpilot/core/services';
 import { configServicesRepo } from '../../db/repositories/config-services.js';
 import { getLog } from '../../services/log.js';
 import { getErrorMessage } from '../../utils/common.js';

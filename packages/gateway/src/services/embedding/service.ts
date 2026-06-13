@@ -6,7 +6,7 @@
  */
 
 import type { IEmbeddingService } from '@ownpilot/core';
-import { getConfigCenter } from '@ownpilot/core';
+import { getConfigCenter } from '@ownpilot/core/services';
 import { getLog } from '../log.js';
 import {
   EmbeddingCacheRepository,

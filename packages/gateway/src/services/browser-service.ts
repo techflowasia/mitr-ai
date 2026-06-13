@@ -8,7 +8,8 @@
 
 import { existsSync } from 'node:fs';
 import type { Browser, Page, SerializedAXNode } from 'puppeteer-core';
-import { hasPII, detectPII, getLog, getConfigCenter } from '@ownpilot/core';
+import { hasPII, detectPII } from '@ownpilot/core/services';
+import { getLog, getConfigCenter } from '@ownpilot/core/services';
 import { isBlockedUrl, isPrivateUrlAsync } from '../utils/ssrf.js';
 
 const log = getLog('BrowserService');
