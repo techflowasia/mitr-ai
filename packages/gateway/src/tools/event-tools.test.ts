@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { getEventSystem, resetEventSystem } from '@ownpilot/core';
+import { getEventSystem, resetEventSystem } from '@ownpilot/core/events';
 
 const { EVENT_TOOLS, executeEventTool } = await import('./event-tools.js');
 

@@ -10,7 +10,7 @@
  * No filesystem access — these read/write the DB only.
  */
 
-import { getErrorMessage } from '@ownpilot/core';
+import { getErrorMessage } from '@ownpilot/core/services';
 import { getExtensionService } from '../../services/extension/service.js';
 import { getAdapter } from '../../db/adapters/index.js';
 

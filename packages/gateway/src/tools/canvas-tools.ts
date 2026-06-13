@@ -6,8 +6,9 @@
  * broadcast over WebSocket so the UI canvas updates live.
  */
 
-import { type ToolDefinition, getErrorMessage } from '@ownpilot/core';
-import type { CanvasElementType } from '@ownpilot/core';
+import type { ToolDefinition } from '@ownpilot/core/agent';
+import { getErrorMessage } from '@ownpilot/core/services';
+import type { CanvasElementType } from '@ownpilot/core/services';
 import { getCanvasServiceImpl } from '../services/canvas/service.js';
 
 const ELEMENT_TYPES: CanvasElementType[] = [

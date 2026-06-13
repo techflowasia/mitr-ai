@@ -12,7 +12,7 @@
 
 import { readFileSync, existsSync } from 'fs';
 import { join, resolve } from 'path';
-import { getErrorMessage } from '@ownpilot/core';
+import { getErrorMessage } from '@ownpilot/core/services';
 import { getExtensionService } from '../../services/extension/service.js';
 import {
   parseSkillMdFrontmatter,

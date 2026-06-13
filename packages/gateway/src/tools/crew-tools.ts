@@ -16,8 +16,9 @@
  * current agent's ID and crew ID without requiring interface changes.
  */
 
-import { generateId, getErrorMessage, getEventSystem } from '@ownpilot/core';
-import type { ToolDefinition, AgentMessage } from '@ownpilot/core';
+import { generateId, getErrorMessage } from '@ownpilot/core/services';
+import { getEventSystem } from '@ownpilot/core/events';
+import type { ToolDefinition, AgentMessage } from '@ownpilot/core/agent';
 import { getCrewsRepository } from '../db/repositories/crew/index.js';
 import { getSoulsRepository } from '../db/repositories/souls.js';
 import { getAgentMessagesRepository } from '../db/repositories/agents/messages.js';

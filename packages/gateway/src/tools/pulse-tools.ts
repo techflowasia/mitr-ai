@@ -4,7 +4,8 @@
  * AI agent tools for managing the Autonomy Engine (Pulse System).
  */
 
-import { type ToolDefinition, getErrorMessage } from '@ownpilot/core';
+import type { ToolDefinition } from '@ownpilot/core/agent';
+import { getErrorMessage } from '@ownpilot/core/services';
 import { getAutonomyEngine } from '../autonomy/engine.js';
 
 // =============================================================================

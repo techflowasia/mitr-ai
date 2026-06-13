@@ -8,7 +8,12 @@
  *  - claw_send_agent_message  — deliver a message to another claw's inbox
  */
 
-import { getErrorMessage, generateId, MAX_CLAW_DEPTH, type ClawSandboxMode } from '@ownpilot/core';
+import {
+  getErrorMessage,
+  generateId,
+  MAX_CLAW_DEPTH,
+  type ClawSandboxMode,
+} from '@ownpilot/core/services';
 import { getClawContext } from '../../services/claw/context.js';
 
 type ExecResult = { success: boolean; result?: unknown; error?: string };

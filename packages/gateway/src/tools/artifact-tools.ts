@@ -6,7 +6,8 @@
  * with optional data bindings to personal data.
  */
 
-import { type ToolDefinition, type DataBinding, getErrorMessage } from '@ownpilot/core';
+import type { ToolDefinition, DataBinding } from '@ownpilot/core/agent';
+import { getErrorMessage } from '@ownpilot/core/services';
 import { getArtifactService } from '../services/artifact/service.js';
 
 // =============================================================================

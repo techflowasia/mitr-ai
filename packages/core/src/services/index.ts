@@ -482,6 +482,9 @@ export {
 // Claw Types
 export * from './claw-types.js';
 
+// Coding Agent Service
+export * from './coding-agent-service.js';
+
 // Audit Service
 export {
   getAuditService,

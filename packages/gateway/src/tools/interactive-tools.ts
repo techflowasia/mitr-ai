@@ -11,7 +11,7 @@
  */
 
 import type { ToolDefinition } from '@ownpilot/core';
-import { getErrorMessage } from '@ownpilot/core';
+import { getErrorMessage } from '@ownpilot/core/services';
 
 // =============================================================================
 // Tool Definitions

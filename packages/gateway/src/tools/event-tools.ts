@@ -6,12 +6,10 @@
  * wait for events, and list available event categories.
  */
 
-import {
-  type ToolDefinition,
-  getEventSystem,
-  getErrorMessage,
-  type EventCategory,
-} from '@ownpilot/core';
+import type { ToolDefinition } from '@ownpilot/core/agent';
+import { getEventSystem } from '@ownpilot/core/events';
+import { getErrorMessage } from '@ownpilot/core/services';
+import type { EventCategory } from '@ownpilot/core/events';
 import { getLog } from '../services/log.js';
 
 const log = getLog('EventTools');

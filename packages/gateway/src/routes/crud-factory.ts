@@ -16,7 +16,7 @@ import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import type { ZodSchema } from 'zod';
-import { getServiceRegistry, type ServiceToken } from '@ownpilot/core';
+import { getServiceRegistry, type ServiceToken } from '@ownpilot/core/services';
 import {
   apiResponse,
   apiError,

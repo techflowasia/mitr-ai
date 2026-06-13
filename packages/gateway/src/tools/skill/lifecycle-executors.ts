@@ -11,7 +11,7 @@
  *  - skill_check_updates   — diff installed vs latest npm
  */
 
-import { getErrorMessage } from '@ownpilot/core';
+import { getErrorMessage } from '@ownpilot/core/services';
 import { getNpmInstaller } from '../../services/skill/npm-installer.js';
 import { getExtensionService } from '../../services/extension/service.js';
 import { extensionsRepo } from '../../db/repositories/extensions.js';

@@ -4,7 +4,8 @@
  * AI agent tools for creating, managing heartbeat entries (NL-to-cron periodic tasks).
  */
 
-import { type ToolDefinition, getErrorMessage } from '@ownpilot/core';
+import type { ToolDefinition } from '@ownpilot/core/agent';
+import { getErrorMessage } from '@ownpilot/core/services';
 import { getHeartbeatService } from '../services/heartbeat/service.js';
 
 // =============================================================================

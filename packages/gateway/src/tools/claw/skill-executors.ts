@@ -9,7 +9,7 @@
  * config (mission, provider, userId) without interface changes.
  */
 
-import { getErrorMessage, getLLMRouter } from '@ownpilot/core';
+import { getErrorMessage, getLLMRouter } from '@ownpilot/core/services';
 import { getClawContext } from '../../services/claw/context.js';
 import { getExtensionService } from '../../services/extension/service.js';
 import {
