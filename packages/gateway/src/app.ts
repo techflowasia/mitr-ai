@@ -256,12 +256,18 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   // Audit logging (fire-and-forget, logs method/path/status/duration)
   app.use('/api/*', auditMiddleware);
 
-  // Mount routes (grouped by domain — see register-*-routes.ts files)
-  registerPlatformRoutes(app);
-  registerAgentRoutes(app);
-  registerDataRoutes(app);
-  registerAutomationRoutes(app);
-  registerIntegrationRoutes(app);
+  // Mount routes via registry — programmatically inspectable, harder to typo
+  const routeRegistry = [
+    { register: registerPlatformRoutes },
+    { register: registerAgentRoutes },
+    { register: registerDataRoutes },
+    { register: registerAutomationRoutes },
+    { register: registerIntegrationRoutes },
+  ] as const;
+
+  for (const { register } of routeRegistry) {
+    register(app);
+  }
 
   // v2 API (side-by-side with v1 — same handlers, new routes for future breaking changes)
   registerV2Routes(app);

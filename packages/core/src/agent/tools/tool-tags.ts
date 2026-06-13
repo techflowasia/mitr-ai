@@ -56,7 +56,7 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   get_memory_stats: ['stats', 'memory info', 'status', 'statistics'],
 
   // ─────────────────────────────────────────────
-  // TASKS / TODO
+  // TASKS (to-do items)
   // ─────────────────────────────────────────────
   add_task: ['task', 'todo', 'to-do', 'job', 'plan', 'add', 'create', 'new task', 'reminder'],
   list_tasks: ['tasks', 'todos', 'list', 'show', 'pending'],

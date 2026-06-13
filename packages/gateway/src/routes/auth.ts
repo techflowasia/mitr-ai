@@ -276,4 +276,5 @@ app.delete('/config/:provider', async (c) => {
   return apiResponse(c, { provider, cleared: true });
 });
 
-export default app;
+const providerAuthRoutes = app;
+export { providerAuthRoutes };

@@ -66,6 +66,5 @@ export * from './channels/index.js';
 export * from './edge/index.js';
 
 // Version — derived from package.json so it stays in sync
-import { createRequire } from 'node:module';
-const _require = createRequire(import.meta.url);
-export const VERSION: string = (_require('../package.json') as { version: string }).version;
+import packageJson from '../package.json' with { type: 'json' };
+export const VERSION: string = packageJson.version;

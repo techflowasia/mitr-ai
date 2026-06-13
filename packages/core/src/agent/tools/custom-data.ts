@@ -62,7 +62,7 @@ Use this ONLY for truly custom data types that don't have built-in support.
 
 ⚠️ DO NOT use custom tables for these - use the dedicated tools instead:
 - BOOKMARKS: Use the bookmarks API (add_bookmark, list_bookmarks, etc.)
-- TASKS/TODO: Use the tasks API (add_task, list_tasks, complete_task, etc.)
+- TASKS (to-do items): Use the tasks API (add_task, list_tasks, complete_task, etc.)
 - NOTES: Use the notes API (add_note, list_notes, etc.)
 - CALENDAR/EVENTS: Use the calendar API (add_event, list_events, etc.)
 - CONTACTS: Use the contacts API (add_contact, list_contacts, etc.)

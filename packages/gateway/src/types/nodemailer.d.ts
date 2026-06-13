@@ -28,6 +28,5 @@ declare module 'nodemailer' {
 
   function createTransport(options: TransportOptions): Transporter;
 
-  export default { createTransport };
   export { createTransport, SendMailOptions, SentMessageInfo, Transporter, TransportOptions };
 }
