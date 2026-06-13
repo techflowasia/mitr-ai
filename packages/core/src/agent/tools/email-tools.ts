@@ -5,6 +5,7 @@
 
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
 import { tryImport } from './module-resolver.js';
+import { isPathAllowedAsync } from './file-security.js';
 
 // ============================================================================
 // SEND EMAIL TOOL
@@ -167,7 +168,7 @@ export const sendEmailTool: ToolDefinition = {
 
 export const sendEmailExecutor: ToolExecutor = async (
   params,
-  _context
+  context
 ): Promise<ToolExecutionResult> => {
   const to = params.to as string[];
   const subject = params.subject as string;
@@ -266,6 +267,15 @@ export const sendEmailExecutor: ToolExecutor = async (
     const attachmentList: Array<{ filename: string; path: string }> = [];
 
     for (const filePath of attachments) {
+      // Guard against path traversal: attachments come from LLM-controlled
+      // args. Without isPathAllowedAsync, an attacker could exfiltrate
+      // arbitrary host files (/etc/passwd, ~/.ssh/id_rsa, etc.).
+      if (!(await isPathAllowedAsync(filePath, context.workspaceDir))) {
+        return {
+          content: { error: 'Attachment path is not within the allowed workspace.' },
+          isError: true,
+        };
+      }
       try {
         await fs.access(filePath);
         attachmentList.push({
@@ -273,8 +283,9 @@ export const sendEmailExecutor: ToolExecutor = async (
           path: filePath,
         });
       } catch {
+        // Do not leak the requested path back to the caller.
         return {
-          content: { error: `Attachment not found: ${filePath}` },
+          content: { error: 'Attachment not accessible.' },
           isError: true,
         };
       }
@@ -283,7 +294,8 @@ export const sendEmailExecutor: ToolExecutor = async (
     message.attachments = attachmentList;
   }
 
-  // Return placeholder - actual sending requires SMTP configuration
+  // Return placeholder - actual sending requires SMTP configuration.
+  // Mark as error so the agent loop does not report success to the user.
   return {
     content: {
       status: 'prepared',
@@ -300,7 +312,9 @@ export const sendEmailExecutor: ToolExecutor = async (
       requiresSMTPConfig: true,
       note: 'Email sending requires SMTP configuration. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS in environment.',
     },
-    isError: false,
+    error: 'requiresSMTPConfig',
+    reason: 'SMTP transport is not yet wired. Email was queued as a draft but not sent.',
+    isError: true,
   };
 };
 
@@ -400,7 +414,9 @@ export const listEmailsExecutor: ToolExecutor = async (
       requiresIMAPConfig: true,
       note: 'Email reading requires IMAP configuration. Set IMAP_HOST, IMAP_PORT, IMAP_USER, IMAP_PASS in environment.',
     },
-    isError: false,
+    error: 'requiresIMAPConfig',
+    reason: 'IMAP transport is not yet wired. No emails could be listed.',
+    isError: true,
   };
 };
 
@@ -464,7 +480,9 @@ export const readEmailExecutor: ToolExecutor = async (
       requiresIMAPConfig: true,
       note: 'Email reading requires IMAP configuration.',
     },
-    isError: false,
+    error: 'requiresIMAPConfig',
+    reason: 'IMAP transport is not yet wired. Email could not be read.',
+    isError: true,
   };
 };
 
@@ -517,7 +535,9 @@ export const deleteEmailExecutor: ToolExecutor = async (
       requiresIMAPConfig: true,
       note: 'Email deletion requires IMAP configuration.',
     },
-    isError: false,
+    error: 'requiresIMAPConfig',
+    reason: 'IMAP transport is not yet wired. Email could not be deleted.',
+    isError: true,
   };
 };
 
@@ -581,7 +601,9 @@ export const searchEmailsExecutor: ToolExecutor = async (
       requiresIMAPConfig: true,
       note: 'Email search requires IMAP configuration.',
     },
-    isError: false,
+    error: 'requiresIMAPConfig',
+    reason: 'IMAP transport is not yet wired. No emails could be searched.',
+    isError: true,
   };
 };
 
@@ -647,7 +669,9 @@ export const replyEmailExecutor: ToolExecutor = async (
       requiresIMAPConfig: true,
       note: 'Replying requires both SMTP (to send) and IMAP (to fetch original) configuration.',
     },
-    isError: false,
+    error: 'requiresSMTPAndIMAPConfig',
+    reason: 'SMTP and IMAP transports are not yet wired. Reply could not be sent.',
+    isError: true,
   };
 };
 
