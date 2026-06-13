@@ -44,10 +44,10 @@ import {
   hasPluginService,
   getExtensionService,
   hasExtensionService,
-  getEventSystem,
   getAuditService,
   hasAuditService,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
+import { getEventSystem } from '@ownpilot/core/events';
 import { checkToolPermission } from './permission.js';
 import type { ToolExecContext } from '../permission/utils.js';
 import { getExtensionSandbox } from '../extension/sandbox.js';

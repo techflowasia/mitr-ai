@@ -40,7 +40,7 @@ import { onMcpToolEvents } from '../../mcp/mcp-events.js';
 import { getLLMRouter } from '@ownpilot/core/services';
 import { ChatRepository } from '../../db/repositories/index.js';
 import { modelConfigsRepo } from '../../db/repositories/model-configs.js';
-import type { NormalizedMessage, MessageProcessingResult } from '@ownpilot/core';
+import type { NormalizedMessage, MessageProcessingResult } from '@ownpilot/core/services';
 import { DEFAULT_EXECUTION_PERMISSIONS, type ExecutionPermissions } from '@ownpilot/core/agent';
 import { getOrCreateSessionWorkspace } from '../../workspace/file-workspace.js';
 import { executionPermissionsRepo } from '../../db/repositories/execution-permissions.js';

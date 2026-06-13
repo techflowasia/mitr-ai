@@ -24,7 +24,7 @@ import type {
   ClawAutonomyPolicy,
   ActionCategory,
   AutonomyDisposition,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
 import { setPermissionGate } from '@ownpilot/core/agent';
 
 const log = getLog('PermissionGate');

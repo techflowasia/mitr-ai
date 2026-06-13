@@ -248,7 +248,7 @@ import {
   hasPluginService,
   getExtensionService,
   hasExtensionService,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
 import { registerImageOverrides } from '../../tools/overrides/image.js';
 import { registerEmailOverrides } from '../../tools/overrides/email.js';
 import { registerAudioOverrides } from '../../tools/overrides/audio.js';

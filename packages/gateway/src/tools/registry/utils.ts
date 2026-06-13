@@ -9,12 +9,12 @@
  *  - ToolExecutor / ToolGroup types
  */
 
-import type { ToolRegistry } from '@ownpilot/core';
+import type { ToolRegistry } from '@ownpilot/core/agent';
 import {
   findSimilarToolNames,
   type ToolExecutionResult as CoreToolResult,
   type ToolDefinition,
-} from '@ownpilot/core';
+} from '@ownpilot/core/agent';
 
 /** Safely extract a string[] from unknown config values (DB records, etc.) */
 export function safeStringArray(value: unknown): string[] | undefined {

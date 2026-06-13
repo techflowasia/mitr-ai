@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import type { ClawAutonomyPolicy } from '@ownpilot/core';
+import type { ClawAutonomyPolicy } from '@ownpilot/core/services';
 import { DefaultPermissionGate, evaluateAutonomyPolicy } from './gate.js';
 
 function policy(overrides: Partial<ClawAutonomyPolicy> = {}): ClawAutonomyPolicy {

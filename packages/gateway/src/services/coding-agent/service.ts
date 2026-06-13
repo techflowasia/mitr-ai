@@ -29,7 +29,7 @@ import {
   isBuiltinProvider,
   getCustomProviderName,
   getErrorMessage,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
 import { tryImport } from '@ownpilot/core/agent';
 import { cliProvidersRepo, type CliProviderRecord } from '../../db/repositories/cli/providers.js';
 import {

@@ -21,8 +21,8 @@ import {
   type TaskExecutionResult,
   type SchedulerNotificationBridge,
   type TaskNotificationEvent,
-} from '@ownpilot/core';
-import type { NotificationRequest } from '@ownpilot/core';
+} from '@ownpilot/core/scheduler';
+import type { NotificationRequest } from '@ownpilot/core/services';
 import { getChannelService } from '@ownpilot/core/channels';
 import { getLLMRouter } from '@ownpilot/core/services';
 import { getOrCreateChatAgent } from '../services/agent/service.js';

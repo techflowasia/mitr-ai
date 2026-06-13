@@ -14,7 +14,7 @@ import type {
   CreateArtifactInput,
   UpdateArtifactInput,
   ArtifactQuery,
-} from '@ownpilot/core';
+} from '@ownpilot/core/data-gateway';
 import { ArtifactsRepository } from '../../db/repositories/artifacts.js';
 import { resolveAllBindings } from './data-resolver.js';
 import { wsGateway } from '../../ws/server.js';

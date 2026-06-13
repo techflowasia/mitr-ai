@@ -14,7 +14,7 @@
 
 import { configServicesRepo } from '../repositories/config-services.js';
 import type { CreateConfigServiceInput } from '../repositories/config-services.js';
-import type { ConfigFieldDefinition } from '@ownpilot/core';
+import type { ConfigFieldDefinition } from '@ownpilot/core/services';
 import { getLog } from '../../services/log.js';
 
 const log = getLog('ConfigSeed');

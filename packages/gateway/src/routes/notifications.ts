@@ -15,7 +15,7 @@ import {
   broadcastNotificationSchema,
   notificationPreferencesSchema,
 } from '../middleware/validation.js';
-import type { NotificationPriority } from '@ownpilot/core';
+import type { NotificationPriority } from '@ownpilot/core/services';
 
 const app = new Hono();
 

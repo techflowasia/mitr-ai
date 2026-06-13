@@ -48,7 +48,7 @@ import { runInHeartbeatContext } from './context.js';
 import { getSessionWorkspacePath } from '../../workspace/file-workspace.js';
 import { getLog } from '@ownpilot/core/services';
 import { HeartbeatCircuitBreaker, HeartbeatMetricsCollector } from '@ownpilot/core/agent';
-import type { BudgetForecaster } from '@ownpilot/core';
+import type { BudgetForecaster } from '@ownpilot/core/agent';
 import { HEARTBEAT_CREW_CONTEXT_CACHE_TTL_MS } from '../../config/defaults.js';
 import { TTLCache } from '../../utils/ttl-cache.js';
 

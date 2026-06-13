@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { ToolProvider } from '@ownpilot/core';
+import type { ToolProvider } from '@ownpilot/core/agent';
 
 // ---------------------------------------------------------------------------
 // Mocks — prevent real service/repo calls

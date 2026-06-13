@@ -42,7 +42,7 @@ import {
   getWorkspaceStorage,
   isDockerAvailable,
   StorageSecurityError,
-} from '@ownpilot/core';
+} from '@ownpilot/core/workspace';
 import { WorkspacesRepository } from '../../db/repositories/workspaces.js';
 
 describe('Workspaces Routes', () => {

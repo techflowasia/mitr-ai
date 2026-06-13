@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { ResolvedAuth } from '@ownpilot/core';
+import type { ResolvedAuth } from '@ownpilot/core/agent';
 
 const mockGet = vi.fn();
 const mockSet = vi.fn();

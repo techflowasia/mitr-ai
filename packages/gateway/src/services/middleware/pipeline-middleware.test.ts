@@ -9,7 +9,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { NormalizedMessage, MessageProcessingResult, PipelineContext } from '@ownpilot/core';
+import type {
+  NormalizedMessage,
+  MessageProcessingResult,
+  PipelineContext,
+} from '@ownpilot/core/services';
 
 // ============================================================================
 // Mocks — vi.hoisted() ensures variables are available in hoisted vi.mock()

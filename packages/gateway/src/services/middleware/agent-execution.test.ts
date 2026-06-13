@@ -8,7 +8,7 @@ import type {
   MessageProcessingResult,
   PipelineContext,
   StreamCallbacks,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
 
 // ---------------------------------------------------------------------------
 // Mocks — vi.hoisted() ensures these are available when vi.mock factories run

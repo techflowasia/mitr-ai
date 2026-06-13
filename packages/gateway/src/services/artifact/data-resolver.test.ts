@@ -10,7 +10,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { resolveBinding, resolveAllBindings } from './data-resolver.js';
-import type { DataBinding } from '@ownpilot/core';
+import type { DataBinding } from '@ownpilot/core/data-gateway';
 
 // ============================================================================
 // Mocks

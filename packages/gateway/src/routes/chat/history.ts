@@ -40,7 +40,7 @@ import { randomUUID } from 'node:crypto';
 import { getOwnerUserId, getOwnerChatId } from '../../services/pairing-service.js';
 import { getLog } from '../../services/log.js';
 import { stripInternalTags } from '../../channels/normalizers/base.js';
-import type { ChannelIncomingMessage } from '@ownpilot/core';
+import type { ChannelIncomingMessage } from '@ownpilot/core/channels';
 
 const log = getLog('ChatHistory');
 

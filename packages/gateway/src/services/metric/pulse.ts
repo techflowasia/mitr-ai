@@ -20,7 +20,7 @@ import {
   type ClawCycleSummary,
 } from '@ownpilot/core/services';
 import { getLog } from '../log.js';
-import type { ClawState } from '@ownpilot/core';
+import type { ClawState } from '@ownpilot/core/services';
 
 const log = getLog('PulseMetricsService');
 

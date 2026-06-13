@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { AgentMessage } from '@ownpilot/core';
+import type { AgentMessage } from '@ownpilot/core/agent';
 
 // ---------------------------------------------------------------------------
 // Mock agent-messages repository

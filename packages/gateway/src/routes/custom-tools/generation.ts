@@ -18,7 +18,7 @@ import {
   ALL_TOOLS,
   validateToolCode,
   type DynamicToolDefinition,
-} from '@ownpilot/core';
+} from '@ownpilot/core/agent';
 import {
   syncToolToRegistry,
   executeCustomToolUnified,

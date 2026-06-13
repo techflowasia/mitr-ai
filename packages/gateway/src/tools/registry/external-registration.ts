@@ -10,16 +10,15 @@
  * ToolRegistry passed by callers.
  */
 
-import type { ToolRegistry } from '@ownpilot/core';
+import type { ToolRegistry } from '@ownpilot/core/agent';
+import { getPluginService, getExtensionService } from '@ownpilot/core/services';
 import {
-  getPluginService,
-  getExtensionService,
   qualifyToolName,
   getBaseName,
   type ToolDefinition,
   type ToolExecutionResult as CoreToolResult,
   type ToolContext,
-} from '@ownpilot/core';
+} from '@ownpilot/core/agent';
 import { getCustomToolDynamicRegistry } from '../../services/custom/tool-registry.js';
 import { getSharedToolRegistry } from '../../services/tool/executor.js';
 import type { ExtensionService } from '../../services/extension/service.js';

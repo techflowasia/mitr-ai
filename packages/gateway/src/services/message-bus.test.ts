@@ -12,7 +12,7 @@ import type {
   MessageProcessingResult,
   PipelineContext,
   StreamCallbacks,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
 
 // ============================================================================
 // Test Fixtures

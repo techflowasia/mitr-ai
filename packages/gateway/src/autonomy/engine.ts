@@ -17,7 +17,7 @@ import type {
   PulseActionResult,
   PulseStats,
   AutonomyLogEntry,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
 import { gatherPulseContext, type PulseContext } from './context.js';
 import {
   evaluatePulseContext,

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { ExecutionPermissions } from '@ownpilot/core';
+import type { ExecutionPermissions } from '@ownpilot/core/agent';
 
 // Mock dependencies before importing the module under test
 vi.mock('../app-settings.js', () => ({

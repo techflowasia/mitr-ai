@@ -18,11 +18,10 @@
 import {
   cosineSimilarity,
   getBaseName,
-  getEmbeddingService,
-  hasEmbeddingService,
   TOOL_SEARCH_TAGS,
   type ToolDefinition,
-} from '@ownpilot/core';
+} from '@ownpilot/core/agent';
+import { getEmbeddingService, hasEmbeddingService } from '@ownpilot/core/services';
 import { createHash } from 'node:crypto';
 import { getLog } from '../../services/log.js';
 

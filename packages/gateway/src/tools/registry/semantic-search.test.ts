@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { ToolDefinition } from '@ownpilot/core';
+import type { ToolDefinition } from '@ownpilot/core/agent';
 
 const hasEmbeddingMock = vi.fn();
 const getEmbeddingMock = vi.fn();

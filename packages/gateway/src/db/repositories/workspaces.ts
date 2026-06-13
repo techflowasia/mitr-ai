@@ -7,7 +7,7 @@
 import { BaseRepository, parseJsonField } from './base.js';
 import { buildUpdateStatement, type RawSetClause } from './query-helpers.js';
 import { randomUUID, createHash } from 'node:crypto';
-import type { ContainerConfig } from '@ownpilot/core';
+import type { ContainerConfig } from '@ownpilot/core/workspace';
 
 // ============================================================================
 // Types

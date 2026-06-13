@@ -10,7 +10,7 @@ import type {
   ToolExecutionResult,
   ToolProvider,
   ToolContext,
-} from '@ownpilot/core';
+} from '@ownpilot/core/agent';
 import {
   MEMORY_TOOLS,
   GOAL_TOOLS,

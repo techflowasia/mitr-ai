@@ -12,7 +12,7 @@
  *  - executeGetToolHelp      — one-or-many tool parameter help
  */
 
-import type { ToolDefinition, ToolRegistry } from '@ownpilot/core';
+import type { ToolDefinition, ToolRegistry } from '@ownpilot/core/agent';
 import {
   applyToolLimits,
   formatFullToolHelp,

@@ -7,7 +7,7 @@
 
 import type { Context } from 'hono';
 import type { ChatRequest } from '../../types/index.js';
-import type { AIProvider } from '@ownpilot/core';
+import type { AIProvider } from '@ownpilot/core/agent';
 import { apiError, ERROR_CODES, getErrorMessage } from '../helpers.js';
 import { getSessionInfo } from '../agents/index.js';
 import { runInSessionLane } from '../../services/agent/session-lane.js';

@@ -32,7 +32,7 @@ import {
   type ResolvedAuth,
   type ProviderOAuthConfig,
   type TokenResponse,
-} from '@ownpilot/core';
+} from '@ownpilot/core/agent';
 import { getLog } from '../log.js';
 import {
   getResolvedAuth,

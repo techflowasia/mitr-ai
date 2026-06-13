@@ -11,7 +11,7 @@
  *                            user custom tools.
  */
 
-import type { ToolRegistry } from '@ownpilot/core';
+import type { ToolRegistry } from '@ownpilot/core/agent';
 import {
   DYNAMIC_TOOL_DEFINITIONS,
   MEMORY_TOOLS,

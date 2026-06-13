@@ -61,11 +61,11 @@ import { createChannelServiceImpl } from './channels/service-impl.js';
 import {
   initServiceRegistry,
   Services,
-  getEventSystem,
   setModuleResolver,
   enforceSecurityConfig,
   type ServiceToken,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
+import { getEventSystem } from '@ownpilot/core/events';
 import { createLogService } from './services/log-service.js';
 import { RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS } from './config/defaults.js';
 import { createSessionService } from './services/session-service.js';
