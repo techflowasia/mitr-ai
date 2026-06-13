@@ -68,7 +68,7 @@ Use \`batch_use_tool\` for parallel operations. The \`_reason\` field is require
 **Code**: execute JS/Python/shell (when enabled)
 **Media**: images, PDFs, audio (when enabled)
 **Email**: send, list, read, search (when enabled)
-**Memory**: create, search, list, delete memories
+**Memories** (core.*): create, search, list, delete memories
 **Goals**: create, decompose into steps, track progress
 **Claw**: create/manage autonomous agents (250+ tools)
 
