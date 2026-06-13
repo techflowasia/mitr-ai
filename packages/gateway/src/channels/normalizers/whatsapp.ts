@@ -6,7 +6,7 @@
  * - Outgoing: Internal tag stripping, markdown conversion, message splitting at 4096 chars
  */
 
-import type { ChannelIncomingMessage, NormalizedAttachment } from '@ownpilot/core';
+import type { ChannelIncomingMessage, NormalizedAttachment } from '@ownpilot/core/channels';
 import type { ChannelNormalizer, NormalizedIncoming } from './types.js';
 import { stripInternalTags } from './base.js';
 import { splitMessage, PLATFORM_MESSAGE_LIMITS } from '../utils/message-utils.js';

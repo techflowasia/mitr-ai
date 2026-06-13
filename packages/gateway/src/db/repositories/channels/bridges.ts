@@ -6,7 +6,7 @@
  */
 
 import { generateId } from '@ownpilot/core/services';
-import type { UCPBridgeConfig, BridgeDirection, BridgeStore } from '@ownpilot/core';
+import type { UCPBridgeConfig, BridgeDirection, BridgeStore } from '@ownpilot/core/channels';
 import { BaseRepository } from '../base.js';
 
 // ============================================================================

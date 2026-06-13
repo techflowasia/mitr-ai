@@ -13,7 +13,7 @@ import type {
   SoulRelationships,
   SoulEvolution,
   SoulBootSequence,
-} from '@ownpilot/core';
+} from '@ownpilot/core/agent';
 
 // ── DB Row Types ────────────────────────────────────
 

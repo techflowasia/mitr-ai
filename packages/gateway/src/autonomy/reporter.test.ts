@@ -12,7 +12,7 @@
  */
 
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import type { PulseResult } from '@ownpilot/core';
+import type { PulseResult } from '@ownpilot/core/services';
 
 // ============================================================================
 // Mock log so we can assert on log.warn in the error branch

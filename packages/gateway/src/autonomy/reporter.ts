@@ -8,7 +8,7 @@
 
 import { getEventSystem } from '@ownpilot/core';
 import { getLog } from '../services/log.js';
-import type { PulseResult } from '@ownpilot/core';
+import type { PulseResult } from '@ownpilot/core/services';
 
 const log = getLog('PulseReporter');
 

@@ -6,7 +6,7 @@
  * - Outgoing: Internal tag stripping, Markdown → Slack mrkdwn, message splitting
  */
 
-import type { ChannelIncomingMessage, NormalizedAttachment } from '@ownpilot/core';
+import type { ChannelIncomingMessage, NormalizedAttachment } from '@ownpilot/core/channels';
 import type { ChannelNormalizer, NormalizedIncoming } from './types.js';
 import { stripInternalTags } from './base.js';
 import { splitMessage, PLATFORM_MESSAGE_LIMITS } from '../utils/message-utils.js';

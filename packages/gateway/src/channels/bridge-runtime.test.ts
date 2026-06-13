@@ -6,7 +6,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { ChannelIncomingMessage, IChannelService, UCPBridgeConfig } from '@ownpilot/core';
+import type {
+  ChannelIncomingMessage,
+  IChannelService,
+  UCPBridgeConfig,
+} from '@ownpilot/core/channels';
 
 const mockGetAll = vi.hoisted(() => vi.fn<() => Promise<UCPBridgeConfig[]>>());
 const mockGetOwnerChatId = vi.hoisted(() => vi.fn<(platform: string) => Promise<string | null>>());

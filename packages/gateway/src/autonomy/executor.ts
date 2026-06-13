@@ -7,7 +7,7 @@
  */
 
 import { getErrorMessage, getMemoryService, getGoalService } from '@ownpilot/core';
-import type { PulseActionResult } from '@ownpilot/core';
+import type { PulseActionResult } from '@ownpilot/core/services';
 import { assessRisk } from './risk.js';
 import { DEFAULT_AUTONOMY_CONFIG, type AutonomyConfig } from './types.js';
 import { PULSE_MAX_ACTIONS } from '../config/defaults.js';

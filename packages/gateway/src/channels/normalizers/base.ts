@@ -6,7 +6,7 @@
  * Auto-transcribes audio attachments via VoiceService when available.
  */
 
-import type { ChannelIncomingMessage, NormalizedAttachment } from '@ownpilot/core';
+import type { ChannelIncomingMessage, NormalizedAttachment } from '@ownpilot/core/channels';
 import type { ChannelNormalizer, NormalizedIncoming } from './types.js';
 import { flattenChatWidgetsToText } from '../../utils/chat-widgets.js';
 import { splitMessage } from '../utils/message-utils.js';

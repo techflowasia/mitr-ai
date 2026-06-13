@@ -6,8 +6,8 @@
  */
 
 import { BaseRepository } from './base.js';
-import type { ExecutionPermissions, PermissionMode } from '@ownpilot/core';
-import { DEFAULT_EXECUTION_PERMISSIONS } from '@ownpilot/core';
+import type { ExecutionPermissions, PermissionMode } from '@ownpilot/core/agent';
+import { DEFAULT_EXECUTION_PERMISSIONS } from '@ownpilot/core/agent';
 
 const CATEGORIES = [
   'execute_javascript',
