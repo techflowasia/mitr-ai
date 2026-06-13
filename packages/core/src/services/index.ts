@@ -474,3 +474,6 @@ export {
 
 // Safe Value Utilities (NaN/Infinity/negative guards for cost + duration fields)
 export { safeCost, safeDuration } from '../utils/safe-value.js';
+
+// Scheduler Utilities
+export { getNextRunTime } from '../scheduler/index.js';
