@@ -13,7 +13,7 @@ import {
   type AutonomyGuardContext,
 } from './autonomy-guard.js';
 import { AutonomyLevel, type ActionCategory } from './types.js';
-import type { SoulAutonomy } from '@ownpilot/core';
+import type { SoulAutonomy } from '@ownpilot/core/agent';
 
 function createMockAutonomy(overrides: Partial<SoulAutonomy> = {}): SoulAutonomy {
   return {

@@ -12,12 +12,8 @@
  * a message out to arbitrary recipients.
  */
 
-import {
-  UCPBridgeManager,
-  type UCPMessage,
-  type ChannelIncomingMessage,
-  type IChannelService,
-} from '@ownpilot/core';
+import { UCPBridgeManager } from '@ownpilot/core/channels';
+import type { UCPMessage, ChannelIncomingMessage, IChannelService } from '@ownpilot/core/channels';
 import { ChannelBridgesRepository } from '../db/repositories/channels/bridges.js';
 import { getOwnerChatId } from '../services/pairing-service.js';
 import { getErrorMessage } from '../utils/common.js';

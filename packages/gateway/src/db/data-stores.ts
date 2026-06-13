@@ -12,7 +12,7 @@ import type {
   Task,
   PersonalCalendarEvent,
   Contact,
-} from '@ownpilot/core';
+} from '@ownpilot/core/data-gateway';
 
 import {
   BookmarksRepository,

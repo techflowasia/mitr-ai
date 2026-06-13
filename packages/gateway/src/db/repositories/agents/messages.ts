@@ -3,7 +3,7 @@
  */
 
 import { BaseRepository, parseJsonField } from '../base.js';
-import type { AgentMessage, AgentMessageType } from '@ownpilot/core';
+import type { AgentMessage, AgentMessageType } from '@ownpilot/core/agent';
 
 // ── DB Row Types ────────────────────────────────────
 

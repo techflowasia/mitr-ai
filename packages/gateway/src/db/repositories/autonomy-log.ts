@@ -7,7 +7,7 @@
 
 import { BaseRepository, parseJsonField } from './base.js';
 import { generateId } from '@ownpilot/core/services';
-import type { PulseActionResult, AutonomyLogEntry, PulseStats } from '@ownpilot/core';
+import type { PulseActionResult, AutonomyLogEntry, PulseStats } from '@ownpilot/core/services';
 
 // ============================================================================
 // Row type (DB shape)

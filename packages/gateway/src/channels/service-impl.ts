@@ -16,25 +16,23 @@ import {
   type ChannelPluginInfo,
   type ChannelIncomingMessage,
   type ChannelPluginManifest,
-  ChannelEvents,
   type ChannelMessageReceivedData,
   type ChannelConnectionEventData,
   type ChannelUserVerifiedData,
   type ChannelUserPendingData,
   type ChannelUserFirstSeenData,
-  getEventBus,
-  createEvent,
-  type PluginRegistry,
-  type Plugin,
+} from '@ownpilot/core/channels';
+import { ChannelEvents, getEventBus, createEvent } from '@ownpilot/core/events';
+import type { PluginRegistry, Plugin } from '@ownpilot/core/plugins';
+import {
   hasSessionService,
   getSessionService,
   hasMessageBus,
   getMessageBus,
   getConfigCenter,
   getLLMRouter,
-  type ISessionService,
-  type IMessageBus,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
+import type { ISessionService, IMessageBus } from '@ownpilot/core/services';
 
 import {
   channelUsersRepo,

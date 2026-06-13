@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { ChannelIncomingMessage } from '@ownpilot/core';
+import type { ChannelIncomingMessage } from '@ownpilot/core/channels';
 import { telegramNormalizer, decodeHtmlEntities } from './telegram.js';
 
 const { mockGetConfig, mockTranscribe } = vi.hoisted(() => ({

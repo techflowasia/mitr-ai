@@ -10,15 +10,10 @@
  * It wraps the Agent to provide a fully autonomous personal AI assistant.
  */
 
-import {
-  type ToolCall,
-  getEventSystem,
-  getMemoryService,
-  getGoalService,
-  getTriggerService,
-  getBaseName,
-} from '@ownpilot/core';
-import type { CliToolPolicy } from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core/events';
+import { getMemoryService, getGoalService, getTriggerService } from '@ownpilot/core/services';
+import { getBaseName, type ToolCall } from '@ownpilot/core/agent';
+import type { CliToolPolicy } from '@ownpilot/core/services';
 import { getResourceRegistry } from '../services/resource/registry.js';
 import { getApprovalManager, assessRisk, type ActionCategory } from '../autonomy/index.js';
 import { getTriggerEngine } from '../triggers/engine.js';

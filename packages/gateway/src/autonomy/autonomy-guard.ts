@@ -12,7 +12,7 @@
  * - Level 4 (FULL): Allow unless in blockedActions, minimal notifications
  */
 
-import type { SoulAutonomy } from '@ownpilot/core';
+import type { SoulAutonomy } from '@ownpilot/core/agent';
 import type { ActionCategory } from './types.js';
 import { AutonomyLevel } from './types.js';
 

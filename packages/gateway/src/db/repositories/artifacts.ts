@@ -15,7 +15,7 @@ import type {
   DataBinding,
   ArtifactType,
   DashboardSize,
-} from '@ownpilot/core';
+} from '@ownpilot/core/data-gateway';
 import { BaseRepository, parseJsonField } from './base.js';
 import { buildUpdateStatement } from './query-helpers.js';
 

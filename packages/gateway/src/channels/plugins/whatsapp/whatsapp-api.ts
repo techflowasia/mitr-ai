@@ -27,12 +27,10 @@ import {
   type ChannelUser,
   type ChannelIncomingMessage,
   type ChannelAttachment,
-  ChannelEvents,
   type ChannelMessageReceivedData,
   type ChannelConnectionEventData,
-  getEventBus,
-  createEvent,
-} from '@ownpilot/core';
+} from '@ownpilot/core/channels';
+import { ChannelEvents, getEventBus, createEvent } from '@ownpilot/core/events';
 import { getLog } from '../../../services/log.js';
 import { getErrorMessage } from '../../../utils/common.js';
 import { MAX_MESSAGE_CHAT_MAP_SIZE } from '../../../config/defaults.js';

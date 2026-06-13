@@ -13,7 +13,7 @@ import type {
   ChannelConnectionStatus,
   ChannelOutgoingMessage,
   ChannelPlatform,
-} from '@ownpilot/core';
+} from '@ownpilot/core/channels';
 import { getLog } from '../../../services/log.js';
 
 const log = getLog('WebChat');

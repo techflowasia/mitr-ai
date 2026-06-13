@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TelegramChannelAPI } from './telegram-api.js';
-import type { ChannelAttachment } from '@ownpilot/core';
+import type { ChannelAttachment } from '@ownpilot/core/channels';
 
 const { mockExecFile, mockWarn } = vi.hoisted(() => ({
   mockExecFile: vi.fn(),

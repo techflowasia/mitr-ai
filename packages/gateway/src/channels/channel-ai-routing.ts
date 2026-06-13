@@ -9,14 +9,9 @@
 
 import { randomUUID } from 'node:crypto';
 import { pricingByExactKey } from '@ownpilot/core/costs';
-import type {
-  ChannelIncomingMessage,
-  ChannelPluginAPI,
-  IMessageBus,
-  NormalizedMessage,
-  StreamCallbacks,
-  ToolCall,
-} from '@ownpilot/core';
+import type { ChannelIncomingMessage, ChannelPluginAPI } from '@ownpilot/core/channels';
+import type { IMessageBus, NormalizedMessage } from '@ownpilot/core/services';
+import type { StreamCallbacks, ToolCall } from '@ownpilot/core/agent';
 import type { ChannelSessionsRepository } from '../db/repositories/channels/sessions.js';
 import { truncate } from '../utils/common.js';
 import { stripInternalTags } from './normalizers/base.js';

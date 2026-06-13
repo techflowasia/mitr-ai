@@ -7,7 +7,7 @@
 
 import type { Bot } from 'grammy';
 import type { Message, PhotoSize } from 'grammy/types';
-import type { ChannelAttachment } from '@ownpilot/core';
+import type { ChannelAttachment } from '@ownpilot/core/channels';
 import { getLog } from '../../../services/log.js';
 
 const log = getLog('TelegramFile');

@@ -5,13 +5,8 @@
  * and user identity resolution for channel users.
  */
 
-import {
-  type ChannelUserVerifiedData,
-  type ChannelUserBlockedData,
-  ChannelEvents,
-  getEventBus,
-  createEvent,
-} from '@ownpilot/core';
+import { type ChannelUserVerifiedData, type ChannelUserBlockedData } from '@ownpilot/core/channels';
+import { ChannelEvents, getEventBus, createEvent } from '@ownpilot/core/events';
 
 import type { ChannelVerificationRepository } from '../../db/repositories/channels/verification.js';
 import { channelVerificationRepo } from '../../db/repositories/channels/verification.js';
