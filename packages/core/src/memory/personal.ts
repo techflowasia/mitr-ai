@@ -19,6 +19,7 @@
 import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { getLog } from '../services/get-log.js';
 
 /**
  * Reject userId values that could escape the per-user partition via `path.join`.
@@ -816,7 +817,24 @@ export class PersonalMemoryStore {
       const content = await fs.readFile(filePath, 'utf-8');
       const entries = JSON.parse(content) as PersonalDataEntry[];
       this.data = new Map(entries.map((e) => [e.id, e]));
-    } catch {
+    } catch (err) {
+      // Distinguish first-run (ENOENT — expected) from corruption. On
+      // corruption, rename the file out of the way so the user can recover
+      // it and we don't silently drop all personal data.
+      const isFirstRun = (err as NodeJS.ErrnoException)?.code === 'ENOENT';
+      if (!isFirstRun) {
+        const corruptPath = `${filePath}.corrupt-${Date.now()}`;
+        try {
+          await fs.rename(filePath, corruptPath);
+        } catch {
+          // best-effort
+        }
+        const log = getLog('PersonalMemory');
+        log.error(
+          `personal.json was corrupt; renamed to ${corruptPath} and starting with empty store. Original error:`,
+          err
+        );
+      }
       this.data = new Map();
     }
   }
