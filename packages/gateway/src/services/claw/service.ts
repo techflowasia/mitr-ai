@@ -13,8 +13,8 @@ import type {
   ClawHistoryEntry,
   CreateClawInput,
   UpdateClawInput,
-} from '@ownpilot/core';
-import { generateId, DEFAULT_CLAW_LIMITS, MAX_CLAW_DEPTH } from '@ownpilot/core';
+} from '@ownpilot/core/services';
+import { generateId, DEFAULT_CLAW_LIMITS, MAX_CLAW_DEPTH } from '@ownpilot/core/services';
 import { getClawManager } from './manager.js';
 import { getClawsRepository } from '../../db/repositories/claws.js';
 

@@ -9,7 +9,7 @@
  */
 
 import { AsyncLocalStorage } from 'node:async_hooks';
-import type { ClawSandboxMode } from '@ownpilot/core';
+import type { ClawSandboxMode } from '@ownpilot/core/services';
 
 export interface ClawExecutionContext {
   clawId: string;

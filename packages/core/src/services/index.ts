@@ -479,6 +479,9 @@ export {
   type IMcpClientService,
 } from './mcp-client-service.js';
 
+// Claw Types
+export * from './claw-types.js';
+
 // Audit Service
 export {
   getAuditService,

@@ -20,7 +20,7 @@ import {
   PLAN_STEP_TIMEOUT_MS,
 } from '../config/defaults.js';
 import { executeTool, hasTool } from '../services/tool/executor.js';
-import { getPlanService, type IPlanService } from '@ownpilot/core';
+import { getPlanService, type IPlanService } from '@ownpilot/core/services';
 import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
 import { downgradePromptToBlocked } from '../services/permission/utils.js';
 import { getErrorMessage } from '../utils/common.js';

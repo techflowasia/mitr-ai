@@ -17,19 +17,18 @@
 
 import {
   getErrorMessage,
-  type Agent,
   CLAW_REFLECTION_THRESHOLD,
   CLAW_TASK_STALL_THRESHOLD,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
+import type { Agent, ToolCall } from '@ownpilot/core/agent';
 import type {
   ClawConfig,
   ClawSession,
   ClawCycleResult,
   ClawToolCall,
-  ToolCall,
-} from '@ownpilot/core';
-import type { RuntimeContext } from '@ownpilot/core';
-import { getRuntimeContext } from '@ownpilot/core';
+} from '@ownpilot/core/services';
+import type { RuntimeContext } from '@ownpilot/core/services';
+import { getRuntimeContext } from '@ownpilot/core/services';
 import { getLog } from '../log.js';
 import { buildEnhancedSystemPrompt } from '../../assistant/orchestrator.js';
 import {

@@ -28,8 +28,8 @@ import type {
   ClawEscalation,
   ClawTask,
   ClawPlanHistoryEntry,
-  EventHandler,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
+import type { EventHandler } from '@ownpilot/core/events';
 import { ClawRunner } from './runner.js';
 import { getClawsRepository } from '../../db/repositories/claws.js';
 import {
@@ -38,7 +38,7 @@ import {
 } from '../../workspace/file-workspace.js';
 import { getLog } from '../log.js';
 import { scaffoldClawDir, runRetentionCleanup, ensureConversationRow } from './manager-helpers.js';
-import { safeCost, safeDuration } from '@ownpilot/core';
+import { safeCost, safeDuration } from '@ownpilot/core/utils';
 // Extracted helpers — see sibling files
 import {
   extractSavedTasks,

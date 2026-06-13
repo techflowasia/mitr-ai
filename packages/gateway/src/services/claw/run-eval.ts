@@ -12,7 +12,7 @@
  * burns cycles without progress. Pure and dependency-free for unit testing.
  */
 
-import type { ClawConfig, ClawHistoryEntry, ClawToolCall } from '@ownpilot/core';
+import type { ClawConfig, ClawHistoryEntry, ClawToolCall } from '@ownpilot/core/services';
 
 interface ToolReliability {
   tool: string;

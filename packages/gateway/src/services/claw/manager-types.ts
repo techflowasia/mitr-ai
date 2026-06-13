@@ -2,7 +2,8 @@
  * Type definitions for ClawManager.
  */
 
-import type { ClawSession, EventHandler } from '@ownpilot/core';
+import type { ClawSession } from '@ownpilot/core/services';
+import type { EventHandler } from '@ownpilot/core/events';
 import type { ClawRunner } from './runner.js';
 
 // ============================================================================

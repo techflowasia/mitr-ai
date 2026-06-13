@@ -8,7 +8,7 @@
  * reach back into the routes/ layer for executors.
  */
 
-import { getGoalService } from '@ownpilot/core';
+import { getGoalService } from '@ownpilot/core/services';
 import type { GoalStatus } from '../db/repositories/goals.js';
 import { GoalServiceError } from '../services/goal-service.js';
 import { sanitizeId, getErrorMessage } from '../utils/common.js';
