@@ -5,7 +5,7 @@
  * (HTML, SVG, Markdown, charts, forms) with data bindings.
  */
 
-import { generateId } from '@ownpilot/core';
+import { generateId } from '@ownpilot/core/services';
 import type {
   Artifact,
   ArtifactVersion,
