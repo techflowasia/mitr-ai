@@ -11,7 +11,8 @@
  */
 
 import type { ToolRegistry, ToolExecutor, ToolExecutionResult } from '@ownpilot/core/agent';
-import { getConfigCenter, isPathAllowedAsync } from '@ownpilot/core/services';
+import { getConfigCenter } from '@ownpilot/core/services';
+import { isPathAllowedAsync } from '@ownpilot/core/agent';
 import { configServicesRepo } from '../../db/repositories/config-services.js';
 import { getLog } from '../../services/log.js';
 import { getErrorMessage } from '../../utils/common.js';

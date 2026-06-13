@@ -5,7 +5,7 @@
  */
 
 import type { MessageMiddleware } from '@ownpilot/core/services';
-import type { AIProvider } from '@ownpilot/core/agent';
+import type { AIProvider } from '@ownpilot/core/costs';
 import { usageTracker } from '../usage-tracking.js';
 import { LogsRepository } from '../../db/repositories/index.js';
 import { logChatEvent } from '../../audit/index.js';

@@ -15,7 +15,8 @@ import {
   getErrorMessage,
   parseJsonBody,
 } from './helpers.js';
-import { getMemoryInjector, type PersonalDataCategory } from '@ownpilot/core/agent';
+import { getMemoryInjector } from '@ownpilot/core/agent';
+import type { PersonalDataCategory } from '@ownpilot/core/memory';
 import { getPersonalMemoryStore } from '@ownpilot/core/memory';
 
 const VALID_CATEGORIES: ReadonlySet<string> = new Set<PersonalDataCategory>([

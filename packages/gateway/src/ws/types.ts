@@ -4,7 +4,7 @@
  * Central control plane for real-time communication
  */
 
-import type { CanvasElement } from '@ownpilot/core/data-gateway';
+import type { CanvasElement } from '@ownpilot/core/services';
 
 /**
  * Session representing a connected client

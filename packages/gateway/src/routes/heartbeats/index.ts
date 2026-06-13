@@ -156,7 +156,7 @@ heartbeatsRoutes.get('/export', async (c) => {
 // Factory-generated CRUD routes: GET /:id, DELETE /:id
 // ============================================================================
 
-const crudRoutes = createCrudRoutes<ReturnType<typeof getService>>({
+const crudRoutes = createCrudRoutes({
   entity: 'heartbeat',
   serviceToken: Services.Heartbeat,
   methods: ['get', 'delete'],

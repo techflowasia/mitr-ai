@@ -24,19 +24,19 @@ import {
   HeartbeatRunner,
   AgentCommunicationBus,
   BudgetTracker,
-  calculateCost,
-  getRuntimeContext,
   runInExecContext,
 } from '@ownpilot/core/agent';
+import { calculateCost } from '@ownpilot/core/costs';
+import { getRuntimeContext } from '@ownpilot/core/services';
 import type {
-  AIProvider,
   HeartbeatToolCallRecord,
   IHeartbeatAgentEngine,
   IHeartbeatEventBus,
   ISoulRepository,
   IHeartbeatLogRepository,
-  RuntimeContext,
 } from '@ownpilot/core/agent';
+import type { AIProvider } from '@ownpilot/core/costs';
+import type { RuntimeContext } from '@ownpilot/core/services';
 import { buildCrewContextSection } from '@ownpilot/core/agent';
 import type { CrewContextInfo } from '@ownpilot/core/agent';
 import { getAdapterSync } from '../../db/adapters/index.js';

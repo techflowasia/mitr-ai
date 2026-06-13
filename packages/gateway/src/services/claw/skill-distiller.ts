@@ -18,7 +18,8 @@
  */
 
 import { getErrorMessage } from '@ownpilot/core/services';
-import type { AIProvider, ClawConfig } from '@ownpilot/core/services';
+import type { ClawConfig } from '@ownpilot/core/services';
+import type { AIProvider } from '@ownpilot/core/costs';
 import { getLog } from '../log.js';
 import { getExtensionService, type ExtensionService } from '../extension/service.js';
 import type { ExtensionManifest } from '../extension/types.js';

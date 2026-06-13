@@ -15,23 +15,24 @@ import {
   ToolRegistry,
   registerAllTools,
   qualifyToolName,
-  calculateCost,
   type IProvider,
   createProvider,
   createFallbackProvider,
   type ProviderConfig,
-  type AIProvider,
   type ToolCall,
-  type ToolId,
   type Message,
 } from '@ownpilot/core/agent';
+import { calculateCost } from '@ownpilot/core/costs';
+import type { AIProvider } from '@ownpilot/core/costs';
+import type { ToolId } from '@ownpilot/core/types';
 import { getErrorMessage } from '@ownpilot/core/services';
 import { getExtensionService } from '@ownpilot/core/services';
 import { getLog } from '../log.js';
 import { resolveForProcess } from '../llm/model-routing.js';
 import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from './cache.js';
 import { resolveAuthForRequest } from '../auth/oauth-flow.js';
-import { getLLMRouter, getConfigCenter, estimateCost } from '@ownpilot/core/services';
+import { getLLMRouter, getConfigCenter } from '@ownpilot/core/services';
+import { estimateCost } from '@ownpilot/core/costs';
 import { budgetManager } from '../usage-tracking.js';
 import {
   registerGatewayTools,

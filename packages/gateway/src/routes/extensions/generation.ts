@@ -5,11 +5,8 @@
  */
 
 import { Hono } from 'hono';
-import {
-  createProvider,
-  getProviderConfig as coreGetProviderConfig,
-  type AIProvider,
-} from '@ownpilot/core/agent';
+import { createProvider, getProviderConfig as coreGetProviderConfig } from '@ownpilot/core/agent';
+import type { AIProvider } from '@ownpilot/core/costs';
 import { validateManifest, type ExtensionManifest } from '../../services/extension/types.js';
 import { serializeExtensionMarkdown } from '../../services/extension/markdown.js';
 import { parseAgentSkillsMd } from '../../services/skill/agentskills-parser.js';

@@ -6,11 +6,8 @@
  * Provides IMAP/SMTP credential configuration via Config Center.
  */
 
-import {
-  createChannelPlugin,
-  type PluginCapability,
-  type PluginPermission,
-} from '@ownpilot/core/channels';
+import { createChannelPlugin } from '@ownpilot/core/channels';
+import type { PluginCapability, PluginPermission } from '@ownpilot/core/plugins';
 import { getConfigCenter } from '@ownpilot/core/services';
 import { getChannelService } from '@ownpilot/core/channels';
 import { EmailChannelAPI } from './email-api.js';

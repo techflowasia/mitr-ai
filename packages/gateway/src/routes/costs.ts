@@ -8,8 +8,8 @@ import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import { getLog } from '../services/log.js';
 import { estimateCost, MODEL_PRICING, formatCost } from '@ownpilot/core/costs';
-import type { AIProvider } from '@ownpilot/core/agent';
-import type { BudgetConfig } from '@ownpilot/core/services';
+import type { AIProvider } from '@ownpilot/core/costs';
+import type { BudgetConfig } from '@ownpilot/core/costs';
 import { usageTracker, budgetManager } from '../services/usage-tracking.js';
 import { getUsageRepository } from '../db/repositories/costs/usage.js';
 import {

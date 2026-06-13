@@ -11,7 +11,7 @@ import type {
   CanvasElementType,
   AddCanvasElementInput,
   UpdateCanvasElementInput,
-} from '@ownpilot/core/data-gateway';
+} from '@ownpilot/core/services';
 import { BaseRepository, parseJsonFieldNullable } from './base.js';
 
 // ============================================================================

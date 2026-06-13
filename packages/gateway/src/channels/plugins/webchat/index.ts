@@ -5,11 +5,8 @@
  * Messages flow through WebSocket events via the existing wsGateway.
  */
 
-import {
-  createChannelPlugin,
-  type PluginCapability,
-  type PluginPermission,
-} from '@ownpilot/core/channels';
+import { createChannelPlugin } from '@ownpilot/core/channels';
+import type { PluginCapability, PluginPermission } from '@ownpilot/core/plugins';
 import { WebChatChannelAPI } from './webchat-api.js';
 
 export function buildWebChatChannelPlugin() {

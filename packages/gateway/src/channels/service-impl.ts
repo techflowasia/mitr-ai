@@ -22,7 +22,8 @@ import {
   type ChannelUserPendingData,
   type ChannelUserFirstSeenData,
 } from '@ownpilot/core/channels';
-import { ChannelEvents, getEventBus, createEvent } from '@ownpilot/core/events';
+import { getEventBus, createEvent } from '@ownpilot/core/events';
+import { ChannelEvents } from '@ownpilot/core/channels';
 import type { PluginRegistry, Plugin } from '@ownpilot/core/plugins';
 import {
   hasSessionService,

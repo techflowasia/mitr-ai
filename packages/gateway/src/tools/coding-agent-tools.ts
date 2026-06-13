@@ -9,7 +9,8 @@
  * waits for completion, and returns the persisted result.
  */
 
-import type { ToolDefinition, CodingAgentProvider } from '@ownpilot/core/services';
+import type { CodingAgentProvider } from '@ownpilot/core/services';
+import type { ToolDefinition } from '@ownpilot/core/agent';
 import { getErrorMessage } from '@ownpilot/core/services';
 import { getCodingAgentService } from '../services/coding-agent/service.js';
 import { getCodingAgentSessionManager } from '../services/coding-agent/sessions.js';

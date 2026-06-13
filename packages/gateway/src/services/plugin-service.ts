@@ -10,7 +10,7 @@
  *   const tool = plugins.getTool('my_tool');
  */
 
-import type { IPluginService, PluginInfo, PluginToolEntry } from '@ownpilot/core/plugins';
+import type { IPluginService, PluginInfo, PluginToolEntry } from '@ownpilot/core/services';
 import type { Plugin, PluginManifest, PluginRegistry } from '@ownpilot/core/plugins';
 import { getDefaultPluginRegistry } from '@ownpilot/core/plugins';
 

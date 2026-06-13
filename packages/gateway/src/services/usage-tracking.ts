@@ -10,7 +10,7 @@
  * just like services and middleware do.
  */
 
-import { UsageTracker, BudgetManager } from '@ownpilot/core/services';
+import { UsageTracker, BudgetManager } from '@ownpilot/core/costs';
 import { getLog } from './log.js';
 
 const log = getLog('UsageTracking');

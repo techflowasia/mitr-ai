@@ -123,7 +123,7 @@ async function parseJsonBody(c: Context): Promise<unknown | null> {
 function validateWithSchema<T>(
   schema: ZodSchema<T>,
   body: unknown
-): { data: T; error?: undefined } | { data?: undefined; error: string } {
+): { data: T } | { error: string } {
   const result = schema.safeParse(body);
   if (!result.success) {
     const issues = result.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
@@ -291,7 +291,7 @@ export function createCrudRoutes<TService = unknown, TCreate = unknown, TUpdate 
       let validatedBody = body as TCreate;
       if (schemas.create) {
         const validation = validateWithSchema<TCreate>(schemas.create, body);
-        if (validation.error) {
+        if ('error' in validation) {
           return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: validation.error }, 400);
         }
         validatedBody = validation.data;
@@ -353,7 +353,7 @@ export function createCrudRoutes<TService = unknown, TCreate = unknown, TUpdate 
       let validatedBody = body as TUpdate;
       if (schemas.update) {
         const validation = validateWithSchema<TUpdate>(schemas.update, body);
-        if (validation.error) {
+        if ('error' in validation) {
           return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: validation.error }, 400);
         }
         validatedBody = validation.data;

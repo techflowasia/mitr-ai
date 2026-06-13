@@ -17,7 +17,8 @@ import {
   type ChannelMessageReceivedData,
   type ChannelConnectionEventData,
 } from '@ownpilot/core/channels';
-import { ChannelEvents, getEventBus, createEvent } from '@ownpilot/core/events';
+import { getEventBus, createEvent } from '@ownpilot/core/events';
+import { ChannelEvents } from '@ownpilot/core/channels';
 import { getLog } from '../../../services/log.js';
 import { getErrorMessage } from '../../../utils/common.js';
 import { MAX_MESSAGE_CHAT_MAP_SIZE } from '../../../config/defaults.js';

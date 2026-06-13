@@ -7,11 +7,8 @@
  * and exposes ChannelPluginAPI for unified channel management.
  */
 
-import {
-  createChannelPlugin,
-  type PluginCapability,
-  type PluginPermission,
-} from '@ownpilot/core/channels';
+import { createChannelPlugin } from '@ownpilot/core/channels';
+import type { PluginCapability, PluginPermission } from '@ownpilot/core/plugins';
 import { getConfigCenter } from '@ownpilot/core/services';
 import { getChannelService } from '@ownpilot/core/channels';
 import { MatrixChannelAPI } from './matrix-api.js';

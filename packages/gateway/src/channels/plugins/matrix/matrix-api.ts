@@ -20,7 +20,8 @@ import {
   type ChannelMessageReceivedData,
   type ChannelConnectionEventData,
 } from '@ownpilot/core/channels';
-import { ChannelEvents, getEventBus, createEvent } from '@ownpilot/core/events';
+import { getEventBus, createEvent } from '@ownpilot/core/events';
+import { ChannelEvents } from '@ownpilot/core/channels';
 import { getLog } from '../../../services/log.js';
 import { getErrorMessage } from '../../../utils/common.js';
 import { splitMessage } from '../../utils/message-utils.js';

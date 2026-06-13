@@ -13,7 +13,7 @@ import type {
   AddCanvasElementInput,
   UpdateCanvasElementInput,
   CanvasOpAction,
-} from '@ownpilot/core/data-gateway';
+} from '@ownpilot/core/services';
 import { CanvasRepository } from '../../db/repositories/canvas.js';
 import { wsGateway } from '../../ws/server.js';
 

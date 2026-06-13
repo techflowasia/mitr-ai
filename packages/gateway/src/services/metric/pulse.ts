@@ -14,11 +14,8 @@
 
 import { getEventSystem } from '@ownpilot/core/events';
 import type { EventHandler } from '@ownpilot/core/events';
-import {
-  ClawCircuitBreaker,
-  ClawMetricsCollector,
-  type ClawCycleSummary,
-} from '@ownpilot/core/services';
+import { ClawCircuitBreaker, ClawMetricsCollector } from '@ownpilot/core/agent';
+import type { ClawCycleSummary } from '@ownpilot/core/agent';
 import { getLog } from '../log.js';
 import type { ClawState } from '@ownpilot/core/services';
 

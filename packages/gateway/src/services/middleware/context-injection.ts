@@ -14,8 +14,10 @@
  */
 
 import type { MessageMiddleware } from '@ownpilot/core/services';
-import { type IExtensionService, debugLog } from '@ownpilot/core/agent';
-import { getTimeContext, getMemoryService, hasMemoryService } from '@ownpilot/core/services';
+import { debugLog } from '@ownpilot/core/agent';
+import type { IExtensionService } from '@ownpilot/core/services';
+import { getMemoryService, hasMemoryService } from '@ownpilot/core/services';
+import { getTimeContext } from '@ownpilot/core/agent';
 import { getExtensionService } from '@ownpilot/core/services';
 import { buildEnhancedSystemPrompt } from '../../assistant/index.js';
 import { getErrorMessage } from '../../utils/common.js';

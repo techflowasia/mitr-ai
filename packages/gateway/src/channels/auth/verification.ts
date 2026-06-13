@@ -6,7 +6,8 @@
  */
 
 import { type ChannelUserVerifiedData, type ChannelUserBlockedData } from '@ownpilot/core/channels';
-import { ChannelEvents, getEventBus, createEvent } from '@ownpilot/core/events';
+import { getEventBus, createEvent } from '@ownpilot/core/events';
+import { ChannelEvents } from '@ownpilot/core/channels';
 
 import type { ChannelVerificationRepository } from '../../db/repositories/channels/verification.js';
 import { channelVerificationRepo } from '../../db/repositories/channels/verification.js';

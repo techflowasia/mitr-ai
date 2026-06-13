@@ -105,7 +105,7 @@ vi.mock('../db/repositories/execution-permissions.js', () => ({
 
 // Must import after mocks are declared
 import { TriggerEngine } from './engine.js';
-import { getNextRunTime } from '@ownpilot/core/services';
+import { getNextRunTime } from '@ownpilot/core/scheduler';
 
 // ---------------------------------------------------------------------------
 // Helpers

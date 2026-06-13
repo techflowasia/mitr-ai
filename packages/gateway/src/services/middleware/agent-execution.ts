@@ -6,7 +6,8 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import type { MessageMiddleware, StreamCallbacks, ContentPart } from '@ownpilot/core/services';
+import type { MessageMiddleware, StreamCallbacks } from '@ownpilot/core/services';
+import type { ContentPart } from '@ownpilot/core/agent';
 import type { NormalizedMessage, MessageProcessingResult } from '@ownpilot/core/services';
 import { checkToolCallApproval } from '../../assistant/index.js';
 import { getLog } from '../log.js';

@@ -7,17 +7,13 @@
  */
 
 import {
-  hasProviderService,
-  getProviderService,
   createAgent,
   type Agent,
   type AgentConfig,
-  type AIProvider,
   type IProvider,
   type WorkspaceContext,
   ToolRegistry,
   injectMemoryIntoPrompt,
-  unsafeToolId,
   getBaseName,
   createProvider,
   createFallbackProvider,
@@ -25,6 +21,9 @@ import {
   type ResolvedAuth,
   buildSoulPrompt,
 } from '@ownpilot/core/agent';
+import { hasProviderService, getProviderService } from '@ownpilot/core/services';
+import type { AIProvider } from '@ownpilot/core/costs';
+import { unsafeToolId } from '@ownpilot/core/types';
 import type { SessionInfo } from '../../types/index.js';
 import { agentsRepo, type AgentRecord } from '../../db/repositories/index.js';
 import { ChatRepository } from '../../db/repositories/chat/index.js';

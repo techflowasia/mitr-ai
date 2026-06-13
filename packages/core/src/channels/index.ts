@@ -111,11 +111,9 @@ export {
 export { createChannelAdapter, type ChannelAdapterConfig } from './sdk.js';
 
 // Notifications
-// Note: NotificationPriority is not re-exported here to avoid ambiguity with
-// the identical type already exported from scheduler/notifications.ts.
-// Both modules define the same 'low' | 'normal' | 'high' | 'urgent' union.
 export {
   type Notification,
+  type NotificationPriority,
   type NotificationResult,
   type NotificationPreferences,
   type INotificationRouter,

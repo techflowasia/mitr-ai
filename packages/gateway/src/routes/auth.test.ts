@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import authRoutes from './auth.js';
+import { providerAuthRoutes as authRoutes } from './auth.js';
 import {
   startDeviceFlow,
   pollPendingDeviceFlow,

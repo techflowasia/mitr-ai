@@ -11,7 +11,7 @@
 import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono } from 'hono';
 import { createProvider, getProviderConfig as coreGetProviderConfig } from '@ownpilot/core/agent';
-import type { AIProvider } from '@ownpilot/core/agent';
+import type { AIProvider } from '@ownpilot/core/costs';
 import { getExtensionService } from '@ownpilot/core/services';
 import type { ExtensionService } from '../../services/extension/service.js';
 import type { ExtensionManifest } from '../../services/extension/types.js';

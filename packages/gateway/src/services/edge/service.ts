@@ -7,7 +7,6 @@
 
 import { getLog } from '@ownpilot/core/services';
 import type {
-  IEdgeService,
   EdgeDevice,
   EdgeCommand,
   EdgeTelemetry,
@@ -17,6 +16,7 @@ import type {
   EdgeCommandInput,
   EdgeDeviceStatus,
 } from '@ownpilot/core/edge';
+import type { IEdgeService } from '@ownpilot/core/services';
 import {
   EdgeDevicesRepository,
   EdgeCommandsRepository,

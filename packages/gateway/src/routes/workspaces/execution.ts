@@ -12,10 +12,10 @@ import { WorkspacesRepository } from '../../db/repositories/workspaces.js';
 import {
   getOrchestrator,
   getWorkspaceStorage,
-  isDockerAvailable,
   type ExecuteCodeRequest,
   type ContainerConfig,
 } from '@ownpilot/core/workspace';
+import { isDockerAvailable } from '@ownpilot/core/sandbox';
 import {
   apiResponse,
   apiError,

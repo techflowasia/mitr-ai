@@ -15,7 +15,7 @@ import {
   TOOL_GROUPS,
   type ToolDefinition,
 } from '@ownpilot/core/agent';
-import { getPluginService } from '@ownpilot/core/plugins';
+import { getPluginService } from '@ownpilot/core/services';
 import { getConfigCenter } from '@ownpilot/core/services';
 import type { ToolInfo } from '../types/index.js';
 import { apiResponse, apiError, ERROR_CODES, notFoundError, getErrorMessage } from './helpers.js';

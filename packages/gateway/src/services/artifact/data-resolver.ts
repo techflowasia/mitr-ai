@@ -9,7 +9,7 @@
  */
 
 import { getLog } from '@ownpilot/core/services';
-import type { DataBinding, DataBindingSource } from '@ownpilot/core/data-gateway';
+import type { DataBinding, DataBindingSource } from '@ownpilot/core/services';
 import {
   TasksRepository,
   GoalsRepository,

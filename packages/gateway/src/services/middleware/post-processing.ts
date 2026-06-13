@@ -6,7 +6,8 @@
  * avoid blocking the response.
  */
 
-import type { MessageMiddleware, ToolCall } from '@ownpilot/core/services';
+import type { MessageMiddleware } from '@ownpilot/core/services';
+import type { ToolCall } from '@ownpilot/core/agent';
 import { extractMemories, updateGoalProgress, evaluateTriggers } from '../../assistant/index.js';
 import { getLog } from '../log.js';
 

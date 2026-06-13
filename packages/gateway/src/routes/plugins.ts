@@ -11,7 +11,7 @@ import type {
   PluginStatus,
 } from '@ownpilot/core/plugins';
 import { getConfigCenter } from '@ownpilot/core/services';
-import { getPluginService } from '@ownpilot/core/plugins';
+import { getPluginService } from '@ownpilot/core/services';
 import type { ConfigFieldDefinition } from '@ownpilot/core/services';
 import {
   apiResponse,

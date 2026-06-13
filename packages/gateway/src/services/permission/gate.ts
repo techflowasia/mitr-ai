@@ -25,7 +25,7 @@ import type {
   ActionCategory,
   AutonomyDisposition,
 } from '@ownpilot/core/services';
-import { setPermissionGate } from '@ownpilot/core/agent';
+import { setPermissionGate } from '@ownpilot/core/services';
 
 const log = getLog('PermissionGate');
 

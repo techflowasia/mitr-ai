@@ -4,8 +4,7 @@
 
 import { Hono } from 'hono';
 import { createMiddleware } from 'hono/factory';
-import { getDebugInfo } from '@ownpilot/core/utils';
-import { debugLog } from '@ownpilot/core/agent';
+import { getDebugInfo, debugLog } from '@ownpilot/core/agent';
 import { apiResponse, apiError, ERROR_CODES, getIntParam, safeKeyCompare } from './helpers.js';
 import { getCircuitBreakerStats, resetAllCircuits } from '../middleware/circuit-breaker.js';
 

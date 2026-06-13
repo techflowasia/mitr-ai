@@ -7,12 +7,8 @@
  */
 
 import { configServicesRepo } from '../db/repositories/config-services.js';
-import type {
-  ConfigServiceRequiredBy,
-  ConfigFieldDefinition,
-  ToolSource,
-  ToolConfigRequirement,
-} from '@ownpilot/core/services';
+import type { ConfigServiceRequiredBy, ConfigFieldDefinition } from '@ownpilot/core/services';
+import type { ToolSource, ToolConfigRequirement } from '@ownpilot/core/agent';
 
 /**
  * Unified config service registration for ALL tool sources (core, custom, plugin).

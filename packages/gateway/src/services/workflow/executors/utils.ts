@@ -10,7 +10,7 @@
  */
 
 import vm from 'node:vm';
-import type { IToolService, ToolServiceResult } from '@ownpilot/core/agent';
+import type { IToolService, ToolServiceResult } from '@ownpilot/core/services';
 import { validateToolCode } from '@ownpilot/core/sandbox';
 import { getLog } from '../../log.js';
 import type { ToolExecutionResult } from '../types.js';

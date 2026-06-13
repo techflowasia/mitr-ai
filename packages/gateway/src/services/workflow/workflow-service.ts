@@ -22,9 +22,8 @@ import {
   getToolService as getCoreToolService,
   type IWorkflowService,
   type IToolService,
-  sleep,
-  withTimeout,
 } from '@ownpilot/core/services';
+import { sleep, withTimeout } from '@ownpilot/core/types';
 import { createWorkflowApprovalsRepository } from '../../db/repositories/workflows/approvals.js';
 import { getErrorMessage } from '../../utils/common.js';
 import { getLog } from '../log.js';

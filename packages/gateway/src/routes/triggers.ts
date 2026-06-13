@@ -8,7 +8,7 @@ import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import { type CreateTriggerInput, type UpdateTriggerInput } from '../db/repositories/triggers.js';
 import { getTriggerEngine } from '../triggers/index.js';
-import { validateCronExpression } from '@ownpilot/core/services';
+import { validateCronExpression } from '@ownpilot/core/scheduler';
 import { getTriggerService } from '@ownpilot/core/services';
 import {
   apiResponse,

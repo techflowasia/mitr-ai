@@ -5,7 +5,7 @@
  * for cross-channel message delivery.
  */
 
-type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';
+export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';
 
 export interface Notification {
   /** Unique notification ID */

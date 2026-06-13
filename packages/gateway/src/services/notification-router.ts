@@ -6,14 +6,14 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import {
-  getChannelService,
-  type Notification,
-  type NotificationPriority,
-  type NotificationResult,
-  type NotificationPreferences,
-  type INotificationRouter,
-} from '@ownpilot/core/services';
+import { getChannelService } from '@ownpilot/core/channels';
+import type {
+  Notification,
+  NotificationResult,
+  NotificationPreferences,
+  INotificationRouter,
+} from '@ownpilot/core/channels';
+import type { NotificationPriority } from '@ownpilot/core/channels';
 import { getLog } from './log.js';
 
 const log = getLog('NotificationRouter');

@@ -8,12 +8,12 @@
 import {
   type Agent,
   type AgentConfig,
-  generateId,
   getProviderConfig as coreGetProviderConfig,
-  getModelPricing,
-  type AIProvider,
   TOOL_GROUPS,
 } from '@ownpilot/core/agent';
+import { generateId } from '@ownpilot/core/services';
+import { getModelPricing } from '@ownpilot/core/costs';
+import type { AIProvider } from '@ownpilot/core/costs';
 import { generateId as _genId } from '@ownpilot/core/services';
 import { localProvidersRepo } from '../../db/repositories/index.js';
 import { getApiKey } from '../app-settings.js';

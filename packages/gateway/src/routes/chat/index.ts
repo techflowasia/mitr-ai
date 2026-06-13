@@ -55,7 +55,7 @@ import { createLoginThrottle } from '../../utils/login-throttle.js';
 import { getClientIp } from '../../utils/client-ip.js';
 import { budgetManager } from '../../services/usage-tracking.js';
 import { estimateCost, formatCost } from '@ownpilot/core/costs';
-import type { AIProvider } from '@ownpilot/core/agent';
+import type { AIProvider } from '@ownpilot/core/costs';
 
 // RATE-003: per-IP throttle for the chat endpoint. /chat is the single
 // most expensive endpoint — every request hits a paid LLM provider

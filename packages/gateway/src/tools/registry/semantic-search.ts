@@ -15,12 +15,8 @@
  *    once across processes.
  */
 
-import {
-  cosineSimilarity,
-  getBaseName,
-  TOOL_SEARCH_TAGS,
-  type ToolDefinition,
-} from '@ownpilot/core/agent';
+import { getBaseName, TOOL_SEARCH_TAGS, type ToolDefinition } from '@ownpilot/core/agent';
+import { cosineSimilarity } from '@ownpilot/core/memory';
 import { getEmbeddingService, hasEmbeddingService } from '@ownpilot/core/services';
 import { createHash } from 'node:crypto';
 import { getLog } from '../../services/log.js';

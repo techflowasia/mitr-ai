@@ -58,13 +58,9 @@ import {
 } from './triggers/index.js';
 import { seedExamplePlans } from './db/seeds/plans-seed.js';
 import { createChannelServiceImpl } from './channels/service-impl.js';
-import {
-  initServiceRegistry,
-  Services,
-  setModuleResolver,
-  enforceSecurityConfig,
-  type ServiceToken,
-} from '@ownpilot/core/services';
+import { initServiceRegistry, Services, type ServiceToken } from '@ownpilot/core/services';
+import { setModuleResolver } from '@ownpilot/core/agent';
+import { enforceSecurityConfig } from '@ownpilot/core/security';
 import { getEventSystem } from '@ownpilot/core/events';
 import { createLogService } from './services/log-service.js';
 import { RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS } from './config/defaults.js';

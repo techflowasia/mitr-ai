@@ -13,7 +13,8 @@
  *   - get_channel_inbox       — read recent inbound messages
  */
 
-import type { ToolDefinition, ChannelOutgoingMessage } from '@ownpilot/core/channels';
+import type { ChannelOutgoingMessage } from '@ownpilot/core/channels';
+import type { ToolDefinition } from '@ownpilot/core/agent';
 import { getErrorMessage } from '@ownpilot/core/services';
 import { getChannelService, hasChannelService } from '@ownpilot/core/channels';
 import { channelMessagesRepo } from '../db/repositories/channels/messages.js';

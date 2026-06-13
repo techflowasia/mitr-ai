@@ -16,7 +16,10 @@ import type { ScheduledTask, TaskExecutionResult, TaskStatus, TaskPriority } fro
 
 // Notification types (inlined — the full notifications module was removed as dead code)
 export type NotificationChannel = 'telegram' | 'email' | 'webhook' | 'push' | 'sms';
-export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';
+// NotificationPriority is intentionally NOT exported here: the canonical
+// public type lives on /channels (channels/notifications.ts). This local copy
+// is kept for internal scheduler use (NotificationRequest.priority etc.).
+type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';
 export interface NotificationContent {
   title: string;
   body: string;

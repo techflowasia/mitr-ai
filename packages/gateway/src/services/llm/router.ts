@@ -15,7 +15,7 @@
  * (`installLLMRouter()`); after that the core singleton is canonical.
  */
 
-import type { ILLMRouter } from '@ownpilot/core/agent';
+import type { ILLMRouter } from '@ownpilot/core/services';
 import { setLLMRouter } from '@ownpilot/core/services';
 import { resolveProviderAndModel, calculateExecutionCost } from '../agent/runner-utils.js';
 import { resolveContextWindow, resolveMaxOutput, computeMemoryMaxTokens } from '../agent/cache.js';

@@ -14,4 +14,3 @@ export {
 export { safeCost, safeDuration } from './safe-value.js';
 
 export { BoundedMap } from './bounded-map.js';
-export type { EvictionPolicy } from './bounded-map.js';

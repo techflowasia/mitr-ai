@@ -5,7 +5,8 @@
  * between base.ts and index.ts.
  */
 
-import type { ChannelIncomingMessage, NormalizedAttachment } from '@ownpilot/core/channels';
+import type { ChannelIncomingMessage } from '@ownpilot/core/channels';
+import type { NormalizedAttachment } from '@ownpilot/core/services';
 
 export interface NormalizedIncoming {
   /** Cleaned text content */

@@ -7,7 +7,8 @@
 
 import { BaseRepository, parseJsonField, parseJsonFieldNullable } from './base.js';
 import { buildUpdateStatement } from './query-helpers.js';
-import { getNextRunTime, generateId } from '@ownpilot/core/services';
+import { generateId } from '@ownpilot/core/services';
+import { getNextRunTime } from '@ownpilot/core/scheduler';
 import { getLog } from '../../services/log.js';
 
 const log = getLog('TriggersRepo');

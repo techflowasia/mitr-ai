@@ -10,7 +10,7 @@ import type {
   ProviderInfo,
   ModelInfo,
   ResolvedProvider,
-} from '@ownpilot/core/agent';
+} from '@ownpilot/core/services';
 import {
   resolveDefaultProviderAndModel,
   getDefaultProvider,

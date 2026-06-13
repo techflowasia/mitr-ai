@@ -19,12 +19,12 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import type { IProvider, ProviderHealthResult } from '@ownpilot/core/agent';
 import type {
-  AIProvider,
   CompletionRequest,
   CompletionResponse,
   StreamChunk,
   Message,
 } from '@ownpilot/core/agent';
+import type { AIProvider } from '@ownpilot/core/costs';
 import type { Result } from '@ownpilot/core/types';
 import { ok, err } from '@ownpilot/core/types';
 import { InternalError } from '@ownpilot/core/types';
