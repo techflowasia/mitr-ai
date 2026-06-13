@@ -148,6 +148,12 @@
         "types": "./dist/assistant/index.d.ts",
         "default": "./dist/assistant/index.js"
       }
+    },
+    "./version": {
+      "import": {
+        "types": "./dist/version.d.ts",
+        "default": "./dist/version.js"
+      }
     }
   },
   "files": [

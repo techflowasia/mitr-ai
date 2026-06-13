@@ -66,5 +66,6 @@ export * from './channels/index.js';
 export * from './edge/index.js';
 
 // Version — derived from package.json so it stays in sync
-import packageJson from '../package.json' with { type: 'json' };
-export const VERSION: string = packageJson.version;
+// Re-exported from ./version.ts so consumers can use @ownpilot/core/version
+// sub-path instead of importing the full barrel just to read the version.
+export { VERSION } from './version.js';

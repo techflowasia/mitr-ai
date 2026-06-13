@@ -12,7 +12,7 @@
 import type { Hono } from 'hono';
 import { generateOpenApiSpec, type OpenApiSpec } from '../openapi/generator.js';
 import { SWAGGER_UI_HTML } from '../openapi/swagger-html.js';
-import { VERSION } from '@ownpilot/core';
+import { VERSION } from '@ownpilot/core/version';
 
 export function registerOpenApiRoutes(app: Hono): void {
   // API-001: the OpenAPI spec and Swagger UI disclose the entire API surface to

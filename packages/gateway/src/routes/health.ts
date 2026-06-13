@@ -3,7 +3,7 @@
  */
 
 import { Hono } from 'hono';
-import { VERSION } from '@ownpilot/core';
+import { VERSION } from '@ownpilot/core/version';
 import {
   getSandboxStatus,
   resetSandboxCache,

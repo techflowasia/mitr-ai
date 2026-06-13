@@ -13,7 +13,7 @@ import { bodyLimit } from 'hono/body-limit';
 import { logger } from 'hono/logger';
 import { secureHeaders } from 'hono/secure-headers';
 
-import { VERSION } from '@ownpilot/core';
+import { VERSION } from '@ownpilot/core/version';
 import type { GatewayConfig } from './types/index.js';
 import {
   requestId,
