@@ -116,7 +116,7 @@ vi.mock('../../ws/server.js', () => ({
 // Core mock (getLog)
 // -----------------------------------------------------------------------------
 
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/services', () => ({
   getLog: vi.fn(() => ({
     info: vi.fn(),
     warn: vi.fn(),

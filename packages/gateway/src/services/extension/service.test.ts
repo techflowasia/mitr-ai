@@ -80,11 +80,15 @@ vi.mock('./scanner.js', async (importOriginal) => ({
   resolveManagedSkillDir: mockResolveManagedSkillDir,
 }));
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/events', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return { ...actual, getEventSystem: () => ({ emit: mockESEmit }) };
+});
+
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
-    getEventSystem: () => ({ emit: mockESEmit }),
     getServiceRegistry: () => ({ get: () => mockTrigSvc }),
     getTriggerService: () => mockTrigSvc,
     Services: { Trigger: 'Trigger' },

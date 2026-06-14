@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockHasServiceRegistry = vi.fn().mockReturnValue(false);
 const mockGetServiceRegistry = vi.fn();
 
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/services', () => ({
   hasServiceRegistry: (...args: unknown[]) => mockHasServiceRegistry(...args),
   getServiceRegistry: (...args: unknown[]) => mockGetServiceRegistry(...args),
   // chat-prompt.ts now resolves the custom-data tables through
@@ -49,6 +49,9 @@ vi.mock('@ownpilot/core', () => ({
     }
   },
   Services: { Message: 'message', Database: 'database' },
+}));
+
+vi.mock('@ownpilot/core/agent', () => ({
   getBaseName: (name: string) =>
     name.includes('.') ? name.substring(name.lastIndexOf('.') + 1) : name,
 }));

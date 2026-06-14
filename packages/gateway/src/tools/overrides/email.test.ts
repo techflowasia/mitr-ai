@@ -92,11 +92,18 @@ vi.mock('imapflow', () => ({
 
 const mockIsPathAllowedAsync = vi.hoisted(() => vi.fn().mockResolvedValue(true));
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@ownpilot/core')>();
+vi.mock('@ownpilot/core/agent', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
     isPathAllowedAsync: (...args: unknown[]) => mockIsPathAllowedAsync(...args),
+  };
+});
+
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
     // SMTP/IMAP config now resolves through ConfigCenter; route to the same
     // mockGetFieldValue that previously hung off the repo mock.
     getConfigCenter: () => ({

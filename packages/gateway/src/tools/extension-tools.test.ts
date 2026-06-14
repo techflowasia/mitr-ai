@@ -22,7 +22,7 @@ vi.mock('../services/extension/service.js', () => ({
   getExtensionService: () => mockService,
 }));
 
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/services', () => ({
   getErrorMessage: (e: unknown) => (e instanceof Error ? e.message : String(e)),
 }));
 

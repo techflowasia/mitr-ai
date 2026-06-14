@@ -30,7 +30,7 @@ vi.mock('../../../config/defaults.js', async (importOriginal) => {
 vi.mock('../../utils/message-utils.js', () => ({ splitMessage: (text: string) => [text] }));
 vi.mock('./session-store.js', () => ({ getSessionDir: vi.fn(), clearSession: vi.fn() }));
 vi.mock('../../../ws/server.js', () => ({ wsGateway: { broadcast: vi.fn() } }));
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/events', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@ownpilot/core')>();
   return {
     ...actual,

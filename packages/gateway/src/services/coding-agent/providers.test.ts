@@ -31,11 +31,15 @@ const mockGetApiKey = vi.fn();
 // tryImport is used to load the Claude Code SDK; the test supplies a fake.
 const mockTryImport = vi.hoisted(() => vi.fn());
 
-vi.mock('@ownpilot/core', async (importOriginal) => ({
+vi.mock('@ownpilot/core/services', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   getConfigCenter: () => ({
     getApiKey: (...args: unknown[]) => mockGetApiKey(...args),
   }),
+}));
+
+vi.mock('@ownpilot/core/agent', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   tryImport: (...args: unknown[]) => mockTryImport(...args),
 }));
 

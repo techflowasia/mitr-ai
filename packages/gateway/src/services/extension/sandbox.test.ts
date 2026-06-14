@@ -134,8 +134,11 @@ vi.mock('../log.js', () => ({
   getLog: vi.fn(() => getMockLog()),
 }));
 
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/services', () => ({
   getErrorMessage: (e: unknown) => (e instanceof Error ? e.message : String(e)),
+}));
+
+vi.mock('@ownpilot/core/sandbox', () => ({
   validateToolCode: (_code: string) => ({ valid: true, errors: [] }),
 }));
 

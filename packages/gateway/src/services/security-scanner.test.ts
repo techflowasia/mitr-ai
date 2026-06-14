@@ -54,7 +54,7 @@ vi.mock('./skill/security-audit.js', () => ({
   auditSkillSecurity: vi.fn(),
 }));
 
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/sandbox', () => ({
   analyzeToolCode: vi.fn(),
   calculateSecurityScore: vi.fn(),
 }));

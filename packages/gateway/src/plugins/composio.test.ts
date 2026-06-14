@@ -40,7 +40,7 @@ let capturedTools: Array<{
   executor: (args: Record<string, unknown>) => Promise<unknown>;
 }> = [];
 
-vi.mock('@ownpilot/core', () => {
+vi.mock('@ownpilot/core/plugins', () => {
   const mockBuilder = {
     meta: vi.fn(function (this: unknown) {
       return mockBuilder;

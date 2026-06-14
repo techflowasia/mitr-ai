@@ -18,8 +18,11 @@ const fakeEmbeddingServiceForMemory = {
   isAvailable: () => mockEmbeddingAvailable(),
   generateEmbedding: (...args: unknown[]) => mockGenerateEmbedding(...args),
 };
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/events', () => ({
   getEventSystem: () => ({ emit: mockEmit }),
+}));
+
+vi.mock('@ownpilot/core/services', () => ({
   getServiceRegistry: () => ({
     get: (token: { key: string }) => {
       if (token.key === 'embedding') return fakeEmbeddingServiceForMemory;

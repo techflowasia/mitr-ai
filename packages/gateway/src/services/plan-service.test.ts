@@ -14,7 +14,7 @@ import type { Plan, PlanStep, PlanHistory } from '../db/repositories/plans.js';
 // ---------------------------------------------------------------------------
 
 const mockEmit = vi.fn();
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/events', () => ({
   getEventSystem: () => ({ emit: mockEmit }),
 }));
 

@@ -35,11 +35,15 @@ vi.mock('node:child_process', async (importOriginal) => {
 // reads keys via mockGetApiKey instead of throwing on uninitialized
 // capability.
 const mockTryImport = vi.fn();
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/agent', async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>;
+  return { ...actual, tryImport: (name: string) => mockTryImport(name) };
+});
+
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;
   return {
     ...actual,
-    tryImport: (name: string) => mockTryImport(name),
     getConfigCenter: () => ({
       getApiKey: (name: string) => mockGetApiKey(name),
       getByName: vi.fn(),

@@ -42,7 +42,7 @@ vi.mock('../triggers/index.js', () => ({
   getTriggerEngine: () => mockTriggerEngine,
 }));
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,
@@ -54,6 +54,13 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     })),
     // Trigger now resolves through the capability accessor.
     getTriggerService: vi.fn(() => mockTriggerService),
+  };
+});
+
+vi.mock('@ownpilot/core/scheduler', async (importOriginal) => {
+  const original = await importOriginal<Record<string, unknown>>();
+  return {
+    ...original,
     validateCronExpression: vi.fn((cron: string) => {
       if (cron === 'invalid') return { valid: false, error: 'Invalid cron expression' };
       return { valid: true };

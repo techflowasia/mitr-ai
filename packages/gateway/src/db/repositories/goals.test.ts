@@ -35,11 +35,18 @@ vi.mock('../adapters/index.js', () => ({
 
 const mockEmit = vi.hoisted(() => vi.fn());
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/events', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
     getEventSystem: () => ({ emit: mockEmit }),
+  };
+});
+
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
     generateId: (prefix: string) => `${prefix}_test_${Date.now()}`,
   };
 });

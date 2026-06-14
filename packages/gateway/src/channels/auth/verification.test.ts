@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/events', () => ({
   getEventBus: vi.fn(),
   createEvent: vi.fn((...args: unknown[]) => args),
 }));

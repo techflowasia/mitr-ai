@@ -34,11 +34,15 @@ vi.mock('node:child_process', async (importOriginal) => {
   };
 });
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/version', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return { ...actual, VERSION: '1.0.0-test' };
+});
+
+vi.mock('@ownpilot/core/sandbox', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
-    VERSION: '1.0.0-test',
     getSandboxStatus: (...args: unknown[]) => mockGetSandboxStatus(...args),
     resetSandboxCache: (...args: unknown[]) => mockResetSandboxCache(...args),
     ensureImage: (...args: unknown[]) => mockEnsureImage(...args),

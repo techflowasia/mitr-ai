@@ -29,7 +29,7 @@ const fakeEmbeddingService = {
   isAvailable: mockIsAvailable,
   generateBatchEmbeddings: mockGenerateBatch,
 };
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/services', () => ({
   getServiceRegistry: () => ({
     get: (token: { key: string }) => {
       if (token.key === 'embedding') return fakeEmbeddingService;
@@ -37,8 +37,11 @@ vi.mock('@ownpilot/core', () => ({
     },
   }),
   getEmbeddingService: () => fakeEmbeddingService,
-  getEventSystem: () => ({ on: mockEventSystemOn }),
   Services: { Embedding: { key: 'embedding' } },
+}));
+
+vi.mock('@ownpilot/core/events', () => ({
+  getEventSystem: () => ({ on: mockEventSystemOn }),
 }));
 
 const mockUpdateEmbedding = vi.fn();

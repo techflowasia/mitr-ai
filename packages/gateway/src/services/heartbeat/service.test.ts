@@ -21,8 +21,11 @@ const mockEventBus = {
   emit: vi.fn(),
 };
 
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/events', () => ({
   getEventSystem: () => mockEventBus,
+}));
+
+vi.mock('@ownpilot/core/services', () => ({
   getServiceRegistry: () => ({
     get: () => mockTriggerService,
   }),

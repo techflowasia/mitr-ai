@@ -29,7 +29,7 @@ vi.mock('../services/heartbeat/service.js', () => ({
   },
 }));
 
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/services', () => ({
   getErrorMessage: (e: unknown) => (e instanceof Error ? e.message : String(e)),
 }));
 

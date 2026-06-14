@@ -53,7 +53,7 @@ Reviews code for security and quality.
 
 const mockComplete = vi.fn();
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/agent', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,

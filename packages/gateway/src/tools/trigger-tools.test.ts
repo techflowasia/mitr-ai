@@ -31,7 +31,7 @@ vi.mock('../triggers/index.js', () => ({
   getTriggerEngine: () => mockTriggerEngine,
 }));
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,

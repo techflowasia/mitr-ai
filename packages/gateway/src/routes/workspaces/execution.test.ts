@@ -5,9 +5,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Hono } from 'hono';
 
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/workspace', () => ({
   getOrchestrator: vi.fn(),
   getWorkspaceStorage: vi.fn(),
+}));
+
+vi.mock('@ownpilot/core/sandbox', () => ({
   isDockerAvailable: vi.fn(),
 }));
 

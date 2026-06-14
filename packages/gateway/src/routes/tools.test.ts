@@ -16,7 +16,7 @@ vi.mock('./agents/index.js', async (importOriginal) => {
 // tools.ts now reads ConfigCenter through the capability accessor (used
 // for ToolRegistry.setConfigCenter). Stub it so the registry initializes
 // cleanly under test.
-vi.mock('@ownpilot/core', async (importOriginal) => ({
+vi.mock('@ownpilot/core/services', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   getConfigCenter: () => ({ getApiKey: () => undefined, getFieldValue: () => undefined }),
 }));

@@ -14,7 +14,7 @@ import type { CustomTableSchema, CustomDataRecord } from '../../db/repositories/
 // ---------------------------------------------------------------------------
 
 const mockEmit = vi.fn();
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/events', () => ({
   getEventSystem: () => ({ emit: mockEmit }),
 }));
 

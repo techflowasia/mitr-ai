@@ -113,12 +113,19 @@ const mockDynamicRegistry = {
   execute: vi.fn(async () => ({ content: 'test result', isError: false, metadata: {} })),
 };
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/agent', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,
     createDynamicToolRegistry: vi.fn(() => mockDynamicRegistry),
     ALL_TOOLS: [],
+  };
+});
+
+vi.mock('@ownpilot/core/sandbox', async (importOriginal) => {
+  const original = await importOriginal<Record<string, unknown>>();
+  return {
+    ...original,
     validateToolCode: (code: string) => {
       if (code.includes('process.exit'))
         return { valid: false, errors: ['forbidden pattern: process access'] };

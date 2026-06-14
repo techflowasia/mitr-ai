@@ -14,7 +14,7 @@ import type { Goal, GoalStep } from '../db/repositories/goals.js';
 // ---------------------------------------------------------------------------
 
 const mockEmit = vi.fn();
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/events', () => ({
   getEventSystem: () => ({ emit: mockEmit }),
 }));
 
