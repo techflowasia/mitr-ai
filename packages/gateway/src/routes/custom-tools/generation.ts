@@ -17,7 +17,7 @@ import {
   createDynamicToolRegistry,
   ALL_TOOLS,
   type DynamicToolDefinition,
-} from '@ownpilot/core/agent';
+} from '@ownpilot/core/tools';
 import { validateToolCode } from '@ownpilot/core/sandbox';
 import {
   syncToolToRegistry,

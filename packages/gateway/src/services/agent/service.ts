@@ -12,15 +12,14 @@ import {
   type AgentConfig,
   type IProvider,
   type WorkspaceContext,
-  ToolRegistry,
   injectMemoryIntoPrompt,
-  getBaseName,
   createProvider,
   createFallbackProvider,
   type ProviderConfig,
   type ResolvedAuth,
   buildSoulPrompt,
 } from '@ownpilot/core/agent';
+import { ToolRegistry, getBaseName } from '@ownpilot/core/tools';
 import { hasProviderService, getProviderService } from '@ownpilot/core/services';
 import type { AIProvider } from '@ownpilot/core/costs';
 import { unsafeToolId } from '@ownpilot/core/types';

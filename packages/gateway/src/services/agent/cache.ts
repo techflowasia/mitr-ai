@@ -9,8 +9,8 @@ import {
   type Agent,
   type AgentConfig,
   getProviderConfig as coreGetProviderConfig,
-  TOOL_GROUPS,
 } from '@ownpilot/core/agent';
+import { TOOL_GROUPS } from '@ownpilot/core/tools';
 import { generateId } from '@ownpilot/core/services';
 import { getModelPricing } from '@ownpilot/core/costs';
 import type { AIProvider } from '@ownpilot/core/costs';

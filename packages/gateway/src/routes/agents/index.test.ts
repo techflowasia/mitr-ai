@@ -71,13 +71,22 @@ vi.mock('@ownpilot/core/agent', async (importOriginal) => {
       reset: vi.fn(() => ({ id: 'new-conversation-id' })),
       getTools: vi.fn(() => []),
     })),
+    injectMemoryIntoPrompt: vi.fn(async (prompt: string) => ({ systemPrompt: prompt })),
+    getProviderConfig: vi.fn(() => null),
+    unsafeToolId: vi.fn((id: string) => id),
+  };
+});
+
+vi.mock('@ownpilot/core/tools', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
     ToolRegistry: vi.fn(function () {
       return mockToolRegistry;
     }),
     registerCoreTools: vi.fn(),
     registerAllTools: vi.fn(),
     getToolDefinitions: vi.fn(() => []),
-    injectMemoryIntoPrompt: vi.fn(async (prompt: string) => ({ systemPrompt: prompt })),
     MEMORY_TOOLS: [],
     GOAL_TOOLS: [],
     CUSTOM_DATA_TOOLS: [],
@@ -91,8 +100,6 @@ vi.mock('@ownpilot/core/agent', async (importOriginal) => {
       memory: { tools: ['save_memory', 'search_memories'] },
       goals: { tools: ['create_goal', 'list_goals'] },
     } as Record<string, { tools: string[] }>,
-    getProviderConfig: vi.fn(() => null),
-    unsafeToolId: vi.fn((id: string) => id),
   };
 });
 

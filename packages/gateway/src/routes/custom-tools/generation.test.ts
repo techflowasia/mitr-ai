@@ -113,7 +113,7 @@ const mockDynamicRegistry = {
   execute: vi.fn(async () => ({ content: 'test result', isError: false, metadata: {} })),
 };
 
-vi.mock('@ownpilot/core/agent', async (importOriginal) => {
+vi.mock('@ownpilot/core/tools', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,

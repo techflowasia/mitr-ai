@@ -71,19 +71,26 @@ vi.mock('@ownpilot/core/services', async (importOriginal) => {
 
 vi.mock('@ownpilot/core/agent', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    createAgent: (...args: unknown[]) => mockCreateAgent(...args),
+    injectMemoryIntoPrompt: (...args: unknown[]) => mockInjectMemoryIntoPrompt(...args),
+    createProvider: (...args: unknown[]) => mockCreateProvider(...args),
+    buildSoulPrompt: (...args: unknown[]) => mockBuildSoulPrompt(...args),
+    createFallbackProvider: vi.fn(() => ({})),
+  };
+});
+
+vi.mock('@ownpilot/core/tools', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
   class MockToolRegistry {
     has = vi.fn(() => true);
     setConfigCenter = vi.fn();
   }
   return {
     ...actual,
-    createAgent: (...args: unknown[]) => mockCreateAgent(...args),
     ToolRegistry: MockToolRegistry,
-    injectMemoryIntoPrompt: (...args: unknown[]) => mockInjectMemoryIntoPrompt(...args),
     getBaseName: vi.fn((name: string) => name),
-    createProvider: (...args: unknown[]) => mockCreateProvider(...args),
-    buildSoulPrompt: (...args: unknown[]) => mockBuildSoulPrompt(...args),
-    createFallbackProvider: vi.fn(() => ({})),
   };
 });
 

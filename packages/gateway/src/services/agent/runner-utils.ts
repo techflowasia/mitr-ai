@@ -14,16 +14,18 @@
 
 import {
   Agent,
-  ToolRegistry,
-  registerAllTools,
-  qualifyToolName,
   type IProvider,
   createProvider,
   createFallbackProvider,
   type ProviderConfig,
-  type ToolCall,
   type Message,
 } from '@ownpilot/core/agent';
+import {
+  ToolRegistry,
+  registerAllTools,
+  qualifyToolName,
+  type ToolCall,
+} from '@ownpilot/core/tools';
 import { calculateCost } from '@ownpilot/core/costs';
 import type { AIProvider } from '@ownpilot/core/costs';
 import type { ToolId } from '@ownpilot/core/types';

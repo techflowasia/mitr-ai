@@ -97,7 +97,7 @@ vi.mock('../../services/custom/tool-registry.js', () => ({
   unregisterToolFromRegistries: (...args: unknown[]) => mockUnregisterToolFromRegistries(...args),
 }));
 
-vi.mock('@ownpilot/core/agent', async (importOriginal) => {
+vi.mock('@ownpilot/core/tools', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,

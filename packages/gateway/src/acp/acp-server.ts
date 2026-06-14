@@ -55,7 +55,8 @@ import {
 import { getOrCreateChatAgent } from '../services/agent/service.js';
 import { resolveDefaultProviderAndModel } from '../services/app-settings.js';
 import { getLog } from '../services/log.js';
-import type { Agent as OwnPilotAgent, ToolCall, StreamChunk } from '@ownpilot/core/agent';
+import type { Agent as OwnPilotAgent, StreamChunk } from '@ownpilot/core/agent';
+import type { ToolCall } from '@ownpilot/core/tools';
 
 const log = getLog('AcpServer');
 

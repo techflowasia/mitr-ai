@@ -20,7 +20,8 @@ import {
   CLAW_REFLECTION_THRESHOLD,
   CLAW_TASK_STALL_THRESHOLD,
 } from '@ownpilot/core/services';
-import type { Agent, ToolCall } from '@ownpilot/core/agent';
+import type { Agent } from '@ownpilot/core/agent';
+import type { ToolCall } from '@ownpilot/core/tools';
 import type {
   ClawConfig,
   ClawSession,

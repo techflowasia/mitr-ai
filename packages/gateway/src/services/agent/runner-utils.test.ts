@@ -48,6 +48,10 @@ vi.mock('@ownpilot/core/agent', async (importOriginal) => ({
   Agent: vi.fn().mockImplementation(function () {
     return { setDirectToolMode: vi.fn(), setPreflightCompactor: vi.fn() };
   }),
+}));
+
+vi.mock('@ownpilot/core/tools', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   ToolRegistry: vi.fn().mockImplementation(function () {
     return { setConfigCenter: vi.fn(), setWorkspaceDir: mockSetWorkspaceDir };
   }),

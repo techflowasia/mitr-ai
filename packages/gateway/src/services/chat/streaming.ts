@@ -8,7 +8,8 @@
 
 import type { streamSSE } from 'hono/streaming';
 import type { StreamChunkResponse, SessionInfo } from '../../types/index.js';
-import type { StreamChunk, ToolCall } from '@ownpilot/core/agent';
+import type { StreamChunk } from '@ownpilot/core/agent';
+import type { ToolCall } from '@ownpilot/core/tools';
 import type { AIProvider } from '@ownpilot/core/costs';
 import type { StreamCallbacks, ToolEndResult } from '@ownpilot/core/services';
 import type { NormalizedMessage, IMessageBus } from '@ownpilot/core/services';

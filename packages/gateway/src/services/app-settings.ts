@@ -17,11 +17,8 @@
 
 import { sanitizeProviderName } from '../utils/common.js';
 import { settingsRepo, localProvidersRepo } from '../db/repositories/index.js';
-import {
-  getDefaultModelForProvider,
-  DEFAULT_ENABLED_GROUPS,
-  type ResolvedAuth,
-} from '@ownpilot/core/agent';
+import { getDefaultModelForProvider, type ResolvedAuth } from '@ownpilot/core/agent';
+import { DEFAULT_ENABLED_GROUPS } from '@ownpilot/core/tools';
 import { DEFAULT_SANDBOX_SETTINGS } from '@ownpilot/core/workspace';
 import type { SandboxSettings } from '@ownpilot/core/workspace';
 import { getLog } from './log.js';
