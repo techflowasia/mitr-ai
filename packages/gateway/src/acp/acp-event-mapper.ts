@@ -45,7 +45,7 @@ export interface MappedAcpEvent {
  * single source of truth for what the UI receives), so the spread is
  * sound at runtime. The cast localises 'as unknown as' to one helper.
  */
-function toMappedEvent<T extends { type: AcpEventType }>(
+function toMappedEvent<T extends object>(
   type: AcpEventType,
   event: Omit<T, 'type'>
 ): MappedAcpEvent {
