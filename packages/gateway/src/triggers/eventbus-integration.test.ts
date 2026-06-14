@@ -69,7 +69,7 @@ vi.mock('../db/repositories/execution-permissions.js', () => ({
   },
 }));
 
-vi.mock('@ownpilot/core', async () => {
+vi.mock('@ownpilot/core/services', async () => {
   const actual = await vi.importActual<typeof import('@ownpilot/core')>('@ownpilot/core');
   return {
     ...actual,

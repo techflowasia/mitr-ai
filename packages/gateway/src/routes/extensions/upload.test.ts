@@ -68,9 +68,12 @@ vi.mock('../../services/extension/markdown.js', () => ({
   serializeExtensionMarkdown: vi.fn(() => '# Extension'),
 }));
 
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/agent', () => ({
   createProvider: vi.fn(() => ({ complete: vi.fn() })),
   getProviderConfig: vi.fn(() => null),
+}));
+
+vi.mock('@ownpilot/core/services', () => ({
   getLog: vi.fn(() => ({
     info: vi.fn(),
     warn: vi.fn(),
@@ -85,6 +88,9 @@ vi.mock('@ownpilot/core', () => ({
   }),
   getExtensionService: () => mockService,
   Services: { Extension: { key: 'extension' } },
+}));
+
+vi.mock('@ownpilot/core/events', () => ({
   // AUDIT-003 added emit() calls in install routes.
   getEventSystem: vi.fn(() => ({ emit: vi.fn() })),
 }));

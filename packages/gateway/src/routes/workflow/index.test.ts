@@ -67,7 +67,7 @@ vi.mock('../../services/workflow/dag-utils.js', () => ({
   detectCycle: vi.fn(), // default: no cycle detected
 }));
 
-vi.mock('@ownpilot/core', async (importOriginal) => ({
+vi.mock('@ownpilot/core/services', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@ownpilot/core')>()),
   getServiceRegistry: () => ({
     get: (token: { name: string }) => {

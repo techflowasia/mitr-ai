@@ -17,7 +17,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // mockEmit captures getEventSystem().emit(type, source, data) calls
 const mockEmit = vi.fn();
 
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/services', () => ({
   getEventSystem: () => ({ emit: mockEmit }),
   getLog: vi.fn(() => ({
     info: vi.fn(),

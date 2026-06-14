@@ -54,12 +54,11 @@ const mockEventBusUnsub = vi.fn();
 const mockEventBusOnPattern = vi.fn().mockReturnValue(mockEventBusUnsub);
 const mockEventBusEmit = vi.fn();
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
     getServiceRegistry: () => ({ get: (token: { name: string }) => mockServices[token.name] }),
-    // Memory, Goal, and Trigger now resolve through the capability accessor.
     getMemoryService: () => mockMemoryService,
     getGoalService: () => mockGoalService,
     getTriggerService: () => mockTriggerService,
@@ -68,16 +67,28 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
       Goal: { name: 'goal' },
       Memory: { name: 'memory' },
     },
-    getNextRunTime: vi.fn(),
-    getEventSystem: () => ({
-      onPattern: mockEventBusOnPattern,
-      emit: mockEventBusEmit,
-      scoped: () => ({ on: vi.fn(), emit: vi.fn() }),
-    }),
-    createDynamicToolRegistry: vi.fn(() => ({ register: vi.fn(), execute: vi.fn() })),
-    ALL_TOOLS: [],
   };
 });
+
+vi.mock('@ownpilot/core/scheduler', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  getNextRunTime: vi.fn(),
+}));
+
+vi.mock('@ownpilot/core/events', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  getEventSystem: () => ({
+    onPattern: mockEventBusOnPattern,
+    emit: mockEventBusEmit,
+    scoped: () => ({ on: vi.fn(), emit: vi.fn() }),
+  }),
+}));
+
+vi.mock('@ownpilot/core/agent', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  createDynamicToolRegistry: vi.fn(() => ({ register: vi.fn(), execute: vi.fn() })),
+  ALL_TOOLS: [],
+}));
 
 vi.mock('../ws/server.js', () => ({
   wsGateway: { broadcast: vi.fn() },

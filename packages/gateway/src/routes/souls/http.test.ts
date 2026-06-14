@@ -88,7 +88,7 @@ vi.mock('../../db/adapters/index.js', () => ({
     }),
 }));
 
-vi.mock('@ownpilot/core', async (importOriginal) => ({
+vi.mock('@ownpilot/core/services', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   getServiceRegistry: () => ({
     get: (token: unknown) => {

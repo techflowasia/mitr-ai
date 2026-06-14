@@ -9,10 +9,9 @@ import { Hono } from 'hono';
 import { workspaceRoutes } from './index.js';
 
 // Mock the core module
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/workspace', () => ({
   getOrchestrator: vi.fn(),
   getWorkspaceStorage: vi.fn(),
-  isDockerAvailable: vi.fn(),
   DEFAULT_CONTAINER_CONFIG: {
     image: 'node:18-alpine',
     timeoutMs: 30000,
@@ -25,6 +24,10 @@ vi.mock('@ownpilot/core', () => ({
       this.name = 'StorageSecurityError';
     }
   },
+}));
+
+vi.mock('@ownpilot/core/sandbox', () => ({
+  isDockerAvailable: vi.fn(),
 }));
 
 // Mock WebSocket gateway

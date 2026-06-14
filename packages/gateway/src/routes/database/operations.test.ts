@@ -40,7 +40,7 @@ vi.mock('fs/promises', () => ({
   stat: (...args: unknown[]) => mockStat(...(args as [])),
 }));
 
-vi.mock('@ownpilot/core', async (importOriginal) => ({
+vi.mock('@ownpilot/core/services', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@ownpilot/core')>()),
   resetServiceRegistrySync: vi.fn(),
 }));

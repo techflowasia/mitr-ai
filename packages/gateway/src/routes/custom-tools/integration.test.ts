@@ -97,12 +97,19 @@ vi.mock('../../services/custom/tool-registry.js', () => ({
   unregisterToolFromRegistries: (...args: unknown[]) => mockUnregisterToolFromRegistries(...args),
 }));
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/agent', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,
     createDynamicToolRegistry: vi.fn(() => mockDynamicRegistry),
     ALL_TOOLS: [],
+  };
+});
+
+vi.mock('@ownpilot/core/sandbox', async (importOriginal) => {
+  const original = await importOriginal<Record<string, unknown>>();
+  return {
+    ...original,
     validateToolCode: (code: string) => {
       // Check for forbidden patterns used in tests
       const forbidden = [
