@@ -49,7 +49,8 @@ const mockCreateTelegramBot = vi.hoisted(() =>
 // Module mocks
 // ============================================================================
 
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/agent', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   createSimpleAgent: mockCreateSimpleAgent,
 }));
 
@@ -57,11 +58,14 @@ vi.mock('../telegram/index.js', () => ({
   createTelegramBot: mockCreateTelegramBot,
 }));
 
-vi.mock('@ownpilot/gateway', () => ({
+vi.mock('@ownpilot/gateway/config', () => ({
   loadApiKeysToEnvironment: mockLoadApiKeysToEnvironment,
   getDefaultProvider: mockGetDefaultProvider,
   getApiKey: mockGetApiKey,
   getDefaultModel: mockGetDefaultModel,
+}));
+
+vi.mock('@ownpilot/gateway/db', () => ({
   settingsRepo: mockSettingsRepo,
 }));
 
