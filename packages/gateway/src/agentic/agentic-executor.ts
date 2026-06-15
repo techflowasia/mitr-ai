@@ -35,6 +35,7 @@ import {
   type TriggerAction,
 } from '@ownpilot/core/services';
 import type { ExecutionStep, ExecutorKind } from '@ownpilot/core/agentic';
+import { getEventSystem } from '@ownpilot/core/events';
 import { ClawRunner } from '../services/claw/runner.js';
 import { getClawManager } from '../services/claw/manager.js';
 import {
@@ -97,45 +98,85 @@ export class AgenticGatewayExecutor {
   /**
    * Dispatch a single execution step to the correct gateway service.
    * This is the method that AgenticOrchestrator calls via dispatchStep().
+   * Emits WebSocket events for real-time observability.
    */
   async dispatch(step: ExecutionStep, signal?: AbortSignal): Promise<DispatchResult> {
     const startTime = Date.now();
+    const events = getEventSystem();
+
+    // Emit start event
+    events.emit('agentic.step.start', 'agentic-executor', {
+      stepIndex: step.index,
+      executorKind: step.executorKind,
+      capabilityId: step.capabilityId,
+    });
 
     try {
+      let result: DispatchResult;
       switch (step.executorKind) {
         case 'claw':
-          return await this.dispatchClaw(step, signal);
+          result = await this.dispatchClaw(step, signal);
+          break;
         case 'soul_heartbeat':
-          return await this.dispatchSoulHeartbeat(step, signal);
+          result = await this.dispatchSoulHeartbeat(step, signal);
+          break;
         case 'crew':
-          return await this.dispatchCrew(step, signal);
+          result = await this.dispatchCrew(step, signal);
+          break;
         case 'coding_agent':
-          return await this.dispatchCodingAgent(step, signal);
+          result = await this.dispatchCodingAgent(step, signal);
+          break;
         case 'workflow':
-          return await this.dispatchWorkflow(step, signal);
+          result = await this.dispatchWorkflow(step, signal);
+          break;
         case 'trigger':
-          return await this.dispatchTrigger(step, signal);
+          result = await this.dispatchTrigger(step, signal);
+          break;
         case 'channel':
-          return await this.dispatchChannel(step, signal);
+          result = await this.dispatchChannel(step, signal);
+          break;
         case 'direct_llm':
-          return await this.dispatchDirectLlm(step, signal);
+          result = await this.dispatchDirectLlm(step, signal);
+          break;
         case 'sandbox_code':
-          return await this.dispatchSandbox(step, signal);
+          result = await this.dispatchSandbox(step, signal);
+          break;
         case 'tool_catalog':
-          return await this.dispatchTool(step, signal);
+          result = await this.dispatchTool(step, signal);
+          break;
         default:
-          return {
+          result = {
             success: false,
             output: null,
             error: `Unknown executor kind: ${step.executorKind}`,
             durationMs: Date.now() - startTime,
           };
       }
+
+      // Emit completion event
+      events.emit(result.success ? 'agentic.step.complete' : 'agentic.step.fail', 'agentic-executor', {
+        stepIndex: step.index,
+        executorKind: step.executorKind,
+        capabilityId: step.capabilityId,
+        durationMs: result.durationMs,
+        costUsd: result.costUsd,
+        error: result.error,
+      });
+
+      return result;
     } catch (err) {
+      const errMsg = getErrorMessage(err, `Step ${step.index} failed`);
+      events.emit('agentic.step.fail', 'agentic-executor', {
+        stepIndex: step.index,
+        executorKind: step.executorKind,
+        capabilityId: step.capabilityId,
+        durationMs: Date.now() - startTime,
+        error: errMsg,
+      });
       return {
         success: false,
         output: null,
-        error: getErrorMessage(err, `Step ${step.index} failed`),
+        error: errMsg,
         durationMs: Date.now() - startTime,
       };
     }
