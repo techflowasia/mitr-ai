@@ -84,6 +84,7 @@ import {
   agenticStatus,
   agenticCancel,
   agenticRerun,
+  agenticDelete,
   agenticPlan,
   agenticCapabilities,
   agenticStats,
@@ -392,6 +393,11 @@ agenticCmd
   .command('cancel <id>')
   .description('Cancel a running execution')
   .action(agenticCancel);
+
+agenticCmd
+  .command('delete <id>')
+  .description('Delete an execution record from history')
+  .action(agenticDelete);
 
 agenticCmd
   .command('rerun <id>')

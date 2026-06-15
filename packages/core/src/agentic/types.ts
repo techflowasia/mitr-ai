@@ -329,6 +329,10 @@ export interface IAgenticOrchestrator {
   getReport(executionId: string): Promise<AgenticReport | null>;
   /** List recent executions. */
   listExecutions(limit?: number, offset?: number): Promise<AgenticReport[]>;
+  /** Delete a single execution from the store. */
+  deleteExecution(executionId: string): Promise<boolean>;
+  /** Clear all stored executions. */
+  clearExecutions(): Promise<void>;
   /** Get the execution stats. */
   getStats(): Promise<{
     totalExecutions: number;

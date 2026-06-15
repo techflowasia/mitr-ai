@@ -300,6 +300,23 @@ export async function agenticCancel(id: string): Promise<void> {
 }
 
 // ============================================================================
+// ─── DELETE ───
+// ============================================================================
+
+export async function agenticDelete(id: string): Promise<void> {
+  if (!id) {
+    console.error('Usage: ownpilot agentic delete <id>');
+    process.exit(1);
+  }
+  try {
+    await api(`/agentic/executions/${id}`, 'DELETE');
+    console.log(`\n  ✓ Deleted execution: ${id}\n`);
+  } catch (err) {
+    ensureGatewayError(err);
+  }
+}
+
+// ============================================================================
 // ─── RERUN ───
 // ============================================================================
 

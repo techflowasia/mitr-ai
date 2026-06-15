@@ -269,6 +269,23 @@ export class AgenticOrchestrator implements IAgenticOrchestrator {
   }
 
   /**
+   * Delete a single execution from both local and shared stores.
+   */
+  async deleteExecution(executionId: string): Promise<boolean> {
+    const existed = this.executions.delete(executionId);
+    const existedShared = AgenticOrchestrator.sharedStore.delete(executionId);
+    return existed || existedShared;
+  }
+
+  /**
+   * Clear all executions from both local and shared stores.
+   */
+  async clearExecutions(): Promise<void> {
+    this.executions.clear();
+    AgenticOrchestrator.sharedStore.clear();
+  }
+
+  /**
    * Get execution stats. Uses merged local + shared stores.
    */
   async getStats(): Promise<{

@@ -570,3 +570,23 @@ agenticRoutes.post('/executions/:id/cancel', async (c) => {
     );
   }
 });
+
+/**
+ * DELETE /executions/:id — Delete a single execution record
+ */
+agenticRoutes.delete('/executions/:id', async (c) => {
+  const id = c.req.param('id');
+  if (!id) {
+    return apiError(c, { code: ERROR_CODES.BAD_REQUEST, message: 'Execution ID is required' }, 400);
+  }
+  try {
+    const orchestrator = createOrchestrator();
+    const deleted = await orchestrator.deleteExecution(id);
+    if (!deleted) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Execution not found' }, 404);
+    }
+    return apiResponse(c, { id, deleted: true });
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err, 'Failed to delete execution') }, 500);
+  }
+});
