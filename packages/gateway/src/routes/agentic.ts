@@ -22,18 +22,16 @@
 
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { getCapabilityRegistry, AgenticRouter, type TaskTriggerStrategy } from '@ownpilot/core/agentic';
+import {
+  getCapabilityRegistry,
+  AgenticRouter,
+  type TaskTriggerStrategy,
+} from '@ownpilot/core/agentic';
 import { getAgenticExecutor } from '../agentic/agentic-executor.js';
 import { AgenticOrchestrator } from '@ownpilot/core/agentic';
 import type { StepDispatchFn } from '@ownpilot/core/agentic';
 import type { ExecutionStep } from '@ownpilot/core/agentic';
-import {
-  apiResponse,
-  apiError,
-  ERROR_CODES,
-  getErrorMessage,
-  getIntParam,
-} from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getErrorMessage, getIntParam } from './helpers.js';
 import { pagination } from '../middleware/pagination.js';
 
 export const agenticRoutes = new Hono();
@@ -45,13 +43,22 @@ export const agenticRoutes = new Hono();
 const executeTaskSchema = z.object({
   name: z.string().min(1, 'Task name is required').max(200),
   description: z.string().min(1, 'Task description is required').max(50_000),
+  prompt: z.string().max(10_000).optional(),
   provider: z.string().max(50).optional(),
   model: z.string().max(100).optional(),
   expectedOutput: z.string().max(1000).optional(),
   priority: z.enum(['low', 'normal', 'high', 'critical']).optional(),
   trigger: z
     .object({
-      type: z.enum(['immediate', 'scheduled', 'interval', 'continuous', 'event', 'condition', 'webhook']),
+      type: z.enum([
+        'immediate',
+        'scheduled',
+        'interval',
+        'continuous',
+        'event',
+        'condition',
+        'webhook',
+      ]),
       cron: z.string().optional(),
       intervalMs: z.number().int().min(1000).optional(),
       eventType: z.string().optional(),
@@ -91,7 +98,15 @@ const planTaskSchema = z.object({
   priority: z.enum(['low', 'normal', 'high', 'critical']).optional(),
   trigger: z
     .object({
-      type: z.enum(['immediate', 'scheduled', 'interval', 'continuous', 'event', 'condition', 'webhook']),
+      type: z.enum([
+        'immediate',
+        'scheduled',
+        'interval',
+        'continuous',
+        'event',
+        'condition',
+        'webhook',
+      ]),
       cron: z.string().optional(),
       intervalMs: z.number().int().min(1000).optional(),
     })
@@ -136,14 +151,24 @@ function createOrchestrator(): AgenticOrchestrator {
  * Build a discriminated TaskTriggerStrategy from a loosely-typed Zod trigger input.
  * The Zod schema allows arbitrary combinations; this narrows to the correct union member.
  */
-function buildTriggerStrategy(input: NonNullable<z.infer<typeof executeTaskSchema>['trigger']>): TaskTriggerStrategy {
+function buildTriggerStrategy(
+  input: NonNullable<z.infer<typeof executeTaskSchema>['trigger']>
+): TaskTriggerStrategy {
   switch (input.type) {
     case 'scheduled':
-      return { type: 'scheduled' as const, cron: input.cron ?? '0 9 * * *', timezone: input.timezone };
+      return {
+        type: 'scheduled' as const,
+        cron: input.cron ?? '0 9 * * *',
+        timezone: input.timezone,
+      };
     case 'interval':
       return { type: 'interval' as const, intervalMs: input.intervalMs ?? 300000 };
     case 'continuous':
-      return { type: 'continuous' as const, minDelayMs: input.minDelayMs, idleDelayMs: input.idleDelayMs };
+      return {
+        type: 'continuous' as const,
+        minDelayMs: input.minDelayMs,
+        idleDelayMs: input.idleDelayMs,
+      };
     case 'event':
       return { type: 'event' as const, eventType: input.eventType ?? 'custom', filters: undefined };
     case 'condition':
@@ -193,9 +218,11 @@ agenticRoutes.post('/execute', async (c) => {
     const report = await orchestrator.execute({
       name: input.name,
       description: input.description,
-      providerPreference: input.provider || input.model
-        ? { providerId: input.provider, modelId: input.model }
-        : undefined,
+      prompt: input.prompt,
+      providerPreference:
+        input.provider || input.model
+          ? { providerId: input.provider, modelId: input.model }
+          : undefined,
       expectedOutput: input.expectedOutput,
       priority: input.priority,
       trigger: input.trigger ? buildTriggerStrategy(input.trigger) : undefined,
@@ -401,7 +428,10 @@ agenticRoutes.get('/capabilities', async (c) => {
 
     // Filter by search keywords
     if (search) {
-      const keywords = search.toLowerCase().split(',').map((k) => k.trim());
+      const keywords = search
+        .toLowerCase()
+        .split(',')
+        .map((k) => k.trim());
       capabilities = capabilities.filter((cap) => {
         const searchText = `${cap.name} ${cap.description} ${cap.tags.join(' ')}`.toLowerCase();
         return keywords.some((kw) => searchText.includes(kw));
