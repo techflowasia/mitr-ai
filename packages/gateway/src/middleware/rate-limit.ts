@@ -9,7 +9,7 @@ import type { RateLimitConfig } from '../types/index.js';
 import { apiError, ERROR_CODES } from '../routes/helpers.js';
 import { getLog } from '../services/log.js';
 import { RATE_LIMIT_MAX_STORE_SIZE } from '../config/defaults.js';
-import { getClientIp as getClientIpShared } from '../utils/client-ip.js';
+import { getClientIp as getClientIpShared, isProxyAwareConfigured } from '../utils/client-ip.js';
 
 const log = getLog('RateLimit');
 
@@ -65,6 +65,14 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
   const store = new Map<string, RateLimitEntry>();
   const burstLimit = config.burstLimit ?? Math.floor(config.maxRequests * 1.5);
   const excludePaths = config.excludePaths ?? ['/health', '/api/v1/health'];
+
+  /**
+   * Local-only IPs that should never be rate-limited.
+   * 'direct' is the fallback when no proxy is configured (getClientIp returns
+   * 'direct' when TRUSTED_PROXY is not set) — which is the common case for
+   * self-hosted / local-dev where the WebUI and gateway run on the same machine.
+   */
+  const LOCAL_IPS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1', 'localhost']);
   const maxStoreSize = RATE_LIMIT_MAX_STORE_SIZE;
 
   // Clean up expired entries periodically
@@ -89,9 +97,21 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
       return next();
     }
 
+    // Skip rate limiting for local/internal requests.
+    // Self-hosted gateway + WebUI run on the same machine; no reason to
+    // rate-limit the browser's own API calls against itself.
+    // When no proxy is configured, getClientIp returns 'direct' —
+    // this is the common self-hosted case where the gateway is not
+    // behind a reverse proxy.
+    const ip = getClientIp(c);
+    const isLocalIp = LOCAL_IPS.has(ip);
+    const noProxy = !isProxyAwareConfigured() && ip === 'direct';
+    if (isLocalIp || noProxy) {
+      return next();
+    }
+
     // Use user ID if available, otherwise fall back to IP
     const userId = c.get('userId');
-    const ip = getClientIp(c);
     const key = userId ?? `ip:${ip}`;
 
     const now = Date.now();
@@ -185,6 +205,7 @@ export function createSlidingWindowRateLimiter(config: RateLimitConfig) {
   const requests = new Map<string, number[]>();
   const burstLimit = config.burstLimit ?? Math.floor(config.maxRequests * 1.5);
   const excludePaths = config.excludePaths ?? ['/health', '/api/v1/health'];
+  const LOCAL_IPS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1', 'localhost']);
   const maxStoreSize = RATE_LIMIT_MAX_STORE_SIZE;
 
   // Clean up old entries
@@ -211,8 +232,14 @@ export function createSlidingWindowRateLimiter(config: RateLimitConfig) {
       return next();
     }
 
-    const userId = c.get('userId');
     const ip = getClientIp(c);
+    const isLocalIp = LOCAL_IPS.has(ip);
+    const noProxy = !isProxyAwareConfigured() && ip === 'direct';
+    if (isLocalIp || noProxy) {
+      return next();
+    }
+
+    const userId = c.get('userId');
     const key = userId ?? `ip:${ip}`;
 
     const now = Date.now();
