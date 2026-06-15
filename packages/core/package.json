@@ -143,6 +143,12 @@
         "default": "./dist/costs/index.js"
       }
     },
+    "./agentic": {
+      "import": {
+        "types": "./dist/agentic/index.d.ts",
+        "default": "./dist/agentic/index.js"
+      }
+    },
     "./assistant": {
       "import": {
         "types": "./dist/assistant/index.d.ts",
