@@ -177,33 +177,21 @@ function Start-DevMode {
     $env:UI_PORT = $UIPort
     $env:NODE_ENV = "development"
 
+    Write-Info "Gateway API: http://localhost:$Port"
+    if (-not $NoUI) {
+        Write-Info "UI Dev Server: http://localhost:$UIPort"
+    }
+    Write-Info ""
+
     if ($NoUI) {
-        Write-Info "Gateway: http://localhost:$Port`n"
         pnpm --filter @ownpilot/gateway dev
         return
     }
 
-    Write-Info "Gateway API: http://localhost:$Port"
-    Write-Info "UI Dev Server: http://localhost:$UIPort"
-    Write-Info ""
-
-    # Build core once so tsx doesn't need to compile it
-    Write-Info "Building @ownpilot/core..."
-    pnpm --filter @ownpilot/core build 2>&1 | Out-Null
-    if ($LASTEXITCODE -ne 0 -and -not (Test-Path "packages/core/dist/index.js")) {
-        Write-Err "Core build failed — check packages/core for TypeScript errors"
-        return
-    }
-    Write-Success "@ownpilot/core built"
-
-    # Start UI dev server in a NEW window (it runs independently).
-    # Gateway runs in THIS window so you see live logs.
-    $uiTitle = "OwnPilot UI (port $UIPort)"
-    Write-Info "Starting UI dev server in a new window..."
-    Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$ScriptDir'; `$env:UI_PORT=$UIPort; pnpm --filter @ownpilot/ui dev" -WindowStyle Normal -Title $uiTitle
-
-    Write-Info "Starting gateway (this window)..."
-    Write-Info "Gateway logs will appear below. Press Ctrl+C to stop everything.`n"
+    Write-Info "Starting gateway. Open a SECOND terminal for the UI:`n"
+    Write-Info "  pnpm --filter @ownpilot/ui dev`n"
+    Write-Info "Gateway logs:"
+    Write-Info "".PadRight(50, '─')
     pnpm --filter @ownpilot/gateway dev
 }
 
