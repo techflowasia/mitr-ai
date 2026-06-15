@@ -363,6 +363,42 @@ function migrateConfig(raw: unknown): LayoutConfig {
     if (accordionAddition) next.push(accordionAddition);
     return {
       ...config,
+      version: 10, // chain to V10→V11
+      sidebar: {
+        ...config.sidebar,
+        width: config.sidebar?.width ?? 'default',
+        sections: next.map((s, i) => ({ ...s, order: i })),
+      },
+    };
+  }
+
+  // V10 → V11: promote /agentic nav link + agentic-executions accordion.
+  // Catches users who got version 10 without the sections due to a missing
+  // migration step in the previous fix (version was bumped prematurely).
+  if (typeof obj.version === 'number' && obj.version === 10) {
+    const config = obj as unknown as LayoutConfig;
+    const oldSections = config.sidebar?.sections ?? [];
+    const existingIds = new Set(oldSections.map((s) => s.id));
+    const additions: SidebarSectionConfig[] = [];
+    if (!existingIds.has('/agentic')) additions.push({ id: '/agentic', order: 0 });
+    if (!existingIds.has('agentic-executions')) additions.push({ id: 'agentic-executions', order: 0, style: 'accordion' });
+    if (additions.length === 0) {
+      return { ...config, version: LAYOUT_CONFIG_VERSION };
+    }
+    const next: SidebarSectionConfig[] = [...oldSections];
+    // Insert /agentic nav link right after /mission-control or /dashboard
+    const afterTarget = oldSections.findIndex(
+      (s) => s.id === '/mission-control' || s.id === '/dashboard'
+    );
+    const navAddition = additions.find((s) => s.id === '/agentic');
+    const accordionAddition = additions.find((s) => s.id === 'agentic-executions');
+    if (navAddition) {
+      if (afterTarget >= 0) next.splice(afterTarget + 1, 0, navAddition);
+      else next.unshift(navAddition);
+    }
+    if (accordionAddition) next.push(accordionAddition);
+    return {
+      ...config,
       version: LAYOUT_CONFIG_VERSION,
       sidebar: {
         ...config.sidebar,

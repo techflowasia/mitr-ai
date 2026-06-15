@@ -15,7 +15,7 @@
  *   - If in config array → shown. If not → hidden.
  */
 
-export const LAYOUT_CONFIG_VERSION = 10;
+export const LAYOUT_CONFIG_VERSION = 11;
 
 /** How pinned header items render */
 export type HeaderItemDisplayMode = 'icon' | 'icon-text' | 'text';
