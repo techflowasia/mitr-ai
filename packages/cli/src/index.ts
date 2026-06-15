@@ -357,7 +357,7 @@ heartbeatCmd
 // Agentic commands — unified task execution across all agent types
 const agenticCmd = program
   .command('agentic')
-  .description('Unified task execution across all agent types (run/list/status/cancel/plan/capabilities/stats)');
+  .description('Execute, plan, list, rerun and monitor autonomous AI tasks across any provider');
 
 agenticCmd
   .command('run <task...>')
