@@ -160,6 +160,32 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
     await next();
   });
 
+  // HTTP→HTTPS redirect (HTTPS-001). When HTTPS_ONLY=true, any plain-HTTP
+  // request is redirected to its HTTPS equivalent with a 301. Respects
+  // X-Forwarded-Proto for reverse-proxy deployments that terminate TLS
+  // upstream and forward to the gateway over plain HTTP. When the proxy
+  // sends X-Forwarded-Proto: https, no redirect happens.
+  //
+  // Must run after the security-headers middleware (which sets HSTS) so
+  // the HSTS header is present on the redirect response. The same env var
+  // (HTTPS_ONLY) controls both — they're always paired.
+  if (process.env.HTTPS_ONLY === 'true') {
+    app.use('*', async (c, next) => {
+      const fwdProto = c.req.header('X-Forwarded-Proto') ?? c.req.header('X-Forwarded-Scheme');
+      if (fwdProto === 'https') return next();
+
+      const url = new URL(c.req.url);
+      if (url.protocol === 'http:') {
+        url.protocol = 'https:';
+        const httpsPort = process.env.HTTPS_PORT ?? process.env.PORT ?? '443';
+        if (httpsPort !== '443') url.port = httpsPort;
+        else url.port = '';
+        return c.redirect(url.toString(), 301);
+      }
+      return next();
+    });
+  }
+
   // Remove server fingerprinting headers
   app.use('*', async (c, next) => {
     await next();
