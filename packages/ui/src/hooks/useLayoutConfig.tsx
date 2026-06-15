@@ -332,7 +332,7 @@ function migrateConfig(raw: unknown): LayoutConfig {
         width: config.sidebar?.width ?? 'default',
         sections: next.map((s, i) => ({ ...s, order: i })),
       },
-    };
+    });
   }
 
   // V9 → V10: promote /agentic nav link + agentic-executions accordion.

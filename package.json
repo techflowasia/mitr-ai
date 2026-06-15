@@ -57,17 +57,17 @@
     ]
   },
   "devDependencies": {
-    "@types/node": "^22.19.15",
+    "@types/node": "^22.19.21",
     "@vitest/coverage-v8": "4.1.5",
-    "eslint": "^10.1.0",
+    "eslint": "^10.5.0",
     "husky": "^9.1.7",
     "knip": "^6.16.1",
-    "lint-staged": "^17.0.5",
-    "prettier": "^3.8.1",
+    "lint-staged": "^17.0.7",
+    "prettier": "^3.8.4",
     "rimraf": "^6.1.3",
-    "turbo": "^2.9.14",
+    "turbo": "^2.9.18",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.58.0"
+    "typescript-eslint": "^8.61.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
@@ -100,7 +100,10 @@
       "follow-redirects": "1.16.0",
       "postcss": "8.5.10",
       "qs": ">=6.15.2"
-    }
+    },
+    "ignoredBuiltDependencies": [
+      "esbuild"
+    ]
   },
   "packageManager": "pnpm@10.29.3",
   "engines": {

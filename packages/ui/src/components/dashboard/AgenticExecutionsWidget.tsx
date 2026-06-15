@@ -3,7 +3,7 @@
  */
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Brain, Play, Loader2, CheckCircle2, X, Clock, DollarSign } from '../icons';
+import { Brain, CheckCircle2, X, Clock, RefreshCw } from '../icons';
 import { agenticApi, type AgenticExecution } from '../../api/endpoints/agentic';
 import { Skeleton } from '../Skeleton';
 
@@ -55,7 +55,7 @@ export function AgenticExecutionsWidget() {
             const isRunning = e.status === 'running' || e.status === 'pending';
             const isFailed = e.status === 'failed';
             const isCompleted = e.status === 'completed';
-            const Icon = isRunning ? Loader2 : isCompleted ? CheckCircle2 : isFailed ? X : Clock;
+            const Icon = isRunning ? RefreshCw : isCompleted ? CheckCircle2 : isFailed ? X : Clock;
             const color = isRunning ? 'text-blue-500' : isCompleted ? 'text-green-500' : isFailed ? 'text-red-500' : 'text-gray-400';
             const dur = e.totalDurationMs >= 1000 ? `${(e.totalDurationMs / 1000).toFixed(1)}s` : `${e.totalDurationMs}ms`;
 

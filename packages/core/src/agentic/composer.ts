@@ -51,7 +51,7 @@ interface ExecutionState {
 // Pipeline Optimization
 // ============================================================================
 
-interface OptimizationSuggestion {
+export interface OptimizationSuggestion {
   type: 'parallelize' | 'merge_steps' | 'reorder' | 'split_task' | 'change_executor';
   description: string;
   impact: 'cost' | 'latency' | 'reliability';
