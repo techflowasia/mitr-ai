@@ -94,6 +94,9 @@ const executeTaskSchema = z.object({
 const planTaskSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().min(1).max(50_000),
+  prompt: z.string().max(10_000).optional(),
+  provider: z.string().max(50).optional(),
+  model: z.string().max(100).optional(),
   expectedOutput: z.string().max(1000).optional(),
   priority: z.enum(['low', 'normal', 'high', 'critical']).optional(),
   trigger: z
@@ -299,6 +302,10 @@ agenticRoutes.post('/plan', async (c) => {
     const { analysis, plan } = await router.route({
       name: input.name,
       description: input.description,
+      prompt: input.prompt,
+      providerPreference: input.provider || input.model
+        ? { providerId: input.provider, modelId: input.model }
+        : undefined,
       expectedOutput: input.expectedOutput,
       priority: input.priority,
       trigger: input.trigger ? buildTriggerStrategy(input.trigger) : undefined,

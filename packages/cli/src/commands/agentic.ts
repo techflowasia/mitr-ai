@@ -294,7 +294,7 @@ export async function agenticCancel(id: string): Promise<void> {
 // ─── PLAN ───
 // ============================================================================
 
-export async function agenticPlan(taskDescription: string[], options: { name?: string; trigger?: string; interval?: string }): Promise<void> {
+export async function agenticPlan(taskDescription: string[], options: { name?: string; trigger?: string; interval?: string; provider?: string; model?: string; prompt?: string }): Promise<void> {
   const description = taskDescription.join(' ').trim();
   if (!description) {
     console.error('Usage: ownpilot agentic plan [options] <task description...>');
@@ -307,6 +307,9 @@ export async function agenticPlan(taskDescription: string[], options: { name?: s
 
   const name = options.name ?? (description.length > 60 ? description.slice(0, 57) + '...' : description);
   const body: Record<string, unknown> = { name, description };
+  if (options.provider) body.provider = options.provider;
+  if (options.model) body.model = options.model;
+  if (options.prompt) body.prompt = options.prompt;
 
   const triggerType = options.trigger ?? 'immediate';
   if (triggerType === 'interval') {

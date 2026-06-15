@@ -397,6 +397,9 @@ agenticCmd
   .option('--name <name>', 'Task name')
   .option('--trigger <type>', 'Trigger: immediate, interval, continuous')
   .option('--interval <ms>', 'Interval in ms for interval trigger')
+  .option('--provider <provider>', 'AI provider (e.g. anthropic, openai)')
+  .option('--model <model>', 'Model name')
+  .option('--prompt <text>', 'System prompt override')
   .action(agenticPlan);
 
 agenticCmd
