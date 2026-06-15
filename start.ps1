@@ -191,7 +191,7 @@ function Start-DevMode {
     Write-Info "Starting gateway. Open a SECOND terminal for the UI:`n"
     Write-Info "  pnpm --filter @ownpilot/ui dev`n"
     Write-Info "Gateway logs:"
-    Write-Info "".PadRight(50, '─')
+    Write-Info "".PadRight(50, '-')
     pnpm --filter @ownpilot/gateway dev
 }
 
