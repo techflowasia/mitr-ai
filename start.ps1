@@ -187,7 +187,7 @@ function Start-DevMode {
     Write-Info "UI Dev Server: http://localhost:$UIPort"
     Write-Info ""
 
-    # Build core first so gateway startup is fast
+    # Build core once so tsx doesn't need to compile it
     Write-Info "Building @ownpilot/core..."
     pnpm --filter @ownpilot/core build 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0 -and -not (Test-Path "packages/core/dist/index.js")) {
@@ -196,67 +196,15 @@ function Start-DevMode {
     }
     Write-Success "@ownpilot/core built"
 
-    # Start gateway in background, writing logs to a temp file
-    $logFile = Join-Path $ScriptDir ".gateway-dev.log"
-    Write-Info "Starting gateway (logs: .gateway-dev.log)..."
-    $job = Start-Job -Name "gw" -ScriptBlock {
-        param($dir, $port, $log)
-        cd $dir
-        $env:PORT = $port
-        $env:NODE_ENV = "development"
-        # Run dev, capture both stdout and stderr
-        pnpm --filter @ownpilot/gateway dev 2>&1 | Out-File -FilePath $log -Encoding utf8
-    } -ArgumentList $ScriptDir, $Port, $logFile
+    # Start UI dev server in a NEW window (it runs independently).
+    # Gateway runs in THIS window so you see live logs.
+    $uiTitle = "OwnPilot UI (port $UIPort)"
+    Write-Info "Starting UI dev server in a new window..."
+    Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$ScriptDir'; `$env:UI_PORT=$UIPort; pnpm --filter @ownpilot/ui dev" -WindowStyle Normal -Title $uiTitle
 
-    # Wait for gateway (check log for startup message)
-    Write-Info "Waiting for gateway..."
-    $ready = $false
-    $maxWait = 90
-    for ($i = 0; $i -lt $maxWait; $i++) {
-        Start-Sleep -Seconds 1
-        # Check if the log file has the "Server running" message
-        if (Test-Path $logFile) {
-            $content = Get-Content $logFile -Raw -ErrorAction SilentlyContinue
-            if ($content -match "Server running|listening on|health.*200|startup complete") {
-                $ready = $true; break
-            }
-            # Check for fatal errors
-            if ($content -match "fatal|error.*exit|failed|connection refused|ECONNREFUSED|ENOENT|Module not found") {
-                Write-Err "Gateway startup error detected in log:"
-                Get-Content $logFile -Tail 10 | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
-                break
-            }
-        }
-        # Also try HTTP health check
-        if (-not $ready) {
-            try { $r = curl.exe -s -o nul -w "%{http_code}" "http://localhost:$Port/health" 2>$null; if ($r -eq 200) { $ready = $true; break } } catch {}
-            try { $r = Invoke-WebRequest -Uri "http://localhost:$Port/health" -UseBasicParsing -TimeoutSec 1; if ($r.StatusCode -eq 200) { $ready = $true; break } } catch {}
-        }
-        if ($i -eq 15) { Write-Info "  Still waiting (compiling TypeScript)..." }
-        if ($i -eq 40) { Write-Info "  Still waiting (gateway starting services)..." }
-    }
-
-    if (-not $ready) {
-        Write-Err "Gateway failed to start within $maxWait seconds."
-        if (Test-Path $logFile) {
-            Write-Info "Last 20 lines of gateway log:"
-            Get-Content $logFile -Tail 20 | ForEach-Object { Write-Host "  $_" }
-        }
-        Write-Info ""
-        Write-Info "Manual start:"
-        Write-Info "  Terminal 1: pnpm --filter @ownpilot/gateway dev"
-        Write-Info "  Terminal 2: pnpm --filter @ownpilot/ui dev"
-        Stop-Job $job -ErrorAction SilentlyContinue; Remove-Job $job -ErrorAction SilentlyContinue
-        return
-    }
-
-    Write-Success "Gateway ready on http://localhost:$Port"
-    Write-Info "Starting UI dev server...`n"
-    pnpm --filter @ownpilot/ui dev
-
-    # Cleanup on exit
-    Write-Info "Stopping gateway..."
-    Stop-Job $job -ErrorAction SilentlyContinue; Remove-Job $job -ErrorAction SilentlyContinue
+    Write-Info "Starting gateway (this window)..."
+    Write-Info "Gateway logs will appear below. Press Ctrl+C to stop everything.`n"
+    pnpm --filter @ownpilot/gateway dev
 }
 
 # Start in production mode
