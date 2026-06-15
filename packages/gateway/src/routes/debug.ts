@@ -15,10 +15,22 @@ export const debugRoutes = new Hono();
 // only when ADMIN_API_KEY is not set (i.e., the binary has no key configured).
 const requireDebugAccess = createMiddleware(async (c, next) => {
   const adminKey = process.env.ADMIN_API_KEY;
+
+  // Socket-level localhost detection: when @hono/node-server is the
+  // adapter (the typical deployment), c.env.incoming is the Node.js
+  // IncomingMessage.  Bare Hono apps (tests) don't have it, so we
+  // fall back to the LOCAL_DEV env-var bypass for CI/container use.
+  // NO header-based checks (Origin/Referer are user-spoofable).
+  const env = c.env as Record<string, unknown>;
+  const remoteAddress =
+    typeof env?.incoming === 'object' && env.incoming !== null
+      ? (env.incoming as { socket?: { remoteAddress?: string } }).socket?.remoteAddress
+      : null;
   const isLocalhost =
-    c.req.header('origin') === `http://localhost:${process.env.UI_PORT ?? '8199'}` ||
-    c.req.header('referer')?.startsWith(`http://localhost:${process.env.UI_PORT ?? '8199'}`) ||
-    c.env?.LOCAL_DEV === 'true';
+    remoteAddress === '127.0.0.1' ||
+    remoteAddress === '::1' ||
+    remoteAddress === '::ffff:127.0.0.1' ||
+    env?.LOCAL_DEV === 'true';
 
   // If no key is configured at all, only allow localhost in dev/test
   if (!adminKey) {

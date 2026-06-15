@@ -143,8 +143,9 @@ function getWsAuth(request: IncomingMessage, url: URL): WsAuth {
       tokenFromProtocols(request.headers['sec-websocket-protocol']) ??
       // Deprecated fallback: query-param tokens leak into access logs,
       // browser history, and proxies. Prefer the Authorization header or
-      // the ownpilot.auth.* subprotocol.
-      url.searchParams.get('token'),
+      // the ownpilot.auth.* subprotocol. Gated behind WS_ALLOW_QUERY_TOKEN
+      // for backward compat; default-off in production.
+      (process.env.WS_ALLOW_QUERY_TOKEN === 'true' ? url.searchParams.get('token') : null),
     uiSessionToken: getCookieValue(request.headers.cookie, UI_SESSION_COOKIE),
   };
 }

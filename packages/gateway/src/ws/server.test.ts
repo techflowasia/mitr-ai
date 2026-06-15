@@ -331,7 +331,9 @@ describe('WSGateway', () => {
       expect(mockSessionManager.create).not.toHaveBeenCalled();
     });
 
-    it('accepts connection with valid token', async () => {
+    // Query-param token tests (deprecated, gated behind WS_ALLOW_QUERY_TOKEN)
+    it('accepts connection with valid query-param token when WS_ALLOW_QUERY_TOKEN=true', async () => {
+      process.env.WS_ALLOW_QUERY_TOKEN = 'true';
       process.env.API_KEYS = 'key-alpha,key-beta';
       const gw = new WSGateway();
       gw.start();
@@ -344,6 +346,22 @@ describe('WSGateway', () => {
 
       expect(mockSessionManager.create).toHaveBeenCalledWith(socket);
       expect(socket.close).not.toHaveBeenCalled();
+      delete process.env.WS_ALLOW_QUERY_TOKEN;
+    });
+
+    it('rejects connection with query-param token when WS_ALLOW_QUERY_TOKEN is not set', async () => {
+      process.env.API_KEYS = 'key-alpha,key-beta';
+      const gw = new WSGateway();
+      gw.start();
+
+      const handler = getConnectionHandler();
+      const socket = createMockSocket();
+      const request = createMockRequest('/?token=key-beta');
+
+      await handler(socket, request);
+
+      expect(socket.close).toHaveBeenCalledWith(1008, 'Authentication required');
+      expect(mockSessionManager.create).not.toHaveBeenCalled();
     });
 
     it('accepts connection with valid UI session cookie', async () => {
@@ -1456,13 +1474,13 @@ describe('WSGateway', () => {
       expect(mockWss.handleUpgrade).not.toHaveBeenCalled();
     });
 
-    it('allows upgrade when valid token is provided', async () => {
+    it('allows upgrade when valid Bearer token is provided', async () => {
       process.env.API_KEYS = 'valid-key';
       const { upgradeHandler } = setupGatewayWithUpgrade();
       const mockSocket = { write: vi.fn(), destroy: vi.fn() };
       const request = {
-        url: '/ws?token=valid-key',
-        headers: { host: 'localhost' },
+        url: '/ws',
+        headers: { host: 'localhost', authorization: 'Bearer valid-key' },
         socket: { remoteAddress: '127.0.0.1' },
       };
       const head = Buffer.from('');
