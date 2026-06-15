@@ -86,6 +86,7 @@ import {
   agenticPlan,
   agenticCapabilities,
   agenticStats,
+  agenticWatch,
   agenticHelp,
 } from './commands/agentic.js';
 import {
@@ -406,6 +407,14 @@ agenticCmd
   .command('stats')
   .description('Show aggregated execution statistics')
   .action(agenticStats);
+
+agenticCmd
+  .command('watch')
+  .description('Live-tail agentic execution events via WebSocket')
+  .option('-v, --verbose', 'print full JSON payloads instead of summary lines')
+  .option('-l, --limit <n>', 'exit after N events', (v: string) => Number(v))
+  .option('--token <token>', 'API token (overrides OWNPILOT_API_KEY env)')
+  .action((opts) => agenticWatch(opts));
 
 // Default: no subcommand → show help
 agenticCmd.action(agenticHelp);

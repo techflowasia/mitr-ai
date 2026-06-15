@@ -416,4 +416,13 @@ describe('Agentic CLI Commands', () => {
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('claw'));
     });
   });
+
+  // ─── agenticWatch export ───
+
+  describe('agenticWatch', () => {
+    it('is exported as a function', async () => {
+      const mod = await import('./agentic.js');
+      expect(typeof mod.agenticWatch).toBe('function');
+    });
+  });
 });

@@ -475,6 +475,11 @@ COMMANDS
   stats        Show aggregated execution statistics
     ownpilot agentic stats
 
+  watch        Live-tail execution events via WebSocket
+    ownpilot agentic watch
+    ownpilot agentic watch --verbose
+    ownpilot agentic watch --limit 10
+
 OPTIONS
   --name       Task name (auto-generated from description if not set)
   --priority   Priority level: low, normal, high, critical
@@ -506,5 +511,134 @@ EXAMPLES
 
   # Show execution stats
   ownpilot agentic stats
+
+  # Watch live execution events
+  ownpilot agentic watch
+  ownpilot agentic watch --verbose
 `);
+}
+
+// ============================================================================
+// ─── WATCH (WebSocket live events) ───
+// ============================================================================
+
+const AGENTIC_WS_TOPICS = [
+  'agentic.step.start',
+  'agentic.step.complete',
+  'agentic.step.fail',
+];
+
+function agenticDeriveWsUrl(): string {
+  const explicit = process.env.OWNPILOT_WS_URL;
+  if (explicit) return explicit;
+  const url = new URL(getBaseUrl());
+  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+  url.pathname = '/ws';
+  url.search = '';
+  return url.toString();
+}
+
+interface AgenticWatchOptions {
+  verbose?: boolean;
+  limit?: number;
+  token?: string;
+  openWebSocket?: (url: string, protocols?: string[]) => WebSocketLike;
+}
+
+/** Minimal WebSocket shape — same as claw's WebSocketLike. */
+interface WebSocketLike {
+  send(data: string): void;
+  close(code?: number): void;
+  addEventListener(
+    type: 'open' | 'message' | 'close' | 'error',
+    handler: (evt: { data?: unknown; code?: number; message?: string }) => void
+  ): void;
+}
+
+/** Pretty-print a single agentic event. */
+function formatAgenticEvent(type: string, payload: Record<string, unknown>): string {
+  const ts = new Date().toISOString().slice(11, 19);
+  switch (type) {
+    case 'agentic.step.start':
+      return `${ts}  → start    ${String(payload.executorKind ?? '').padEnd(16)}  step #${String(payload.stepIndex ?? '')}  ${String(payload.capabilityId ?? '')}`;
+    case 'agentic.step.complete': {
+      const dur = typeof payload.durationMs === 'number' ? ` ${payload.durationMs}ms` : '';
+      const cost = typeof payload.costUsd === 'number' ? ` ${(payload.costUsd as number).toFixed(4)}` : '';
+      return `${ts}  ✓ done     ${String(payload.executorKind ?? '').padEnd(16)}  step #${String(payload.stepIndex ?? '')}${dur}${cost}`;
+    }
+    case 'agentic.step.fail':
+      return `${ts}  ✗ fail     ${String(payload.executorKind ?? '').padEnd(16)}  step #${String(payload.stepIndex ?? '')}  ${String(payload.error ?? '').slice(0, 60)}`;
+    default:
+      return `${ts}  ? ${type.padEnd(16)}  ${JSON.stringify(payload).slice(0, 80)}`;
+  }
+}
+
+/**
+ * Live-tail agentic execution events from the gateway via WebSocket.
+ * Shows step start, complete, and failure events in real time.
+ */
+export async function agenticWatch(options: AgenticWatchOptions = {}): Promise<void> {
+  const token = options.token ?? process.env.OWNPILOT_API_KEY;
+  const baseUrl = agenticDeriveWsUrl();
+  const protocols = token
+    ? ['ownpilot', `ownpilot.auth.${Buffer.from(token, 'utf-8').toString('base64url')}`]
+    : undefined;
+
+  const openWebSocket =
+    options.openWebSocket ??
+    ((u: string, p?: string[]): WebSocketLike => {
+      const Ctor = (globalThis as { WebSocket?: new (u: string, p?: string[]) => WebSocketLike }).WebSocket;
+      if (!Ctor) throw new Error('Global WebSocket not available — requires Node 22+');
+      return new Ctor(u, p);
+    });
+
+  const ws = openWebSocket(baseUrl, protocols);
+  let count = 0;
+
+  return new Promise<void>((resolve, reject) => {
+    let resolved = false;
+    const finish = (err?: Error): void => {
+      if (resolved) return;
+      resolved = true;
+      try { ws.close(); } catch { /* ignore */ }
+      if (err) reject(err);
+      else resolve();
+    };
+
+    ws.addEventListener('open', () => {
+      console.log(
+        `Connected to ${baseUrl} — watching agentic execution events` +
+        ` (${AGENTIC_WS_TOPICS.length} topics).`
+      );
+      console.log('Press Ctrl-C to stop.\n');
+      for (const topic of AGENTIC_WS_TOPICS) {
+        ws.send(JSON.stringify({ type: 'event:subscribe', event: topic }));
+      }
+    });
+
+    ws.addEventListener('message', (evt) => {
+      if (resolved) return;
+      let msg: { type?: string; event?: string; data?: unknown; payload?: unknown };
+      try {
+        msg = JSON.parse(String(evt.data));
+      } catch { return; }
+      const type = (msg.event ?? msg.type) as string | undefined;
+      if (!type || !type.startsWith('agentic.step')) return;
+      const payload = (msg.payload ?? msg.data ?? {}) as Record<string, unknown>;
+
+      if (options.verbose) {
+        console.log(`[${type}]`, JSON.stringify(payload, null, 2));
+      } else {
+        console.log(formatAgenticEvent(type, payload));
+      }
+
+      count++;
+      if (typeof options.limit === 'number' && count >= options.limit) finish();
+    });
+
+    ws.addEventListener('close', () => finish());
+    ws.addEventListener('error', (evt) => {
+      finish(new Error(`WebSocket error: ${String(evt.message ?? 'unknown')}`));
+    });
+  });
 }
