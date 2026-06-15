@@ -367,6 +367,8 @@ agenticCmd
   .option('--interval <ms>', 'Interval in ms for interval trigger (default: 300000)')
   .option('--timeout <ms>', 'Step timeout in ms (default: 60000)')
   .option('--output <path>', 'Save results to file')
+  .option('--provider <provider>', 'AI provider (e.g. anthropic, openai)')
+  .option('--model <model>', 'Model name (e.g. claude-sonnet-4-20250514)')
   .action(agenticRun);
 
 agenticCmd

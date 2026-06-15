@@ -351,6 +351,12 @@ export class AgenticRouter implements IAgenticRouter {
     // Trigger-based plans take priority over orchestration — if a trigger
     // strategy is defined and it's not immediate, always route through the
     // trigger engine regardless of what the task analysis suggests.
+
+    // Extra params shared across all step types
+    const extraParams: Record<string, unknown> = {};
+    if (task.providerPreference?.providerId) extraParams.provider = task.providerPreference.providerId;
+    if (task.providerPreference?.modelId) extraParams.model = task.providerPreference.modelId;
+
     if (trigger && trigger.type !== 'immediate') {
       // Trigger-based plan: set up trigger, then execute
       steps.push({
@@ -382,6 +388,7 @@ export class AgenticRouter implements IAgenticRouter {
         params: {
           task: task.description,
           expectedOutput: task.expectedOutput,
+          ...extraParams,
         },
         dependsOn: [1],
         timeoutMs: task.constraints?.timeoutMs ?? defaults.timeoutMs,
@@ -402,6 +409,7 @@ export class AgenticRouter implements IAgenticRouter {
           expectedOutput: task.expectedOutput,
           constraints: task.constraints,
           trigger: trigger ? { trigger } : undefined,
+          ...extraParams,
         },
         dependsOn: [],
         timeoutMs: task.constraints?.timeoutMs ?? defaults.timeoutMs,
@@ -445,6 +453,7 @@ export class AgenticRouter implements IAgenticRouter {
           expectedOutput: task.expectedOutput,
           constraints: task.constraints,
           trigger: trigger && trigger.type !== 'immediate' ? { trigger } : undefined,
+          ...extraParams,
         },
         dependsOn: [],
         timeoutMs: task.constraints?.timeoutMs ?? defaults.timeoutMs,

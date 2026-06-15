@@ -45,6 +45,8 @@ export const agenticRoutes = new Hono();
 const executeTaskSchema = z.object({
   name: z.string().min(1, 'Task name is required').max(200),
   description: z.string().min(1, 'Task description is required').max(50_000),
+  provider: z.string().max(50).optional(),
+  model: z.string().max(100).optional(),
   expectedOutput: z.string().max(1000).optional(),
   priority: z.enum(['low', 'normal', 'high', 'critical']).optional(),
   trigger: z
@@ -191,6 +193,9 @@ agenticRoutes.post('/execute', async (c) => {
     const report = await orchestrator.execute({
       name: input.name,
       description: input.description,
+      providerPreference: input.provider || input.model
+        ? { providerId: input.provider, modelId: input.model }
+        : undefined,
       expectedOutput: input.expectedOutput,
       priority: input.priority,
       trigger: input.trigger ? buildTriggerStrategy(input.trigger) : undefined,

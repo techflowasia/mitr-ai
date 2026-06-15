@@ -28,6 +28,8 @@ import {
   getLog,
   getErrorMessage,
   getRuntimeContext,
+  hasProviderService,
+  getProviderService,
   type RuntimeContext,
   type CreateTriggerInput,
   type TriggerAction,
@@ -207,9 +209,34 @@ export class AgenticGatewayExecutor {
       };
     }
 
-    // Single-shot: use the chat agent directly
-    const provider = (params.provider as string) || process.env.DEFAULT_PROVIDER || 'openai';
-    const model = (params.model as string) || process.env.DEFAULT_MODEL || 'gpt-4o-mini';
+    // Single-shot: use the chat agent directly.
+    // Resolve provider/model — explicit params > env vars > system defaults.
+    const explicitProvider = params.provider as string | undefined;
+    const explicitModel = params.model as string | undefined;
+    let provider = explicitProvider || process.env.DEFAULT_PROVIDER || '';
+    let model = explicitModel || process.env.DEFAULT_MODEL || '';
+
+    // If not explicitly set, try the ProviderService for the system default.
+    if (!provider && hasProviderService()) {
+      try {
+        const svc = getProviderService();
+        const resolved = await svc.resolve({});
+        provider = resolved.provider ?? '';
+        model = resolved.model ?? model;
+      } catch { /* fall through */ }
+    }
+
+    // If still no provider, return a clear error instead of failing
+    // with "API key not configured for provider: openai".
+    if (!provider) {
+      return {
+        success: false,
+        output: null,
+        error: 'No AI provider configured. Go to Settings → API Keys to add a provider.',
+        durationMs: Date.now() - startTime,
+      };
+    }
+
     const agent = await getOrCreateChatAgent(provider, model);
 
     // Build a system prompt that gives the agent access to tools

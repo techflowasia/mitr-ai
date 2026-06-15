@@ -64,6 +64,8 @@ export async function agenticRun(taskDescription: string[], options: {
   interval?: string;
   timeout?: number;
   output?: string;
+  provider?: string;
+  model?: string;
 }): Promise<void> {
   const description = taskDescription.join(' ').trim();
   if (!description) {
@@ -87,6 +89,8 @@ export async function agenticRun(taskDescription: string[], options: {
     description,
     priority: options.priority ?? 'normal',
   };
+  if (options.provider) body.provider = options.provider;
+  if (options.model) body.model = options.model;
 
   // Add trigger config
   const triggerType = options.trigger ?? 'immediate';
@@ -486,6 +490,8 @@ OPTIONS
   --trigger    Trigger type: immediate, interval, continuous
   --interval   Interval in ms (for interval trigger, default: 300000)
   --timeout    Step timeout in ms (default: 60000)
+  --provider   AI provider (e.g. anthropic, openai — uses system default if not set)
+  --model      Model name (e.g. claude-sonnet-4-20250514 — uses system default if not set)
   --output     Save execution result to file
   --json       JSON output format
   --limit      Max results (default: 20)
@@ -502,6 +508,9 @@ EXAMPLES
 
   # Scheduled monitoring
   ownpilot agentic run --trigger interval --interval 60000 "Check API health"
+
+  # Use specific provider/model
+  ownpilot agentic run --provider anthropic --model claude-sonnet-4-20250514 "Research task"
 
   # Plan without executing
   ownpilot agentic plan "Refactor the authentication module"
