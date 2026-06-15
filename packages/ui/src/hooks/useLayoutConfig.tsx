@@ -276,7 +276,8 @@ function migrateConfig(raw: unknown): LayoutConfig {
     if (!existingIds.has('/claws')) additions.push({ id: '/claws', order: 0 });
     if (!existingIds.has('claws')) additions.push({ id: 'claws', order: 0, style: 'accordion' });
     if (additions.length === 0) {
-      return { ...config, version: LAYOUT_CONFIG_VERSION };
+      // Chain to V8→V9 even when nothing to add
+      return migrateConfig({ ...config, version: 8 });
     }
     // Insert /claws nav link right after /dashboard (or at the front if no
     // /dashboard exists), and the live claws accordion at the end.
@@ -310,7 +311,7 @@ function migrateConfig(raw: unknown): LayoutConfig {
     const oldSections = config.sidebar?.sections ?? [];
     const existingIds = new Set(oldSections.map((s) => s.id));
     if (existingIds.has('/mission-control')) {
-      return { ...config, version: LAYOUT_CONFIG_VERSION };
+      return migrateConfig({ ...config, version: 9 });
     }
     // Insert /mission-control right after /dashboard, or at the very top
     // if no /dashboard exists in the user's config.
@@ -322,9 +323,10 @@ function migrateConfig(raw: unknown): LayoutConfig {
       next.push(s);
       if (i === dashboardIdx) next.push(newEntry);
     });
-    return {
+    // Chain to V9→V10 so all migrations run in a single load
+    return migrateConfig({
       ...config,
-      version: 9, // chain to V9→V10
+      version: 9,
       sidebar: {
         ...config.sidebar,
         width: config.sidebar?.width ?? 'default',
@@ -345,7 +347,8 @@ function migrateConfig(raw: unknown): LayoutConfig {
     if (!existingIds.has('/agentic')) additions.push({ id: '/agentic', order: 0 });
     if (!existingIds.has('agentic-executions')) additions.push({ id: 'agentic-executions', order: 0, style: 'accordion' });
     if (additions.length === 0) {
-      return { ...config, version: LAYOUT_CONFIG_VERSION };
+      // Chain to V10→V11 even when nothing to add
+      return migrateConfig({ ...config, version: 10 });
     }
     // Insert /agentic nav link right after /mission-control (or /dashboard
     // if mission-control doesn't exist), and agentic-executions at the end.
@@ -361,15 +364,16 @@ function migrateConfig(raw: unknown): LayoutConfig {
     });
     if (navAddition && afterTarget === -1) next.unshift(navAddition);
     if (accordionAddition) next.push(accordionAddition);
-    return {
+    // Chain to V10→V11 so both migrations happen in a single load
+    return migrateConfig({
       ...config,
-      version: 10, // chain to V10→V11
+      version: 10,
       sidebar: {
         ...config.sidebar,
         width: config.sidebar?.width ?? 'default',
         sections: next.map((s, i) => ({ ...s, order: i })),
       },
-    };
+    });
   }
 
   // V10 → V11: promote /agentic nav link + agentic-executions accordion.
@@ -447,6 +451,14 @@ function readConfig(): LayoutConfig {
         const hasFooter = parsed.sidebar?.sections?.some((s: { id: string }) => s.id === 'footer');
         if (hasPinned || hasFooter) {
           const migrated = migrateConfig({ ...parsed, version: 6 }); // re-run V6→V7
+          persistConfig(migrated);
+          return migrated;
+        }
+        // Ensure /agentic and agentic-executions exist even at the same version,
+        // in case a previous run saved version 11 without these sections.
+        const sectionIds = new Set((parsed.sidebar?.sections ?? []).map((s: { id: string }) => s.id));
+        if (!sectionIds.has('/agentic') || !sectionIds.has('agentic-executions')) {
+          const migrated = migrateConfig({ ...parsed, version: 10 });
           persistConfig(migrated);
           return migrated;
         }
