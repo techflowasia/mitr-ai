@@ -57,6 +57,11 @@ const LIVE_REFETCH_TOPICS: Record<string, readonly LiveRefetchSub[]> = {
     { topic: 'claw:plan:updated' },
     { topic: 'claw:escalation' },
   ],
+  'agentic-executions': [
+    { topic: 'agentic.step.start' },
+    { topic: 'agentic.step.complete' },
+    { topic: 'agentic.step.fail' },
+  ],
   workflows: [{ topic: 'data:changed', filter: isEntityMatch('workflow') }],
   triggers: [
     { topic: 'data:changed', filter: isEntityMatch('trigger') },

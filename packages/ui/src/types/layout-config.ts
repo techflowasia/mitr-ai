@@ -15,7 +15,7 @@
  *   - If in config array → shown. If not → hidden.
  */
 
-export const LAYOUT_CONFIG_VERSION = 9;
+export const LAYOUT_CONFIG_VERSION = 10;
 
 /** How pinned header items render */
 export type HeaderItemDisplayMode = 'icon' | 'icon-text' | 'text';
@@ -64,6 +64,7 @@ type SidebarSectionId =
   // AI & Automation
   | 'agents'
   | 'claws'
+  | 'agentic-executions'
   | 'triggers'
   | 'artifacts'
   // Tools & Extensions
@@ -135,13 +136,17 @@ export const DEFAULT_SIDEBAR_SECTIONS: SidebarSectionConfig[] = [
   // only reachable through the "AI & Automation" nav group, which itself
   // had to be enabled, making the entire claw stack invisible by default.
   { id: '/claws', order: 6 },
+  // Agentic Center — unified autonomous task execution across all agent types
+  { id: '/agentic', order: 7 },
   // Data (shown by default, user can remove)
-  { id: 'workspaces', order: 7, style: 'accordion' },
-  { id: 'workflows', order: 8, style: 'accordion' },
+  { id: 'workspaces', order: 8, style: 'accordion' },
+  { id: 'workflows', order: 9, style: 'accordion' },
   // Live claw list (top 5) right alongside workspaces/workflows so the
   // running runtimes are visible at a glance.
-  { id: 'claws', order: 9, style: 'accordion' },
-  { id: 'recents', order: 10, style: 'accordion' },
+  { id: 'claws', order: 10, style: 'accordion' },
+  // Recent agentic executions
+  { id: 'agentic-executions', order: 11, style: 'accordion' },
+  { id: 'recents', order: 12, style: 'accordion' },
 ];
 
 /** Human-readable labels for built-in sidebar sections */
@@ -157,6 +162,7 @@ export const SIDEBAR_SECTION_LABELS: Record<string, string> = {
   // AI & Automation
   agents: 'Agents',
   claws: 'Claws',
+  'agentic-executions': 'Agentic Tasks',
   triggers: 'Triggers',
   artifacts: 'Artifacts',
   // Tools & Extensions
