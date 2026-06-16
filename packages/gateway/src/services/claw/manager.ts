@@ -29,7 +29,6 @@ import type {
   ClawTask,
   ClawPlanHistoryEntry,
 } from '@ownpilot/core/services';
-import type { EventHandler } from '@ownpilot/core/events';
 import { ClawRunner } from './runner.js';
 import { getClawsRepository } from '../../db/repositories/claws.js';
 import {
@@ -44,10 +43,18 @@ import {
   extractSavedTasks,
   extractSavedPlanHistory,
   stripSavedTasks,
-  PRIORITY_DELAY_MULTIPLIER,
 } from './manager-task-plan.js';
 import { stringifyToolResult, truncateForFailureLog } from './manager-failure.js';
 import type { ManagedClaw } from './manager-types.js';
+// Extracted scheduling — timer + event management
+import {
+  scheduleNext as scheduleNextImpl,
+  scheduleImmediate as scheduleImmediateImpl,
+  clearScheduling as clearSchedulingImpl,
+  isSchedulableState as isSchedulableStateImpl,
+} from './manager-scheduling.js';
+import type { ExecuteCycleFn } from './manager-scheduling.js';
+import { shouldStop as shouldStopImpl } from './manager-stop-conditions.js';
 
 const log = getLog('ClawManager');
 
@@ -57,17 +64,10 @@ const log = getLog('ClawManager');
 
 const MAX_CONSECUTIVE_ERRORS = 5;
 const SESSION_PERSIST_INTERVAL_MS = 30_000;
-const DEFAULT_INTERVAL_MS = 300_000; // 5 min
-const MISSION_COMPLETE_SENTINEL = 'MISSION_COMPLETE';
 const MAX_CONCURRENT_CLAWS = 50;
 const CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000; // once per day
 const MAX_INBOX_MESSAGES = 100;
 const MAX_INBOX_BYTES = 50_000;
-
-// Continuous mode adaptive delays
-const CONTINUOUS_MIN_DELAY_MS = 500; // Active: fast loop
-const CONTINUOUS_MAX_DELAY_MS = 10_000; // Error: backoff
-const CONTINUOUS_IDLE_DELAY_MS = 5_000; // No tool calls: slow down
 
 // ============================================================================
 // Manager
@@ -88,6 +88,17 @@ export class ClawManager {
   private starting = new Set<string>();
   private running = false;
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
+
+  /**
+   * Bound reference to executeCycle for the scheduling module. Set in the
+   * constructor so manager-scheduling.ts can call it without a circular
+   * import back to the manager class.
+   */
+  private executeCycleBound: ExecuteCycleFn;
+
+  constructor() {
+    this.executeCycleBound = (clawId: string) => this.executeCycle(clawId);
+  }
 
   /**
    * Boot: resume autoStart claws and interrupted sessions.
@@ -676,12 +687,7 @@ export class ClawManager {
 
   /** Clear any pending timer and run a cycle on the next tick. */
   private scheduleImmediate(clawId: string, managed: ManagedClaw): void {
-    this.clearScheduling(managed);
-    managed.timer = setTimeout(() => {
-      this.executeCycle(clawId).catch((err) => {
-        log.error(`Steered cycle error: ${getErrorMessage(err)}`);
-      });
-    }, 0);
+    scheduleImmediateImpl(clawId, managed, this.executeCycleBound);
   }
 
   private trimInbox(managed: ManagedClaw): void {
@@ -1402,188 +1408,30 @@ export class ClawManager {
   }
 
   /**
-   * States from which it is safe to schedule the next cycle. Anything else
-   * (paused, stopped, completed, failed, escalation_pending) means an
-   * external actor has decided this claw should stop running.
+   * States from which it is safe to schedule the next cycle.
+   * Delegates to manager-scheduling.ts.
    */
   private isSchedulableState(state: ClawSession['state']): boolean {
-    return state === 'running' || state === 'waiting';
+    return isSchedulableStateImpl(state);
   }
 
   // ============================================================================
   // Private: Helpers
   // ============================================================================
 
+  /** Stop condition evaluation — delegates to manager-stop-conditions.ts. */
   private shouldStop(managed: ManagedClaw, result: ClawCycleResult): boolean {
-    // Check for MISSION_COMPLETE sentinel
-    if (result.outputMessage.includes(MISSION_COMPLETE_SENTINEL)) {
-      return true;
-    }
-
-    // Check stop condition
-    const stopCondition = managed.session.config.stopCondition;
-    if (stopCondition) {
-      // max_cycles:N — stop after N cycles
-      const maxCyclesMatch = stopCondition.match(/^max_cycles:(\d+)$/i);
-      if (maxCyclesMatch?.[1]) {
-        const maxCycles = parseInt(maxCyclesMatch[1], 10);
-        if (managed.session.cyclesCompleted >= maxCycles) {
-          return true;
-        }
-      }
-
-      // on_report — stop when claw_complete_report was called this cycle
-      if (stopCondition === 'on_report') {
-        const calledReport = result.toolCalls.some(
-          (tc) => tc.tool === 'claw_complete_report' && tc.success
-        );
-        if (calledReport) return true;
-      }
-
-      // on_error — stop on first cycle failure
-      if (stopCondition === 'on_error' && !result.success) {
-        return true;
-      }
-
-      // idle:N — stop after N consecutive cycles with 0 tool calls
-      const idleMatch = stopCondition.match(/^idle:(\d+)$/i);
-      if (idleMatch?.[1]) {
-        const idleLimit = parseInt(idleMatch[1], 10);
-        if (managed.lastCycleToolCalls === 0) {
-          managed.idleCycles = (managed.idleCycles ?? 0) + 1;
-          if (managed.idleCycles >= idleLimit) return true;
-        } else {
-          managed.idleCycles = 0;
-        }
-      }
-
-      // plan_complete — stop when every structured task is in a terminal
-      // state (completed or blocked) AND at least one is completed. The
-      // "at least one completed" guard prevents two degenerate exits: an
-      // empty plan immediately tripping the stop on cycle 1, and a plan
-      // where everything is blocked from being mistaken for success — that
-      // is stuck, not done.
-      if (stopCondition === 'plan_complete') {
-        const tasks = managed.session.tasks;
-        if (tasks.length > 0) {
-          const everyTerminal = tasks.every(
-            (t) => t.status === 'completed' || t.status === 'blocked'
-          );
-          const anyCompleted = tasks.some((t) => t.status === 'completed');
-          if (everyTerminal && anyCompleted) return true;
-        }
-      }
-    }
-
-    return false;
+    return shouldStopImpl(managed, result);
   }
 
+  /** Schedule next cycle — delegates to manager-scheduling.ts. */
   private scheduleNext(clawId: string, managed: ManagedClaw): void {
-    this.clearScheduling(managed);
-
-    switch (managed.session.config.mode) {
-      case 'continuous':
-        this.scheduleContinuous(clawId, managed);
-        break;
-      case 'interval':
-        this.scheduleInterval(clawId, managed);
-        break;
-      case 'event':
-        this.subscribeToEvents(clawId, managed);
-        break;
-      // single-shot handled separately in startClaw
-    }
+    scheduleNextImpl(clawId, managed, this.executeCycleBound);
   }
 
-  private scheduleContinuous(clawId: string, managed: ManagedClaw): void {
-    let delay: number;
-    if (managed.session.lastCycleDurationMs === null) {
-      delay = CONTINUOUS_MIN_DELAY_MS; // First cycle — start fast
-    } else if (managed.session.lastCycleError) {
-      delay = CONTINUOUS_MAX_DELAY_MS; // Error — backoff
-    } else if (managed.lastCycleToolCalls === 0) {
-      delay = CONTINUOUS_IDLE_DELAY_MS; // Idle — slow down
-    } else {
-      delay = CONTINUOUS_MIN_DELAY_MS; // Active — fast loop
-    }
-
-    // Apply priority multiplier to delay
-    const multiplier = PRIORITY_DELAY_MULTIPLIER[managed.priority] ?? 1.0;
-    const finalDelay = delay * multiplier;
-
-    managed.timer = setTimeout(() => {
-      this.executeCycle(clawId).catch((err) => {
-        log.error(`Continuous cycle error: ${getErrorMessage(err)}`);
-      });
-    }, finalDelay);
-  }
-
-  private scheduleInterval(clawId: string, managed: ManagedClaw): void {
-    const interval = managed.session.config.intervalMs ?? DEFAULT_INTERVAL_MS;
-    managed.timer = setTimeout(() => {
-      this.executeCycle(clawId).catch((err) => {
-        log.error(`Interval cycle error: ${getErrorMessage(err)}`);
-      });
-    }, interval);
-  }
-
-  private subscribeToEvents(clawId: string, managed: ManagedClaw): void {
-    const filters = managed.session.config.eventFilters ?? [];
-    if (filters.length === 0) return;
-
-    const selfSource = `claw:${clawId}`;
-    const selfMarker = clawId;
-
-    try {
-      const eventSystem = getEventSystem();
-      for (const eventType of filters) {
-        const handler: EventHandler = (event: unknown) => {
-          // Guard against self-trigger loops when an event-mode claw filters on
-          // event types it can emit itself (e.g. claw.*, claw.cycle.complete, claw.cycle.summary).
-          const ev = event as
-            | { source?: string; payload?: { _clawId?: string; clawId?: string } }
-            | undefined;
-          if (ev) {
-            if (ev.source === selfSource || ev.source === 'claw-manager') return;
-            const payloadClawId = ev.payload?._clawId ?? ev.payload?.clawId;
-            if (payloadClawId === selfMarker) return;
-          }
-
-          if (managed.session.state === 'waiting') {
-            managed.session.state = 'running';
-            this.markDirty(managed);
-            managed.timer = setTimeout(() => {
-              this.executeCycle(clawId).catch((err) => {
-                log.error(`Event-triggered cycle error: ${getErrorMessage(err)}`);
-              });
-            }, 0);
-          }
-        };
-
-        eventSystem.onAny(eventType, handler);
-        managed.eventSubscriptions.push({ eventType, handler });
-      }
-    } catch {
-      // Event system may not be initialized
-    }
-  }
-
+  /** Clear all scheduling — delegates to manager-scheduling.ts. */
   private clearScheduling(managed: ManagedClaw): void {
-    if (managed.timer) {
-      clearTimeout(managed.timer);
-      managed.timer = null;
-    }
-
-    // Unsubscribe from events
-    try {
-      const eventSystem = getEventSystem();
-      for (const sub of managed.eventSubscriptions) {
-        eventSystem.off(sub.eventType, sub.handler);
-      }
-    } catch {
-      // Event system may not be initialized
-    }
-    managed.eventSubscriptions = [];
+    clearSchedulingImpl(managed);
   }
 
   private async stopClawInternal(
