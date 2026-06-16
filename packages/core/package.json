@@ -83,6 +83,24 @@
         "default": "./dist/services/index.js"
       }
     },
+    "./services/claw": {
+      "import": {
+        "types": "./dist/services/claw.d.ts",
+        "default": "./dist/services/claw.js"
+      }
+    },
+    "./services/coding-agent": {
+      "import": {
+        "types": "./dist/services/coding-agent.d.ts",
+        "default": "./dist/services/coding-agent.js"
+      }
+    },
+    "./services/registry": {
+      "import": {
+        "types": "./dist/services/registry-barrel.d.ts",
+        "default": "./dist/services/registry-barrel.js"
+      }
+    },
     "./memory": {
       "import": {
         "types": "./dist/memory/index.d.ts",
