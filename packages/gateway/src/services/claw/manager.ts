@@ -15,12 +15,9 @@
 import { getEventSystem } from '@ownpilot/core/events';
 import {
   getErrorMessage,
-  generateId,
   CLAW_RECENT_FAILURES_MAX,
   CLAW_PLAN_HISTORY_MAX,
   CLAW_NEXT_INTENT_MAX,
-  CLAW_TASK_STALL_AUTO_ESCALATE,
-  CLAW_TASK_STALL_FORCE_BLOCK,
 } from '@ownpilot/core/services';
 import type {
   ClawSession,
@@ -55,6 +52,11 @@ import {
 } from './manager-scheduling.js';
 import type { ExecuteCycleFn } from './manager-scheduling.js';
 import { shouldStop as shouldStopImpl } from './manager-stop-conditions.js';
+import {
+  checkBudgetThreshold,
+  checkTaskForceBlock,
+  checkTaskStallEscalation,
+} from './manager-cycle-ops.js';
 
 const log = getLog('ClawManager');
 
@@ -96,8 +98,34 @@ export class ClawManager {
    */
   private executeCycleBound: ExecuteCycleFn;
 
+  /** Callbacks for cycle-ops (escalation/stall detection). */
+  private cycleOpsCallbacks: {
+    requestEscalation: (clawId: string, escalation: ClawEscalation) => Promise<void>;
+    recordPlanHistory: (managed: ManagedClaw, entry: ClawPlanHistoryEntry) => void;
+    markDirty: (managed: ManagedClaw) => void;
+    emitPlanUpdated: (
+      clawId: string,
+      managed: ManagedClaw,
+      source: 'replace' | 'task',
+      taskId?: string
+    ) => void;
+  };
+
   constructor() {
     this.executeCycleBound = (clawId: string) => this.executeCycle(clawId);
+    this.cycleOpsCallbacks = {
+      requestEscalation: (clawId: string, escalation: ClawEscalation) =>
+        this.requestEscalation(clawId, escalation),
+      recordPlanHistory: (managed: ManagedClaw, entry: ClawPlanHistoryEntry) =>
+        this.recordPlanHistory(managed, entry),
+      markDirty: (managed: ManagedClaw) => this.markDirty(managed),
+      emitPlanUpdated: (
+        clawId: string,
+        managed: ManagedClaw,
+        source: 'replace' | 'task',
+        taskId?: string
+      ) => this.emitPlanUpdated(clawId, managed, source, taskId),
+    };
   }
 
   /**
@@ -1122,191 +1150,19 @@ export class ClawManager {
         return result;
       }
 
-      // Programmatically enforce autonomyPolicy.maxCostUsdBeforePause. The
-      // prompt-side instruction tells the LLM to self-pause, but we cannot
-      // rely on it — a runaway claw will keep spending. Auto-request an
-      // escalation so the operator decides whether to grant a budget bump
-      // or stop the claw. Only fires once: subsequent cycles see
-      // pendingEscalation already set and skip via state guard.
-      const policyMaxCost = managed.session.config.autonomyPolicy?.maxCostUsdBeforePause;
-      if (
-        policyMaxCost !== undefined &&
-        managed.session.totalCostUsd >= policyMaxCost &&
-        managed.session.state !== 'escalation_pending' &&
-        !managed.session.pendingEscalation
-      ) {
-        log.warn(
-          `[${clawId}] autonomyPolicy.maxCostUsdBeforePause reached ($${managed.session.totalCostUsd.toFixed(4)} >= $${policyMaxCost}); requesting budget_increase escalation`
-        );
-        try {
-          await this.requestEscalation(clawId, {
-            id: generateId('esc'),
-            type: 'budget_increase',
-            reason: `Total cost $${managed.session.totalCostUsd.toFixed(4)} reached autonomy-policy threshold $${policyMaxCost}`,
-            details: {
-              totalCostUsd: managed.session.totalCostUsd,
-              maxCostUsdBeforePause: policyMaxCost,
-              cyclesCompleted: managed.session.cyclesCompleted,
-              autoTriggered: true,
-            },
-            requestedAt: new Date(),
-          });
-        } catch (err) {
-          log.warn(
-            `[${clawId}] Failed to auto-request escalation: ${err instanceof Error ? err.message : String(err)}`
-          );
-        }
+      // Programmatically enforce autonomyPolicy.maxCostUsdBeforePause.
+      if (await checkBudgetThreshold(clawId, managed, this.cycleOpsCallbacks)) {
         return result;
       }
 
-      // Hard fail-safe: a single task at or past CLAW_TASK_STALL_FORCE_BLOCK
-      // cycles is force-flipped to `blocked` regardless of the agent's
-      // behavior. Sits above the auto-escalate threshold to give the
-      // escalation/approval loop a chance to recover first — only fires when
-      // that loop didn't unstick the task. Edits the plan directly so the
-      // agent picks something else on the next cycle. Operator can edit it
-      // back to in_progress later from the Plan tab.
-      const forceBlocked = managed.session.tasks.find(
-        (t) =>
-          t.status === 'in_progress' && (t.cyclesInProgress ?? 0) >= CLAW_TASK_STALL_FORCE_BLOCK
-      );
-      if (forceBlocked) {
-        const heat = forceBlocked.cyclesInProgress ?? 0;
-        log.warn(
-          `[${clawId}] task "${forceBlocked.title}" (${forceBlocked.id}) force-blocked at ${heat} cycles ≥ ${CLAW_TASK_STALL_FORCE_BLOCK}; operator escalation fired`
-        );
-        const priorStatus = forceBlocked.status;
-        forceBlocked.status = 'blocked';
-        forceBlocked.notes =
-          `[AUTO-BLOCKED] Force-blocked by the runtime after ${heat} cycles without status change. ` +
-          (forceBlocked.notes ? `Prior notes: ${forceBlocked.notes}` : '');
-        forceBlocked.cyclesInProgress = 0;
-        delete forceBlocked.autoEscalatedAt;
-        forceBlocked.updatedAt = new Date().toISOString();
-        this.recordPlanHistory(managed, {
-          at: forceBlocked.updatedAt,
-          actor: 'operator',
-          kind: 'task_update',
-          taskId: forceBlocked.id,
-          title: forceBlocked.title,
-          prevStatus: priorStatus,
-          newStatus: 'blocked',
-        });
-
-        // Pull the most recent failure errors into the agent's inbox so its
-        // next cycle has actual error context to diagnose against — without
-        // this it has to re-derive what went wrong from scratch. Truncated
-        // to keep the prompt budget reasonable.
-        const recentFails = managed.session.recentFailures.slice(-3);
-        const failureContext = recentFails.length
-          ? `\nRecent failure context (last ${recentFails.length} cycle${recentFails.length === 1 ? '' : 's'}):\n` +
-            recentFails
-              .map((f, i) => {
-                const toolErr = f.toolErrors?.[0];
-                const detail = toolErr
-                  ? `${toolErr.tool}: ${toolErr.error.slice(0, 200)}`
-                  : (f.error ?? 'no error message').slice(0, 200);
-                return `  ${i + 1}. cycle ${f.cycleNumber} — ${detail}`;
-              })
-              .join('\n')
-          : '';
-
-        // Nudge the agent so it doesn't get confused next cycle about why the
-        // task it was focused on flipped status under it. The directive is
-        // about diagnosing the root cause, not just moving on — if this is a
-        // load-bearing task (downstream work depends on it), moving on is
-        // exactly the wrong move.
-        const nudge =
-          `[TASK_FORCE_BLOCKED] The runtime auto-blocked task "${forceBlocked.id}" ("${forceBlocked.title}") after ${heat} cycles without progress.\n\n` +
-          `If downstream tasks depend on this one's output, picking a different task will NOT unblock the mission — diagnose first.\n\n` +
-          `Required next-cycle action (pick ONE):\n` +
-          `  A. ROOT-CAUSE THIS: write your diagnosis (env / perms / wrong tool / wrong args) to .claw/MEMORY.md, then claw_split_task on this one with subtasks that test ONE hypothesis each. Do NOT retry the same approach.\n` +
-          `  B. ESCALATE: call claw_request_escalation with a concrete, actionable ask if the failure is outside your control (missing creds, missing tool, external service down).\n` +
-          `  C. MARK MISSION BLOCKED: if there is no path forward, claw_complete_report with status="failed" and an explanation — do not silently move to dependent tasks that cannot succeed.${failureContext}`;
-        managed.session.inbox.push(nudge);
-        const repo = getClawsRepository();
-        await repo.appendToInbox(clawId, nudge);
-        this.markDirty(managed);
-        this.emitPlanUpdated(clawId, managed, 'task', forceBlocked.id);
-
-        // Also fire an operator-facing escalation. The auto-block alone is
-        // not enough when the task is load-bearing — silently moving to a
-        // dependent task that cannot succeed wastes more cycles. The
-        // operator decides whether the mission can recover.
-        try {
-          await this.requestEscalation(clawId, {
-            id: generateId('esc'),
-            type: 'task_force_blocked',
-            reason: `Task "${forceBlocked.title}" auto-blocked after ${heat} cycles without progress. Downstream work may depend on this — operator intervention needed.`,
-            details: {
-              taskId: forceBlocked.id,
-              taskTitle: forceBlocked.title,
-              cyclesInProgress: heat,
-              forceBlockThreshold: CLAW_TASK_STALL_FORCE_BLOCK,
-              successCriteria: forceBlocked.successCriteria,
-              recentFailures: recentFails.map((f) => ({
-                cycleNumber: f.cycleNumber,
-                error: f.error,
-                toolError: f.toolErrors?.[0],
-              })),
-              autoTriggered: true,
-            },
-            requestedAt: new Date(),
-          });
-        } catch (err) {
-          log.warn(
-            `[${clawId}] Failed to fire task_force_blocked escalation: ${err instanceof Error ? err.message : String(err)}`
-          );
-        }
-        // The escalation set state to escalation_pending — return early so
-        // the rest of the cycle's stop / consecutive-error logic doesn't run.
+      // Hard fail-safe: task force-block at CLAW_TASK_STALL_FORCE_BLOCK.
+      if (await checkTaskForceBlock(clawId, managed, this.cycleOpsCallbacks)) {
         return result;
       }
 
-      // Task-stall auto-escalation. The runner already injects a "⚠ STALLED
-      // — split, mark blocked, or escalate" warning into the prompt at
-      // CLAW_TASK_STALL_THRESHOLD (5 cycles), but the agent can ignore it
-      // indefinitely. Past CLAW_TASK_STALL_AUTO_ESCALATE (10 cycles) the
-      // manager takes the decision out of the agent's hands and requests an
-      // escalation so a human (or higher-level orchestrator) decides whether
-      // to split / unstick / abort. Fires once per task via the per-task
-      // `autoEscalatedAt` marker — the operator denying the escalation does
-      // not re-trigger it for the same task.
-      if (managed.session.state !== 'escalation_pending' && !managed.session.pendingEscalation) {
-        const stalled = managed.session.tasks.find(
-          (t) =>
-            t.status === 'in_progress' &&
-            !t.autoEscalatedAt &&
-            (t.cyclesInProgress ?? 0) >= CLAW_TASK_STALL_AUTO_ESCALATE
-        );
-        if (stalled) {
-          log.warn(
-            `[${clawId}] task "${stalled.title}" (${stalled.id}) stalled at ${stalled.cyclesInProgress} cycles ≥ ${CLAW_TASK_STALL_AUTO_ESCALATE}; requesting task_stalled escalation`
-          );
-          stalled.autoEscalatedAt = new Date().toISOString();
-          this.markDirty(managed);
-          try {
-            await this.requestEscalation(clawId, {
-              id: generateId('esc'),
-              type: 'task_stalled',
-              reason: `Task "${stalled.title}" has been in_progress for ${stalled.cyclesInProgress} cycles without status change. The agent did not split, block, or self-escalate after the stall warning.`,
-              details: {
-                taskId: stalled.id,
-                taskTitle: stalled.title,
-                cyclesInProgress: stalled.cyclesInProgress,
-                stallAutoEscalateThreshold: CLAW_TASK_STALL_AUTO_ESCALATE,
-                successCriteria: stalled.successCriteria,
-                autoTriggered: true,
-              },
-              requestedAt: new Date(),
-            });
-          } catch (err) {
-            log.warn(
-              `[${clawId}] Failed to auto-request task_stalled escalation: ${err instanceof Error ? err.message : String(err)}`
-            );
-          }
-          return result;
-        }
+      // Task-stall auto-escalation at CLAW_TASK_STALL_AUTO_ESCALATE.
+      if (await checkTaskStallEscalation(clawId, managed, this.cycleOpsCallbacks)) {
+        return result;
       }
 
       // Check consecutive errors — set 'failed' state to distinguish from manual pause
