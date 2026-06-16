@@ -15,16 +15,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Phase 2A — Large file splits (6 targets)
 
-Each split leaves a thin `index.ts` re-export so all call sites work unchanged.
-Test files migrate to the new import paths.
+Each split leaves a thin re-export so all call sites work unchanged.
 
-- [ ] `services/claw/manager.ts` (1739 LOC) → `manager/{index,registry,lifecycle,permissions,scheduler-sync}.ts`
-- [ ] `services/workflow/workflow-service.ts` (1704 LOC) → `workflow/{service,runtime,job-dispatch,persistence,index}.ts`
-- [ ] `services/agent/service.ts` (1200 LOC) → `agent/{service,runs,prompts,tools-bridge,index}.ts`
-- [ ] `services/tool/templates.ts` (914 LOC) → `templates/{registry,builtin,user,render,index}.ts`
-- [ ] `services/claw/runner.ts` (895 LOC) → `runner/{index,execution,context,errors}.ts`
-- [ ] `db/repositories/workflows/index.ts` (959 LOC) → `workflows/{repo,queries,migrations,index}.ts`
+- [~] `services/claw/manager.ts` (1739→1443 LOC) — extracted `manager-scheduling.ts` (199 LOC),
+  `manager-stop-conditions.ts` (88 LOC), `manager-cycle-ops.ts` (223 LOC). Remaining: executeCycle
+  core orchestration (~470 LOC) + lifecycle methods.
+- [x] `services/workflow/workflow-service.ts` (1704→1068 LOC) — extracted `workflow-dispatch.ts`
+      (717 LOC) with dispatchNode, executeWithRetryAndTimeout, helpers, and ApprovalPauseError.
+      Uses DispatchCallbacks interface for sub-workflow recursion.
+- [ ] `services/agent/service.ts` (1200 LOC) — blocked: compactContext depends on getSessionInfo
+      and getLLMRouter, creating circular imports. Needs getSessionInfo extracted to a shared
+      module first.
+- [--] `services/tool/templates.ts` (914 LOC) — skipped: pure data file (single exported array
+  of static template definitions). No logic to extract; splitting would scatter data with
+  no architectural benefit.
+- [ ] `services/claw/runner.ts` (895 LOC) — deferred: 7 prompt-building methods deeply coupled
+      to instance state (config, runtime, session). Extraction creates large context objects
+      with marginal benefit.
+- [ ] `db/repositories/workflows/index.ts` (959 LOC) — not started.
 
+**Progress**: 2 targets complete (−932 LOC), 1 partial, 1 skipped, 2 deferred/not started.
 **Exit criteria**: No file > 800 LOC in `gateway/src/services/` and `gateway/src/db/repositories/`.
 
 #### Phase 2B — Barrel export cleanup
