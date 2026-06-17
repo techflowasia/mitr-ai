@@ -3,474 +3,70 @@
  *
  * Database operations for visual DAG tool pipelines.
  * Stores ReactFlow-compatible nodes/edges and execution logs.
+ *
+ * Types are defined in workflow-types.ts to allow consumers to import
+ * domain types without loading the full repository class.
  */
+
+// Re-export all types from workflow-types.ts so the barrel remains the public API
+export {
+  // Enums
+  type WorkflowStatus,
+  type WorkflowLogStatus,
+  type NodeExecutionStatus,
+  // Node Data
+  type ToolNodeData,
+  type TriggerNodeData,
+  type LlmNodeData,
+  type ConditionNodeData,
+  type CodeNodeData,
+  type TransformerNodeData,
+  type ForEachNodeData,
+  type HttpRequestNodeData,
+  type DelayNodeData,
+  type SwitchNodeData,
+  type DataStoreNodeData,
+  type SchemaValidatorNodeData,
+  type FilterNodeData,
+  type MapNodeData,
+  type AggregateNodeData,
+  type WebhookResponseNodeData,
+  type WorkflowNodeData,
+  // Graph types
+  type WorkflowNode,
+  type WorkflowEdge,
+  type InputParameter,
+  // Domain models
+  type Workflow,
+  type NodeResult,
+  type WorkflowLog,
+  type WorkflowVersion,
+  // Input types
+  type CreateWorkflowInput,
+  type UpdateWorkflowInput,
+  // Row types
+  type WorkflowRow,
+  type WorkflowVersionRow,
+  type WorkflowLogRow,
+} from './workflow-types.js';
 
 import { BaseRepository, parseJsonField } from '../base.js';
 import { generateId } from '@ownpilot/core/services';
-
-// ============================================================================
-// Types
-// ============================================================================
-
-export type WorkflowStatus = 'active' | 'inactive';
-export type WorkflowLogStatus =
-  | 'running'
-  | 'completed'
-  | 'failed'
-  | 'cancelled'
-  | 'awaiting_approval';
-export type NodeExecutionStatus = 'pending' | 'running' | 'success' | 'error' | 'skipped';
-
-export interface ToolNodeData {
-  toolName: string;
-  toolArgs: Record<string, unknown>;
-  label: string;
-  description?: string;
-  retryCount?: number;
-  timeoutMs?: number;
-}
-
-export interface TriggerNodeData {
-  triggerType: 'manual' | 'schedule' | 'event' | 'condition' | 'webhook';
-  label: string;
-  cron?: string;
-  timezone?: string;
-  eventType?: string;
-  filters?: Record<string, unknown>;
-  condition?: string;
-  threshold?: number;
-  checkInterval?: number;
-  webhookPath?: string;
-  webhookSecret?: string;
-  triggerId?: string;
-}
-
-export interface LlmNodeData {
-  label: string;
-  provider: string;
-  model: string;
-  systemPrompt?: string;
-  userMessage: string;
-  temperature?: number;
-  maxTokens?: number;
-  apiKey?: string;
-  baseUrl?: string;
-  retryCount?: number;
-  timeoutMs?: number;
-  /** When 'json', instructs the LLM to return valid JSON and parses the response */
-  responseFormat?: 'text' | 'json';
-  /** Multi-turn context messages inserted between system and user messages */
-  conversationMessages?: Array<{ role: 'user' | 'assistant'; content: string }>;
-}
-
-export interface ConditionNodeData {
-  label: string;
-  /** JS expression evaluated against upstream outputs — must return truthy/falsy */
-  expression: string;
-  description?: string;
-  retryCount?: number;
-  timeoutMs?: number;
-}
-
-export interface CodeNodeData {
-  label: string;
-  language: 'javascript' | 'python' | 'shell';
-  /** The script source code */
-  code: string;
-  description?: string;
-  retryCount?: number;
-  timeoutMs?: number;
-}
-
-export interface TransformerNodeData {
-  label: string;
-  /** JS expression that transforms input data. `data` variable holds upstream output. */
-  expression: string;
-  description?: string;
-  retryCount?: number;
-  timeoutMs?: number;
-}
-
-export interface ForEachNodeData {
-  label: string;
-  /** Template expression resolving to an array, e.g. "{{node_1.output}}" */
-  arrayExpression: string;
-  /** Optional alias for the current item (e.g. "issue" → use {{issue}} in body nodes) */
-  itemVariable?: string;
-  /** Safety cap on iterations. Default: 100 */
-  maxIterations?: number;
-  /** Error strategy: 'stop' aborts on first error, 'continue' collects errors */
-  onError?: 'stop' | 'continue';
-  description?: string;
-  retryCount?: number;
-  timeoutMs?: number;
-}
-
-export interface HttpRequestNodeData {
-  label: string;
-  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-  /** URL template — supports {{node_id.output}} expressions */
-  url: string;
-  headers?: Record<string, string>;
-  queryParams?: Record<string, string>;
-  /** Request body (JSON string or raw text) — template-resolved */
-  body?: string;
-  bodyType?: 'json' | 'text' | 'form';
-  auth?: {
-    type: 'none' | 'bearer' | 'basic' | 'apiKey';
-    token?: string;
-    username?: string;
-    password?: string;
-    /** API key header name (default: X-API-Key) */
-    headerName?: string;
-  };
-  /** Response body size limit in bytes (default: 1MB) */
-  maxResponseSize?: number;
-  description?: string;
-  retryCount?: number;
-  timeoutMs?: number;
-}
-
-export interface DelayNodeData {
-  label: string;
-  /** Duration value — supports template expressions */
-  duration: string;
-  unit: 'seconds' | 'minutes' | 'hours';
-  description?: string;
-}
-
-export interface SwitchNodeData {
-  label: string;
-  /** JS expression evaluated to produce a switch value */
-  expression: string;
-  /** Named cases: each has a label (handle ID) and a value to match against */
-  cases: Array<{ label: string; value: string }>;
-  description?: string;
-  retryCount?: number;
-  timeoutMs?: number;
-}
-
-interface ErrorHandlerNodeData {
-  label: string;
-  description?: string;
-  continueOnSuccess?: boolean;
-  outputAlias?: string;
-}
-
-interface SubWorkflowNodeData {
-  label: string;
-  subWorkflowId?: string;
-  subWorkflowName?: string;
-  inputMapping?: Record<string, string>;
-  maxDepth?: number;
-  description?: string;
-  retryCount?: number;
-  timeoutMs?: number;
-}
-
-interface ApprovalNodeData {
-  label: string;
-  approvalMessage?: string;
-  timeoutMinutes?: number;
-  description?: string;
-}
-
-interface StickyNoteNodeData {
-  label: string;
-  text?: string;
-  color?: string;
-}
-
-interface NotificationNodeData {
-  label: string;
-  message?: string;
-  severity?: 'info' | 'warning' | 'error' | 'success';
-  description?: string;
-  retryCount?: number;
-  timeoutMs?: number;
-}
-
-interface ParallelNodeData {
-  label: string;
-  branchCount: number;
-  branchLabels?: string[];
-  description?: string;
-}
-
-interface MergeNodeData {
-  label: string;
-  mode?: 'waitAll' | 'firstCompleted';
-  description?: string;
-}
-
-export interface DataStoreNodeData {
-  label: string;
-  operation: 'get' | 'set' | 'delete' | 'list' | 'has';
-  key?: string;
-  value?: unknown;
-  namespace?: string;
-  description?: string;
-}
-
-export interface SchemaValidatorNodeData {
-  label: string;
-  schema: Record<string, unknown>;
-  strict?: boolean;
-  description?: string;
-  retryCount?: number;
-  timeoutMs?: number;
-}
-
-export interface FilterNodeData {
-  label: string;
-  arrayExpression: string;
-  condition: string;
-  description?: string;
-  retryCount?: number;
-  timeoutMs?: number;
-}
-
-export interface MapNodeData {
-  label: string;
-  arrayExpression: string;
-  expression: string;
-  description?: string;
-  retryCount?: number;
-  timeoutMs?: number;
-}
-
-export interface AggregateNodeData {
-  label: string;
-  arrayExpression: string;
-  operation: 'sum' | 'count' | 'avg' | 'min' | 'max' | 'groupBy' | 'flatten' | 'unique';
-  field?: string;
-  description?: string;
-}
-
-export interface WebhookResponseNodeData {
-  label: string;
-  statusCode?: number;
-  body?: string;
-  headers?: Record<string, string>;
-  contentType?: string;
-  description?: string;
-}
-
-export type WorkflowNodeData =
-  | ToolNodeData
-  | TriggerNodeData
-  | LlmNodeData
-  | ConditionNodeData
-  | CodeNodeData
-  | TransformerNodeData
-  | ForEachNodeData
-  | HttpRequestNodeData
-  | DelayNodeData
-  | SwitchNodeData
-  | ErrorHandlerNodeData
-  | SubWorkflowNodeData
-  | ApprovalNodeData
-  | StickyNoteNodeData
-  | NotificationNodeData
-  | ParallelNodeData
-  | MergeNodeData
-  | DataStoreNodeData
-  | SchemaValidatorNodeData
-  | FilterNodeData
-  | MapNodeData
-  | AggregateNodeData
-  | WebhookResponseNodeData
-  | Record<string, unknown>;
-
-export interface WorkflowNode {
-  id: string;
-  type: string;
-  position: { x: number; y: number };
-  data: WorkflowNodeData;
-}
-
-export interface WorkflowEdge {
-  id: string;
-  source: string;
-  target: string;
-  sourceHandle?: string;
-  targetHandle?: string;
-}
-
-export interface InputParameter {
-  name: string;
-  type: 'string' | 'number' | 'boolean' | 'json';
-  required: boolean;
-  defaultValue?: string;
-  description?: string;
-}
-
-export interface Workflow {
-  id: string;
-  userId: string;
-  name: string;
-  description: string | null;
-  nodes: WorkflowNode[];
-  edges: WorkflowEdge[];
-  status: WorkflowStatus;
-  variables: Record<string, unknown>;
-  inputSchema: InputParameter[];
-  lastRun: Date | null;
-  runCount: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface NodeResult {
-  nodeId: string;
-  status: NodeExecutionStatus;
-  output?: unknown;
-  resolvedArgs?: Record<string, unknown>;
-  error?: string;
-  durationMs?: number;
-  startedAt?: string;
-  completedAt?: string;
-  /** For condition nodes: 'true'/'false'. For switch nodes: matched case label or 'default'. */
-  branchTaken?: string;
-  /** For forEach nodes: number of iterations completed */
-  iterationCount?: number;
-  /** For forEach nodes: total items in the source array */
-  totalItems?: number;
-  /** Number of retry attempts (0 = succeeded on first try) */
-  retryAttempts?: number;
-}
-
-export interface WorkflowLog {
-  id: string;
-  workflowId: string | null;
-  workflowName: string | null;
-  status: WorkflowLogStatus;
-  nodeResults: Record<string, NodeResult>;
-  error: string | null;
-  durationMs: number | null;
-  startedAt: Date;
-  completedAt: Date | null;
-}
-
-interface WorkflowVersion {
-  id: string;
-  workflowId: string;
-  version: number;
-  nodes: WorkflowNode[];
-  edges: WorkflowEdge[];
-  variables: Record<string, unknown>;
-  createdAt: Date;
-}
-
-interface CreateWorkflowInput {
-  name: string;
-  description?: string;
-  nodes: WorkflowNode[];
-  edges: WorkflowEdge[];
-  status?: WorkflowStatus;
-  variables?: Record<string, unknown>;
-  inputSchema?: InputParameter[];
-}
-
-interface UpdateWorkflowInput {
-  name?: string;
-  description?: string;
-  nodes?: WorkflowNode[];
-  edges?: WorkflowEdge[];
-  status?: WorkflowStatus;
-  variables?: Record<string, unknown>;
-  inputSchema?: InputParameter[];
-}
-
-// ============================================================================
-// Row types (DB snake_case)
-// ============================================================================
-
-interface WorkflowRow {
-  id: string;
-  user_id: string;
-  name: string;
-  description: string | null;
-  nodes: string;
-  edges: string;
-  status: WorkflowStatus;
-  variables: string;
-  input_schema: string;
-  last_run: string | null;
-  run_count: number;
-  created_at: string;
-  updated_at: string;
-}
-
-interface WorkflowVersionRow {
-  id: string;
-  workflow_id: string;
-  version: number;
-  nodes: string;
-  edges: string;
-  variables: string;
-  created_at: string;
-}
-
-interface WorkflowLogRow {
-  id: string;
-  workflow_id: string | null;
-  workflow_name: string | null;
-  status: WorkflowLogStatus;
-  node_results: string;
-  error: string | null;
-  duration_ms: number | null;
-  started_at: string;
-  completed_at: string | null;
-}
-
-// ============================================================================
-// Row mappers
-// ============================================================================
-
-function mapWorkflow(row: WorkflowRow): Workflow {
-  return {
-    id: row.id,
-    userId: row.user_id,
-    name: row.name,
-    description: row.description,
-    nodes: parseJsonField<WorkflowNode[]>(row.nodes, []),
-    edges: parseJsonField<WorkflowEdge[]>(row.edges, []),
-    status: row.status,
-    variables: parseJsonField<Record<string, unknown>>(row.variables, {}),
-    inputSchema: parseJsonField<InputParameter[]>(row.input_schema, []),
-    lastRun: row.last_run ? new Date(row.last_run) : null,
-    runCount: row.run_count,
-    createdAt: new Date(row.created_at),
-    updatedAt: new Date(row.updated_at),
-  };
-}
-
-function mapVersion(row: WorkflowVersionRow): WorkflowVersion {
-  return {
-    id: row.id,
-    workflowId: row.workflow_id,
-    version: row.version,
-    nodes: parseJsonField<WorkflowNode[]>(row.nodes, []),
-    edges: parseJsonField<WorkflowEdge[]>(row.edges, []),
-    variables: parseJsonField<Record<string, unknown>>(row.variables, {}),
-    createdAt: new Date(row.created_at),
-  };
-}
-
-function mapLog(row: WorkflowLogRow): WorkflowLog {
-  return {
-    id: row.id,
-    workflowId: row.workflow_id,
-    workflowName: row.workflow_name,
-    status: row.status,
-    nodeResults: parseJsonField<Record<string, NodeResult>>(row.node_results, {}),
-    error: row.error,
-    durationMs: row.duration_ms,
-    startedAt: new Date(row.started_at),
-    completedAt: row.completed_at ? new Date(row.completed_at) : null,
-  };
-}
+import {
+  type CreateWorkflowInput,
+  type UpdateWorkflowInput,
+  type Workflow,
+  type WorkflowLog,
+  type WorkflowLogStatus,
+  type WorkflowVersion,
+  type WorkflowRow,
+  type WorkflowVersionRow,
+  type WorkflowLogRow,
+  type NodeResult,
+  mapWorkflowRow,
+  mapWorkflowVersionRow,
+  mapWorkflowLogRow,
+} from './workflow-types.js';
 
 // ============================================================================
 // Repository
@@ -520,7 +116,7 @@ export class WorkflowsRepository extends BaseRepository {
       'SELECT * FROM workflows WHERE id = $1 AND user_id = $2',
       [id, this.userId]
     );
-    return row ? mapWorkflow(row) : null;
+    return row ? mapWorkflowRow(row, parseJsonField) : null;
   }
 
   async update(id: string, input: UpdateWorkflowInput): Promise<Workflow | null> {
@@ -592,7 +188,7 @@ export class WorkflowsRepository extends BaseRepository {
       'SELECT * FROM workflows WHERE user_id = $1 ORDER BY updated_at DESC LIMIT $2 OFFSET $3',
       [this.userId, limit, offset]
     );
-    return rows.map(mapWorkflow);
+    return rows.map((r) => mapWorkflowRow(r, parseJsonField));
   }
 
   async count(): Promise<number> {
@@ -685,7 +281,7 @@ export class WorkflowsRepository extends BaseRepository {
        ORDER BY wv.version DESC LIMIT $3 OFFSET $4`,
       [workflowId, this.userId, limit, offset]
     );
-    return rows.map(mapVersion);
+    return rows.map((r) => mapWorkflowVersionRow(r, parseJsonField));
   }
 
   async countVersions(workflowId: string): Promise<number> {
@@ -705,7 +301,7 @@ export class WorkflowsRepository extends BaseRepository {
        WHERE wv.workflow_id = $1 AND wv.version = $2 AND w.user_id = $3`,
       [workflowId, version, this.userId]
     );
-    return row ? mapVersion(row) : null;
+    return row ? mapWorkflowVersionRow(row, parseJsonField) : null;
   }
 
   async restoreVersion(workflowId: string, version: number): Promise<Workflow | null> {
@@ -793,7 +389,7 @@ export class WorkflowsRepository extends BaseRepository {
        WHERE wl.id = $1 AND w.user_id = $2`,
       [id, this.userId]
     );
-    return row ? mapLog(row) : null;
+    return row ? mapWorkflowLogRow(row, parseJsonField) : null;
   }
 
   async getLogsForWorkflow(workflowId: string, limit = 20, offset = 0): Promise<WorkflowLog[]> {
@@ -804,7 +400,7 @@ export class WorkflowsRepository extends BaseRepository {
        ORDER BY wl.started_at DESC LIMIT $3 OFFSET $4`,
       [workflowId, this.userId, limit, offset]
     );
-    return rows.map(mapLog);
+    return rows.map((r) => mapWorkflowLogRow(r, parseJsonField));
   }
 
   async countLogsForWorkflow(workflowId: string): Promise<number> {
@@ -825,7 +421,7 @@ export class WorkflowsRepository extends BaseRepository {
        ORDER BY wl.started_at DESC LIMIT $2 OFFSET $3`,
       [this.userId, limit, offset]
     );
-    return rows.map(mapLog);
+    return rows.map((r) => mapWorkflowLogRow(r, parseJsonField));
   }
 
   async countLogs(): Promise<number> {
@@ -871,7 +467,7 @@ export class WorkflowsRepository extends BaseRepository {
        LIMIT 1`,
       [webhookPath]
     );
-    return row ? mapWorkflow(row) : null;
+    return row ? mapWorkflowRow(row, parseJsonField) : null;
   }
 
   /**
