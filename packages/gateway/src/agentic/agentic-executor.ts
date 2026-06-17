@@ -36,6 +36,7 @@ import { getCodingAgentService } from '@ownpilot/core/services/coding-agent';
 import { getTriggerEngine } from '../triggers/engine.js';
 import type { ExecutionStep } from '@ownpilot/core/agentic';
 import { getEventSystem } from '@ownpilot/core/events';
+import { calculateCost, type AIProvider } from '@ownpilot/core/costs';
 import { executeTool } from '../services/tool/executor.js';
 import { getOrCreateChatAgent } from '../services/agent/service.js';
 
@@ -64,44 +65,6 @@ function convertIntervalToCron(intervalMs: number | undefined): string | null {
 
   const days = Math.round(hours / 24);
   return `0 0 */${Math.max(1, days)} * *`;
-}
-
-/**
- * Wraps an async dispatch call with AbortSignal cancellation.
- * Returns a DispatchResult with `cancelled: true` when the signal fires.
- * Uses Promise.race so cancellation is cooperative — the underlying operation
- * may still run to completion; we just discard the result.
- */
-async function _withCancellation<T extends { durationMs: number }>(
-  p: Promise<T>,
-  signal?: AbortSignal
-): Promise<T> {
-  if (!signal) return p;
-  if (signal.aborted) {
-    // Return a cancelled result; caller must provide durationMs
-    return { durationMs: 0, success: false, output: null, cancelled: true } as unknown as T;
-  }
-  const raceResult = Promise.race([
-    p,
-    new Promise<never>((_, reject) => {
-      if (signal.aborted) {
-        reject({ _cancelled: true });
-        return;
-      }
-      const handler = () => reject({ _cancelled: true });
-      signal.addEventListener('abort', handler, { once: true });
-    }),
-  ]);
-  try {
-    return await raceResult;
-  } catch (err) {
-    if ((err as { _cancelled?: boolean })._cancelled) {
-      // Signal fired during execution — return a partial cancelled result.
-      // The p promise is still running; we abandon the result.
-      return { durationMs: 0, success: false, output: null, cancelled: true } as unknown as T;
-    }
-    throw err;
-  }
 }
 
 // ============================================================================
@@ -313,10 +276,18 @@ export class AgenticGatewayExecutor {
       };
     }
 
+    // Populate cost tracking from the completion response usage
+    const usage = result.value.usage;
+    const costUsd = usage
+      ? calculateCost(provider as AIProvider, model, usage.promptTokens, usage.completionTokens)
+      : undefined;
+
     return {
       success: true,
       output: { content: result.value.content },
       durationMs: Date.now() - startTime,
+      tokensUsed: usage ? { input: usage.promptTokens, output: usage.completionTokens } : undefined,
+      costUsd,
     };
   }
 
