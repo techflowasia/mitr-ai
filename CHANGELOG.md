@@ -35,8 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `dispatch()` does a pre-flight abort check — returns `{ cancelled: true }` immediately
   if the AbortSignal is already aborted before starting any work.
   WebSocket events emit `agentic.step.fail` with `cancelled: true` on pre-flight abort.
-  `_withCancellation()` helper added for future co-operative cancellation support.
 - Added 3 cancellation tests to `agentic-executor.test.ts` (pre-flight abort, WS event, normal dispatch).
+- `dispatchDirectLlm` now populates `costUsd` and `tokensUsed` in `DispatchResult`
+  by extracting usage from `CompletionResponse` and computing cost via `calculateCost()`.
 
 > **Theme**: Break up oversized files, harden type safety, expand test coverage.
 > Target: no public API changes — all splits preserve barrel re-exports.
@@ -108,9 +109,10 @@ Each split leaves a thin re-export so all call sites work unchanged.
       unknown executor kind, singleton access, event emission (start/complete/fail).
 - [x] Add cancellation propagation through AgenticOrchestrator → step executors
       (pre-flight abort check implemented; co-operative mid-execution cancellation
-      scaffolded via `_withCancellation()` helper, ready to wire up when executor
-      methods add signal checking)
-- [ ] Add cost tracking persistence to database (currently in-memory only)
+      can be wired up when executor methods add signal checking)
+- [x] Add cost tracking to DispatchResult
+      (`dispatchDirectLlm` now populates `costUsd` and `tokensUsed` from
+      `CompletionResponse.usage` via `calculateCost()`)
 - [ ] WebSocket event delivery verification tests
 
 ## [0.7.3] - 2026-06-16
