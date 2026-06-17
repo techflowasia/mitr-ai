@@ -21,12 +21,9 @@
  */
 
 import {
-  getClawService,
   getWorkflowService,
-  getCodingAgentService,
   getTriggerService,
   getLog,
-  getErrorMessage,
   getRuntimeContext,
   hasProviderService,
   getProviderService,
@@ -34,6 +31,8 @@ import {
   type CreateTriggerInput,
   type TriggerAction,
 } from '@ownpilot/core/services';
+import { getClawService } from '@ownpilot/core/services/claw';
+import { getCodingAgentService } from '@ownpilot/core/services/coding-agent';
 import { getTriggerEngine } from '../triggers/engine.js';
 import type { ExecutionStep } from '@ownpilot/core/agentic';
 import { getEventSystem } from '@ownpilot/core/events';
@@ -67,6 +66,44 @@ function convertIntervalToCron(intervalMs: number | undefined): string | null {
   return `0 0 */${Math.max(1, days)} * *`;
 }
 
+/**
+ * Wraps an async dispatch call with AbortSignal cancellation.
+ * Returns a DispatchResult with `cancelled: true` when the signal fires.
+ * Uses Promise.race so cancellation is cooperative — the underlying operation
+ * may still run to completion; we just discard the result.
+ */
+async function withCancellation<T extends { durationMs: number }>(
+  p: Promise<T>,
+  signal?: AbortSignal
+): Promise<T> {
+  if (!signal) return p;
+  if (signal.aborted) {
+    // Return a cancelled result; caller must provide durationMs
+    return { durationMs: 0, success: false, output: null, cancelled: true } as unknown as T;
+  }
+  const raceResult = Promise.race([
+    p,
+    new Promise<never>((_, reject) => {
+      if (signal.aborted) {
+        reject({ _cancelled: true });
+        return;
+      }
+      const handler = () => reject({ _cancelled: true });
+      signal.addEventListener('abort', handler, { once: true });
+    }),
+  ]);
+  try {
+    return await raceResult;
+  } catch (err) {
+    if ((err as { _cancelled?: boolean })._cancelled) {
+      // Signal fired during execution — return a partial cancelled result.
+      // The p promise is still running; we abandon the result.
+      return { durationMs: 0, success: false, output: null, cancelled: true } as unknown as T;
+    }
+    throw err;
+  }
+}
+
 // ============================================================================
 // Result envelope
 // ============================================================================
@@ -78,6 +115,8 @@ export interface DispatchResult {
   durationMs: number;
   costUsd?: number;
   tokensUsed?: { input: number; output: number };
+  /** Set to true when the step was cancelled via AbortSignal. */
+  cancelled?: boolean;
 }
 
 // ============================================================================
@@ -111,82 +150,68 @@ export class AgenticGatewayExecutor {
       }
     );
 
-    try {
-      let result: DispatchResult;
-      switch (step.executorKind) {
-        case 'claw':
-          result = await this.dispatchClaw(step, signal);
-          break;
-        case 'soul_heartbeat':
-          result = await this.dispatchSoulHeartbeat(step, signal);
-          break;
-        case 'crew':
-          result = await this.dispatchCrew(step, signal);
-          break;
-        case 'coding_agent':
-          result = await this.dispatchCodingAgent(step, signal);
-          break;
-        case 'workflow':
-          result = await this.dispatchWorkflow(step, signal);
-          break;
-        case 'trigger':
-          result = await this.dispatchTrigger(step, signal);
-          break;
-        case 'channel':
-          result = await this.dispatchChannel(step, signal);
-          break;
-        case 'direct_llm':
-          result = await this.dispatchDirectLlm(step, signal);
-          break;
-        case 'sandbox_code':
-          result = await this.dispatchSandbox(step, signal);
-          break;
-        case 'tool_catalog':
-          result = await this.dispatchTool(step, signal);
-          break;
-        default:
-          result = {
-            success: false,
-            output: null,
-            error: `Unknown executor kind: ${step.executorKind}`,
-            durationMs: Date.now() - startTime,
-          };
+    // Run the dispatch, wrapped in cancellation awareness.
+    // If the signal fires during execution, withCancellation returns a
+    // { cancelled: true } result instead of a real result.
+    const result = await withCancellation(this.runDispatch(step, startTime), signal);
+
+    // Emit completion event — cancelled steps emit 'agentic.step.fail' with the cancelled flag.
+    const eventType = result.cancelled
+      ? 'agentic.step.fail'
+      : result.success
+        ? 'agentic.step.complete'
+        : 'agentic.step.fail';
+    (events.emit as (type: string, source: string, data: Record<string, unknown>) => void)(
+      eventType,
+      'agentic-executor',
+      {
+        stepIndex: step.index,
+        executorKind: step.executorKind,
+        capabilityId: step.capabilityId,
+        durationMs: result.durationMs,
+        costUsd: result.costUsd,
+        error: result.cancelled ? 'Cancelled' : result.error,
+        cancelled: result.cancelled,
       }
+    );
 
-      // Emit completion event — cast needed for cross-package EventMap sync
-      (events.emit as (type: string, source: string, data: Record<string, unknown>) => void)(
-        result.success ? 'agentic.step.complete' : 'agentic.step.fail',
-        'agentic-executor',
-        {
-          stepIndex: step.index,
-          executorKind: step.executorKind,
-          capabilityId: step.capabilityId,
-          durationMs: result.durationMs,
-          costUsd: result.costUsd,
-          error: result.error,
-        }
-      );
+    return result;
+  }
 
-      return result;
-    } catch (err) {
-      const errMsg = getErrorMessage(err, `Step ${step.index} failed`);
-      (events.emit as (type: string, source: string, data: Record<string, unknown>) => void)(
-        'agentic.step.fail',
-        'agentic-executor',
-        {
-          stepIndex: step.index,
-          executorKind: step.executorKind,
-          capabilityId: step.capabilityId,
+  /**
+   * Inner dispatch logic — runs the executor switch and returns the result.
+   * Extracted so withCancellation() can wrap the whole operation.
+   */
+  private async runDispatch(step: ExecutionStep, startTime: number): Promise<DispatchResult> {
+    const signal = undefined; // signal is already checked in the outer dispatch()
+    switch (step.executorKind) {
+      case 'claw':
+        return this.dispatchClaw(step, signal);
+      case 'soul_heartbeat':
+        return this.dispatchSoulHeartbeat(step, signal);
+      case 'crew':
+        return this.dispatchCrew(step, signal);
+      case 'coding_agent':
+        return this.dispatchCodingAgent(step, signal);
+      case 'workflow':
+        return this.dispatchWorkflow(step, signal);
+      case 'trigger':
+        return this.dispatchTrigger(step, signal);
+      case 'channel':
+        return this.dispatchChannel(step, signal);
+      case 'direct_llm':
+        return this.dispatchDirectLlm(step, signal);
+      case 'sandbox_code':
+        return this.dispatchSandbox(step, signal);
+      case 'tool_catalog':
+        return this.dispatchTool(step, signal);
+      default:
+        return {
+          success: false,
+          output: null,
+          error: `Unknown executor kind: ${step.executorKind}`,
           durationMs: Date.now() - startTime,
-          error: errMsg,
-        }
-      );
-      return {
-        success: false,
-        output: null,
-        error: errMsg,
-        durationMs: Date.now() - startTime,
-      };
+        };
     }
   }
 

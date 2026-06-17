@@ -98,16 +98,20 @@ const {
 });
 
 vi.mock('@ownpilot/core/services', () => ({
-  getClawService: () => mockClawService,
   getWorkflowService: () => mockWorkflowService,
-  getCodingAgentService: () => mockCodingAgentService,
   getTriggerService: () => mockTriggerService,
   hasProviderService: mockHasProviderService,
   getProviderService: mockGetProviderService,
   getRuntimeContext: () => mockRuntimeContext,
   getLog: () => ({ info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() }),
-  getErrorMessage: (err: unknown, fallback: string) =>
-    err instanceof Error ? err.message : fallback,
+}));
+
+vi.mock('@ownpilot/core/services/claw', () => ({
+  getClawService: () => mockClawService,
+}));
+
+vi.mock('@ownpilot/core/services/coding-agent', () => ({
+  getCodingAgentService: () => mockCodingAgentService,
 }));
 
 vi.mock('../triggers/engine.js', () => ({
