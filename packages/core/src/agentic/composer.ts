@@ -152,6 +152,9 @@ export type StepDispatchFn = (
   signal?: AbortSignal
 ) => Promise<{ success: boolean; output: unknown; error?: string; costUsd?: number }>;
 
+/** Max executions retained in the process-wide shared store (oldest evicted). */
+const MAX_SHARED_EXECUTIONS = 500;
+
 export class AgenticOrchestrator implements IAgenticOrchestrator {
   private readonly executions = new Map<string, ExecutionState>();
   private readonly router: AgenticRouter;
@@ -166,8 +169,8 @@ export class AgenticOrchestrator implements IAgenticOrchestrator {
    * Execution state is written here by `execute()` on every orchestrator
    * and read by `listExecutions()` / `getReport()` on any orchestrator.
    * Indexed by execution id — Map<string, ExecutionState>.
-   * Writes are additive (insert/overwrite), never deleted — executions
-   * accumulate until process restart.
+   * Bounded to the most recent MAX_SHARED_EXECUTIONS entries (oldest evicted
+   * on insert) so it cannot grow without bound over the process lifetime.
    */
   private static readonly sharedStore = new Map<string, ExecutionState>();
 
@@ -204,6 +207,17 @@ export class AgenticOrchestrator implements IAgenticOrchestrator {
 
     this.executions.set(state.id, state);
     AgenticOrchestrator.sharedStore.set(state.id, state);
+
+    // Bound the cross-instance shared store — it accumulates one entry per
+    // execution for the whole process lifetime. Evict the oldest entries (Map
+    // preserves insertion order) so a long-running gateway doesn't grow without
+    // bound. Most recent MAX_SHARED_EXECUTIONS remain queryable via
+    // listExecutions()/getReport().
+    while (AgenticOrchestrator.sharedStore.size > MAX_SHARED_EXECUTIONS) {
+      const oldest = AgenticOrchestrator.sharedStore.keys().next().value;
+      if (oldest === undefined) break;
+      AgenticOrchestrator.sharedStore.delete(oldest);
+    }
 
     try {
       await this.executePlan(state);
