@@ -38,6 +38,8 @@ import type { ExecutionStep } from '@ownpilot/core/agentic';
 import { getEventSystem } from '@ownpilot/core/events';
 import { calculateCost, type AIProvider } from '@ownpilot/core/costs';
 import { executeTool } from '../services/tool/executor.js';
+import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
+import { downgradePromptToBlocked } from '../services/permission/utils.js';
 import { getOrCreateChatAgent } from '../services/agent/service.js';
 
 const log = getLog('AgenticExecutor');
@@ -771,8 +773,19 @@ export class AgenticGatewayExecutor {
       };
     }
 
-    // Execute a single tool via the shared tool executor
-    const toolResult = await executeTool(toolName, toolArgs, 'local');
+    // Execute a single tool via the shared tool executor. Pass the same
+    // permission context plans/triggers use so agentic tool dispatch also goes
+    // through the ToolPermissionService gate (tool-group enable, CLI policy,
+    // custom-tool approval). 'system' is non-interactive, so 'prompt' code-exec
+    // permissions downgrade to 'blocked'. Without this the tool_catalog step
+    // bypassed the gate entirely.
+    const userId = (params.userId as string) || 'local';
+    const userPerms = await executionPermissionsRepo.get(userId);
+    const execPerms = downgradePromptToBlocked(userPerms);
+    const toolResult = await executeTool(toolName, toolArgs, userId, execPerms, {
+      source: 'system',
+      executionPermissions: execPerms,
+    });
 
     return {
       success: toolResult.success,

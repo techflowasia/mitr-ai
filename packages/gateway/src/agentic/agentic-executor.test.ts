@@ -122,6 +122,12 @@ vi.mock('../services/tool/executor.js', () => ({
   executeTool: mockExecuteTool,
 }));
 
+vi.mock('../db/repositories/execution-permissions.js', () => ({
+  executionPermissionsRepo: {
+    get: vi.fn(async () => ({ enabled: true, mode: 'local' })),
+  },
+}));
+
 vi.mock('../services/agent/service.js', () => ({
   getOrCreateChatAgent: mockGetOrCreateChatAgent,
 }));
@@ -548,7 +554,9 @@ describe('AgenticGatewayExecutor', () => {
       expect(mockExecuteTool).toHaveBeenCalledWith(
         'list_emails',
         { since: '2026-01-01', limit: 10 },
-        'local'
+        'local',
+        expect.any(Object),
+        expect.objectContaining({ source: 'system' })
       );
       expect(result.success).toBe(true);
       expect(result.output).toEqual({ rows: 5 });
