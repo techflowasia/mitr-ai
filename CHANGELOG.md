@@ -124,7 +124,11 @@ Each split leaves a thin re-export so all call sites work unchanged.
 - [x] Audited `as any` in production source — 5 occurrences, at the ≤5 target. All
       justified: ESM↔CJS default-interop (`pdf-parse`, `DOMPurify`) and a
       `crypto.randomUUID` global polyfill (`ui/main.tsx`). No unsafe casts to remove.
-- [ ] Resolve 4 TODO and 1 FIXME in source code
+- [x] Audited TODO/FIXME in production source — not actionable defects. The 3 literal
+      markers are an "out of scope for this MVP" note (`acp/acp-server.ts`) and TODO/FIXME
+      _strings_ inside a `.claw` scaffold template (`manager-helpers.ts`) and a copilot
+      prompt that teaches the agent to grep for them. Same false-positive class as the
+      eval() item above.
 
 #### Test coverage expansion
 
