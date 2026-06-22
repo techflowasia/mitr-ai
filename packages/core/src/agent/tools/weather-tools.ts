@@ -4,14 +4,23 @@
  * Get current weather and forecasts for any location.
  */
 
-import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
+import type { ToolContext, ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
 import { getErrorMessage } from '../../services/error-utils.js';
+
 import type { WeatherDataService } from '../../services/weather-service.js';
 import {
   createWeatherDataService,
   type WeatherProvider,
   type WeatherForecastDay,
 } from '../../services/weather-service.js';
+
+/** Short-circuit when the caller's AbortSignal has fired */
+function cancelledResult(context: ToolContext | undefined): ToolExecutionResult | null {
+  if (context?.signal?.aborted) {
+    return { content: { error: 'Tool execution cancelled' }, isError: true };
+  }
+  return null;
+}
 
 // =============================================================================
 // Configuration
@@ -115,6 +124,9 @@ export const getWeatherExecutor: ToolExecutor = async (
   params,
   context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(context);
+  if (cancelled) return cancelled;
+
   const location = params.location as string;
 
   if (!location || location.trim().length === 0) {
@@ -234,6 +246,9 @@ export const getWeatherForecastExecutor: ToolExecutor = async (
   params,
   context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(context);
+  if (cancelled) return cancelled;
+
   const location = params.location as string;
   const days = Math.min(Math.max((params.days as number) || 5, 1), 10);
 
