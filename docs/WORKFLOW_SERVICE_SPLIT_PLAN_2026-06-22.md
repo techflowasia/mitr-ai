@@ -333,13 +333,12 @@ Existing `workflow-service.test.ts` already covers a broad surface. Before split
 - `workflow-dispatch.ts` re-exports both for backward compatibility
 - Removed unused imports (`WorkflowLog`, `IToolService`) from `workflow-dispatch.ts`
 
-### Phase 3 — Jobified level runner
+### ✅ Phase 3 — Jobified level runner (DONE)
 
-1. Move `jobifiedExecuteLevel()` into `jobified-level-runner.ts`.
-2. Pass polling intervals explicitly.
-3. Keep existing behavior and error strings.
-
-Rollback: restore private method.
+- Moved `jobifiedExecuteLevel()` into `jobified-level-runner.ts`
+- New `runJobifiedLevel()` function with `JobifiedLevelRunnerDeps` + `JobifiedLevelRunnerOptions` interfaces
+- `workflow-service.ts` now calls `runJobifiedLevel()` instead of the removed private method
+- Removed unused imports: `WorkflowEdge`, `sleep`, `IToolService`, `enqueueWorkflowLevel`
 
 ### Phase 4 — Inline level runner
 
