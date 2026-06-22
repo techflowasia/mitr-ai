@@ -54,6 +54,11 @@ export async function runJobifiedLevel(
   const { repo } = deps;
   const { pollIntervalMs, maxWaitMs } = options;
 
+  // Respect cancellation before enqueueing (no point enqueueing if already cancelled)
+  if (abortSignal.aborted) {
+    throw new Error('Workflow execution cancelled');
+  }
+
   const wfRunId = logId;
   await enqueueWorkflowLevel(
     workflowId,
