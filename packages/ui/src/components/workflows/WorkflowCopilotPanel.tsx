@@ -436,10 +436,17 @@ const SUGGESTIONS = [
   'Create a document processing pipeline: receive file via webhook, extract text, summarize, store results',
 ];
 
-/** Pick `count` random items from an array without repeats */
+/** Pick `count` random items from an array without repeats — Fisher-Yates shuffle */
 function pickRandom<T>(arr: T[], count: number): T[] {
-  const shuffled = [...arr].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const vi = result[i]!;
+    const vj = result[j]!;
+    result[i] = vj;
+    result[j] = vi;
+  }
+  return result.slice(0, count);
 }
 
 const VISIBLE_COUNT = 5;

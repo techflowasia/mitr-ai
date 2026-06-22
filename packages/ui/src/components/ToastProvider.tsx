@@ -173,8 +173,6 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
 // Provider
 // ============================================================================
 
-let toastCounter = 0;
-
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [history, setHistory] = useState<NotificationHistoryItem[]>([]);
@@ -215,7 +213,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const addToHistory = useCallback((toast: Toast) => {
     const historyItem: NotificationHistoryItem = {
-      id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: crypto.randomUUID(),
       type: toast.type,
       title: toast.title,
       message: toast.message,
@@ -255,7 +253,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   );
 
   const addToast = useCallback((input: Omit<Toast, 'id' | 'duration'> & { duration?: number }) => {
-    const id = `toast-${++toastCounter}`;
+    const id = crypto.randomUUID();
     const duration = input.duration ?? DEFAULT_DURATION[input.type];
     setToasts((prev) => {
       // Deduplicate: skip if same message already visible
