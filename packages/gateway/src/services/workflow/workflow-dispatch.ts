@@ -117,12 +117,14 @@ export class ApprovalPauseError extends Error {
 
 /**
  * Execute a node function with configurable retry count and timeout.
+ * Checks abortSignal between retry attempts so cancelled workflows stop retrying promptly.
  * VM-based nodes (condition, transformer, switch) skip the timeout since
  * they run synchronously in-process.
  */
 export async function executeWithRetryAndTimeout(
   node: WorkflowNode,
   executeFn: () => Promise<NodeResult>,
+  abortSignal: AbortSignal,
   onProgress?: (event: WorkflowProgressEvent) => void
 ): Promise<NodeResult> {
   const data = nodeDataRecord(node);
@@ -134,6 +136,11 @@ export async function executeWithRetryAndTimeout(
   let lastResult!: NodeResult;
 
   for (let attempt = 0; attempt <= retryCount; attempt++) {
+    // Respect cancellation between retry attempts
+    if (abortSignal.aborted) {
+      throw new Error('Workflow execution cancelled');
+    }
+
     if (attempt > 0) {
       const delay = Math.min(100 * Math.pow(2, attempt - 1), 5000);
       onProgress?.({ type: 'node_retry', nodeId: node.id, retryAttempt: attempt });
@@ -220,6 +227,7 @@ export async function dispatchNode(
     return await cb.retryFn(
       node,
       () => executeLlmNode(node, nodeOutputs, workflow.variables),
+      abortSignal,
       onProgress
     );
   }
@@ -230,6 +238,7 @@ export async function dispatchNode(
     return await cb.retryFn(
       node,
       async () => executeConditionNode(node, nodeOutputs, workflow.variables),
+      abortSignal,
       onProgress
     );
   }
@@ -241,6 +250,7 @@ export async function dispatchNode(
     return await cb.retryFn(
       node,
       () => executeCodeNode(node, nodeOutputs, workflow.variables, userId, toolService),
+      abortSignal,
       onProgress
     );
   }
@@ -251,6 +261,7 @@ export async function dispatchNode(
     return await cb.retryFn(
       node,
       async () => executeTransformerNode(node, nodeOutputs, workflow.variables),
+      abortSignal,
       onProgress
     );
   }
@@ -272,6 +283,7 @@ export async function dispatchNode(
     return await cb.retryFn(
       node,
       () => executeHttpRequestNode(node, nodeOutputs, workflow.variables),
+      abortSignal,
       onProgress
     );
   }
@@ -288,6 +300,7 @@ export async function dispatchNode(
     return await cb.retryFn(
       node,
       () => executeDelayNode(node, nodeOutputs, workflow.variables, abortSignal),
+      abortSignal,
       onProgress
     );
   }
@@ -298,6 +311,7 @@ export async function dispatchNode(
     return await cb.retryFn(
       node,
       async () => executeSwitchNode(node, nodeOutputs, workflow.variables),
+      abortSignal,
       onProgress
     );
   }
@@ -319,6 +333,7 @@ export async function dispatchNode(
     return await cb.retryFn(
       node,
       async () => executeNotificationNode(node, nodeOutputs, workflow.variables),
+      abortSignal,
       onProgress
     );
   }
@@ -381,6 +396,7 @@ export async function dispatchNode(
     return await cb.retryFn(
       node,
       async () => executeMergeNode(node, nodeOutputs, workflow.variables, incomingNodeIds),
+      abortSignal,
       onProgress
     );
   }
@@ -391,6 +407,7 @@ export async function dispatchNode(
     return await cb.retryFn(
       node,
       async () => executeDataStoreNode(node, nodeOutputs, workflow.variables),
+      abortSignal,
       onProgress
     );
   }
@@ -401,6 +418,7 @@ export async function dispatchNode(
     return await cb.retryFn(
       node,
       async () => executeSchemaValidatorNode(node, nodeOutputs, workflow.variables),
+      abortSignal,
       onProgress
     );
   }
@@ -411,6 +429,7 @@ export async function dispatchNode(
     return await cb.retryFn(
       node,
       async () => executeFilterNode(node, nodeOutputs, workflow.variables),
+      abortSignal,
       onProgress
     );
   }
@@ -421,6 +440,7 @@ export async function dispatchNode(
     return await cb.retryFn(
       node,
       async () => executeMapNode(node, nodeOutputs, workflow.variables),
+      abortSignal,
       onProgress
     );
   }
@@ -431,6 +451,7 @@ export async function dispatchNode(
     return await cb.retryFn(
       node,
       async () => executeAggregateNode(node, nodeOutputs, workflow.variables),
+      abortSignal,
       onProgress
     );
   }
@@ -441,6 +462,7 @@ export async function dispatchNode(
     return await cb.retryFn(
       node,
       async () => executeWebhookResponseNode(node, nodeOutputs, workflow.variables),
+      abortSignal,
       onProgress
     );
   }
@@ -466,6 +488,7 @@ export async function dispatchNode(
     return await cb.retryFn(
       node,
       () => executeClawNode(node, nodeOutputs, workflow.variables, userId, abortSignal),
+      abortSignal,
       onProgress
     );
   }
@@ -576,6 +599,10 @@ export async function dispatchNode(
     return await cb.retryFn(
       node,
       async () => {
+        // Check abort signal at sub-workflow start
+        if (abortSignal.aborted) {
+          throw new Error('Workflow execution cancelled');
+        }
         const startTime = Date.now();
         const inputMapping = (swData.inputMapping ?? {}) as Record<string, string>;
         const subVars = resolveTemplates(inputMapping, nodeOutputs, workflow.variables) as Record<
@@ -655,6 +682,7 @@ export async function dispatchNode(
           durationMs: Date.now() - startTime,
         };
       },
+      abortSignal,
       onProgress
     );
   }
@@ -682,6 +710,7 @@ export async function dispatchNode(
   return await cb.retryFn(
     node,
     () => executeNode(node, nodeOutputs, workflow.variables, userId, toolService),
+    abortSignal,
     onProgress
   );
 }

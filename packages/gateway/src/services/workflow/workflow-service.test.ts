@@ -859,17 +859,19 @@ describe('executeWithRetryAndTimeout', () => {
     svc: WorkflowService,
     node: WorkflowNode,
     executeFn: () => Promise<NodeResult>,
-    onProgress?: (event: Record<string, unknown>) => void
+    onProgress?: (event: Record<string, unknown>) => void,
+    abortSignal: AbortSignal = new AbortController().signal
   ) {
     return (
       svc as unknown as {
         executeWithRetryAndTimeout: (
           node: WorkflowNode,
           fn: () => Promise<NodeResult>,
+          abortSignal: AbortSignal,
           progress?: (e: Record<string, unknown>) => void
         ) => Promise<NodeResult>;
       }
-    ).executeWithRetryAndTimeout(node, executeFn, onProgress);
+    ).executeWithRetryAndTimeout(node, executeFn, abortSignal, onProgress);
   }
 
   it('succeeds on first try with retryAttempts = 0', async () => {

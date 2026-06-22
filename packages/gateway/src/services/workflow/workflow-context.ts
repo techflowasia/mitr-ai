@@ -48,6 +48,7 @@ export interface DispatchCallbacks {
   retryFn: (
     node: WorkflowNode,
     executeFn: () => Promise<NodeResult>,
+    abortSignal: AbortSignal,
     onProgress?: (event: WorkflowProgressEvent) => void
   ) => Promise<NodeResult>;
   subWorkflowExecutor: (

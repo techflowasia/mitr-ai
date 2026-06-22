@@ -614,17 +614,19 @@ describe('WorkflowService', () => {
         error?: string;
         [k: string]: unknown;
       }>,
-      onProgress?: (e: { type: string; nodeId?: string; retryAttempt?: number }) => void
+      onProgress?: (e: { type: string; nodeId?: string; retryAttempt?: number }) => void,
+      abortSignal: AbortSignal = new AbortController().signal
     ) {
       return (
         svc as unknown as {
           executeWithRetryAndTimeout: (
             node: unknown,
             fn: () => Promise<unknown>,
+            abortSignal: AbortSignal,
             progress?: (e: unknown) => void
           ) => Promise<{ nodeId: string; status: string; error?: string; retryAttempts?: number }>;
         }
-      ).executeWithRetryAndTimeout(node, executeFn, onProgress);
+      ).executeWithRetryAndTimeout(node, executeFn, abortSignal, onProgress);
     }
 
     it('succeeds on first try with retryAttempts = 0', async () => {

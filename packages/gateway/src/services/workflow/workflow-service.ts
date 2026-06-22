@@ -77,7 +77,8 @@ export class WorkflowService implements IWorkflowService {
     // These are set here (not in the field initializer) because they reference
     // instance methods that don't exist as standalone functions yet.
     this.dispatchCallbacks = {
-      retryFn: (node, fn, onProgress) => executeWithRetryAndTimeout(node, fn, onProgress),
+      retryFn: (node, fn, abortSignal, onProgress) =>
+        executeWithRetryAndTimeout(node, fn, abortSignal, onProgress),
       subWorkflowExecutor: (wfId, uid, onProg, opts) =>
         this.executeWorkflow(wfId, uid, onProg, opts),
       subWorkflowCancel: (wfId) => this.cancelExecution(wfId),
@@ -262,6 +263,7 @@ export class WorkflowService implements IWorkflowService {
                     repo,
                     wfLog.id
                   ),
+                abortController.signal,
                 onProgress
               );
             }
@@ -709,6 +711,7 @@ export class WorkflowService implements IWorkflowService {
                     repo,
                     logId
                   ),
+                abortController.signal,
                 onProgress
               );
             }
@@ -974,9 +977,10 @@ export class WorkflowService implements IWorkflowService {
   private async executeWithRetryAndTimeout(
     node: WorkflowNode,
     executeFn: () => Promise<NodeResult>,
+    abortSignal: AbortSignal,
     onProgress?: (event: WorkflowProgressEvent) => void
   ): Promise<NodeResult> {
-    return executeWithRetryAndTimeout(node, executeFn, onProgress);
+    return executeWithRetryAndTimeout(node, executeFn, abortSignal, onProgress);
   }
 }
 
