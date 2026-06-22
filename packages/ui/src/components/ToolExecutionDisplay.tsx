@@ -16,8 +16,8 @@ interface ToolCall {
   id: string;
   name: string;
   arguments: Record<string, unknown>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic tool output (string | object)
-  result?: any;
+  /** Tool output — dynamic type (string | object | number | etc.), typed as unknown */
+  result?: unknown;
   status?: 'pending' | 'running' | 'success' | 'error';
   duration?: number;
   error?: string;
@@ -204,7 +204,7 @@ function ToolResultDisplay({ result, toolName, workspaceId }: ToolResultDisplayP
 
   // Image tools — show inline preview
   if (isImageToolResult(baseName, result)) {
-    const imagePath = result.output || result.source || result.outputPath;
+    const imagePath = (result.output ?? result.source ?? result.outputPath) as string | undefined;
     const src = resolveWorkspaceImageUrl(imagePath, workspaceId);
     return (
       <div className="space-y-2">
@@ -492,13 +492,12 @@ function getToolCategory(name: string): string {
  * Detect if a tool result indicates local (non-sandboxed) execution.
  * Checks both object and JSON string results.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic tool output
-function isLocalExecution(result: any): boolean {
+function isLocalExecution(result: unknown): boolean {
   if (!result) return false;
 
   // Direct object with sandboxed field
-  if (typeof result === 'object' && 'sandboxed' in result) {
-    return result.sandboxed === false;
+  if (typeof result === 'object' && result !== null && 'sandboxed' in result) {
+    return (result as { sandboxed?: unknown }).sandboxed === false;
   }
 
   // JSON string result — try parsing
@@ -506,7 +505,7 @@ function isLocalExecution(result: any): boolean {
     try {
       const parsed = JSON.parse(result);
       if (typeof parsed === 'object' && parsed !== null && 'sandboxed' in parsed) {
-        return parsed.sandboxed === false;
+        return (parsed as { sandboxed?: unknown }).sandboxed === false;
       }
     } catch {
       /* not JSON */
@@ -559,11 +558,14 @@ const IMAGE_TOOLS = new Set([
   'analyze_image',
 ]);
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic tool output
-function isImageToolResult(baseName: string, result: any): boolean {
+/** Narrowed type for image tool results after isImageToolResult guard */
+type ImageToolResult = { output?: unknown; outputPath?: unknown; source?: unknown };
+
+function isImageToolResult(baseName: string, result: unknown): result is ImageToolResult {
   if (!IMAGE_TOOLS.has(baseName)) return false;
   if (typeof result !== 'object' || result === null) return false;
-  return !!(result.output || result.outputPath || result.source);
+  const r = result as ImageToolResult;
+  return !!(r.output || r.outputPath || r.source);
 }
 
 function resolveWorkspaceImageUrl(
