@@ -3,9 +3,17 @@
  * Read and create PDF documents
  */
 
-import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
+import type { ToolContext, ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
 import { tryImport } from './module-resolver.js';
 import { isPathAllowedAsync, resolveFilePath } from './file-system.js';
+
+/** Short-circuit when the caller's AbortSignal has fired */
+function cancelledResult(context: ToolContext | undefined): ToolExecutionResult | null {
+  if (context?.signal?.aborted) {
+    return { content: { error: 'Tool execution cancelled' }, isError: true };
+  }
+  return null;
+}
 
 // ============================================================================
 // READ PDF TOOL
@@ -44,6 +52,9 @@ export const readPdfExecutor: ToolExecutor = async (
   params,
   context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(context);
+  if (cancelled) return cancelled;
+
   const rawPath = params.path as string;
   const pages = (params.pages as string) || 'all';
   const extractTables = params.extractTables === true;
@@ -214,6 +225,9 @@ export const createPdfExecutor: ToolExecutor = async (
   params,
   context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(context);
+  if (cancelled) return cancelled;
+
   const rawOutputPath = params.path as string;
   const content = params.content as string;
   const format = (params.format as string) || 'text';

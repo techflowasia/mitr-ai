@@ -3,9 +3,17 @@
  * Image analysis (Vision API) and generation (DALL-E)
  */
 
-import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
+import type { ToolContext, ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
 import { tryImport } from './module-resolver.js';
 import { isPathAllowedAsync, resolveFilePath } from './file-system.js';
+
+/** Short-circuit when the caller's AbortSignal has fired */
+function cancelledResult(context: ToolContext | undefined): ToolExecutionResult | null {
+  if (context?.signal?.aborted) {
+    return { content: { error: 'Tool execution cancelled' }, isError: true };
+  }
+  return null;
+}
 
 // Maximum image size for analysis (10MB)
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
@@ -94,6 +102,9 @@ export const analyzeImageExecutor: ToolExecutor = async (
   params,
   context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(context);
+  if (cancelled) return cancelled;
+
   const source = params.source as string;
   const task = (params.task as string) || 'describe';
   const question = params.question as string | undefined;
@@ -393,6 +404,9 @@ export const resizeImageExecutor: ToolExecutor = async (
   params,
   context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(context);
+  if (cancelled) return cancelled;
+
   const source = params.source as string;
   const width = params.width as number | undefined;
   const height = params.height as number | undefined;
