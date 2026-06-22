@@ -340,21 +340,19 @@ Existing `workflow-service.test.ts` already covers a broad surface. Before split
 - `workflow-service.ts` now calls `runJobifiedLevel()` instead of the removed private method
 - Removed unused imports: `WorkflowEdge`, `sleep`, `IToolService`, `enqueueWorkflowLevel`
 
-### Phase 4 — Inline level runner
+### Phase 4 — Inline level runner (NOT PLANNED)
 
-1. Extract one-level execution helper.
-2. Keep branch skip/error handler behavior identical.
-3. Run full `workflow-service.test.ts` after each small move.
+The topological sort + level iteration loop is deeply interleaved with node result processing (error handlers, branch skipping, alias mirroring). Extracting it requires restructuring the dispatch callbacks first. Not worth the risk without a characterization test suite.
 
-Rollback: restore loop from git.
+### Phase 5 — Execute/resume runtime split (ABANDONED)
 
-### Phase 5 — Execute/resume runtime split
+Attempted and reverted. The circular callback dependency makes this infeasible without first refactoring `dispatchCallbacks` to be passed explicitly rather than created in the constructor. Specifically: `dispatchCallbacks.subWorkflowExecutor` needs to call `executeWorkflow`, but `executeWorkflow` needs `dispatchCallbacks` to exist first — a true circular reference that cannot be resolved without either lazy initialization or separating the callback interfaces further.
 
-1. Move execute-from-scratch into `runtime.ts`.
-2. Move approval resume into `resume-runtime.ts`.
-3. Leave `WorkflowService` as public facade.
+Current state after 3 phases:
 
-Rollback: keep facade delegates small so each runtime file can be reverted independently.
+- `workflow-service.ts` reduced from ~1068 to ~995 LOC
+- 3 new modules: `execution-locks.ts`, `workflow-context.ts`, `jobified-level-runner.ts`
+- All 425 workflow tests passing
 
 ## Verification commands
 
