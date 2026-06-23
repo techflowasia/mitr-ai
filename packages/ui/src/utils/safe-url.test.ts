@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isSafeUrl, safeHref } from './safe-url';
+import { isSafeUrl, safeHref, safeDownloadHref } from './safe-url';
 
 describe('isSafeUrl', () => {
   it('accepts http and https URLs', () => {
@@ -53,5 +53,43 @@ describe('safeHref', () => {
     expect(safeHref('javascript:alert(1)')).toBeUndefined();
     expect(safeHref('')).toBeUndefined();
     expect(safeHref(null)).toBeUndefined();
+  });
+});
+
+describe('safeDownloadHref', () => {
+  it('accepts http(s) URLs', () => {
+    expect(safeDownloadHref('https://cdn.example.com/file.pdf')).toBe(
+      'https://cdn.example.com/file.pdf'
+    );
+    expect(safeDownloadHref('http://example.com/x')).toBe('http://example.com/x');
+  });
+
+  it('accepts blob: object URLs', () => {
+    expect(safeDownloadHref('blob:https://example.com/abc')).toBe('blob:https://example.com/abc');
+  });
+
+  it('accepts same-origin relative paths (resolved against the app origin)', () => {
+    // jsdom origin is http://localhost:3000 by default.
+    expect(safeDownloadHref('/api/v1/files/report.csv')).toBe('/api/v1/files/report.csv');
+  });
+
+  it('rejects javascript:, data:, vbscript:, file: URLs', () => {
+    expect(safeDownloadHref('javascript:alert(1)')).toBeUndefined();
+    expect(safeDownloadHref('JavaScript:alert(1)')).toBeUndefined();
+    expect(safeDownloadHref('data:text/html,<script>alert(1)</script>')).toBeUndefined();
+    expect(safeDownloadHref('vbscript:msgbox')).toBeUndefined();
+    expect(safeDownloadHref('file:///etc/passwd')).toBeUndefined();
+  });
+
+  it('rejects control-char smuggling and whitespace-padded input', () => {
+    expect(safeDownloadHref('java\tscript:alert(1)')).toBeUndefined();
+    expect(safeDownloadHref('  javascript:alert(1)')).toBeUndefined();
+  });
+
+  it('rejects empty / non-string input', () => {
+    expect(safeDownloadHref('')).toBeUndefined();
+    expect(safeDownloadHref(null)).toBeUndefined();
+    expect(safeDownloadHref(undefined)).toBeUndefined();
+    expect(safeDownloadHref(123)).toBeUndefined();
   });
 });
