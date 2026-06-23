@@ -1,6 +1,7 @@
 import type { WidgetTone } from './widget-types';
 import { WidgetShell } from './WidgetShell';
 import { formatBytes } from '../../utils/formatters';
+import { safeDownloadHref } from '../../utils/safe-url';
 
 interface Props {
   data: unknown;
@@ -78,6 +79,9 @@ export function FileWidget({ data, title: titleProp }: Props) {
 
 function FileItemRenderer({ item }: { item: FileItem }) {
   const { name, size, type, url } = item;
+  // `url` is LLM/tool-controlled — gate it so a `javascript:`/`data:` URI can't
+  // execute on click. Unsafe URLs simply render no download link.
+  const downloadHref = safeDownloadHref(url);
 
   return (
     <div className="flex items-center gap-3 rounded-md border border-border bg-bg-secondary/70 p-3 dark:border-dark-border dark:bg-dark-bg-secondary/70">
@@ -94,9 +98,9 @@ function FileItemRenderer({ item }: { item: FileItem }) {
           {size && <span>{formatBytes(size)}</span>}
         </div>
       </div>
-      {url && (
+      {downloadHref && (
         <a
-          href={url}
+          href={downloadHref}
           download={name}
           target="_blank"
           rel="noopener noreferrer"
