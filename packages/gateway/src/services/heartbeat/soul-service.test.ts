@@ -564,6 +564,87 @@ describe('heartbeat engine — processMessage()', () => {
     expect(blocked.reason).toContain('core.delete_data');
   });
 
+  describe('soul autonomy enforcement (heartbeat tool gate)', () => {
+    async function captureFilterWithSoul(autonomy: {
+      allowedActions?: string[];
+      blockedActions?: string[];
+      requiresApproval?: string[];
+    }) {
+      initRunner();
+      const repo = (await import('../../db/repositories/souls.js')).getSoulsRepository();
+      vi.mocked(repo.getByAgentId).mockResolvedValue({
+        autonomy: {
+          allowedActions: autonomy.allowedActions ?? [],
+          blockedActions: autonomy.blockedActions ?? [],
+          requiresApproval: autonomy.requiresApproval ?? [],
+        },
+      } as never);
+
+      let captured:
+        | ((tc: { name: string }) => Promise<{ approved: boolean; reason?: string }>)
+        | undefined;
+      mockChat.mockImplementation((_msg: string, opts: { onBeforeToolCall?: typeof captured }) => {
+        captured = opts.onBeforeToolCall;
+        return Promise.resolve({ ok: true, value: { content: 'ok', usage: null } });
+      });
+      await getEngine().processMessage({ message: 'run', context: {} });
+      expect(captured).toBeDefined();
+      return captured!;
+    }
+
+    afterEach(async () => {
+      const repo = (await import('../../db/repositories/souls.js')).getSoulsRepository();
+      vi.mocked(repo.getByAgentId).mockReset();
+    });
+
+    it('installs the gate even for a default soul with no tool filter (always-on)', async () => {
+      const filter = await captureFilterWithSoul({});
+      // Gate present; ordinary tool allowed (no restrictions configured).
+      expect(await filter({ name: 'core.get_current_time' })).toEqual({ approved: true });
+    });
+
+    it('blocks a tool matching blockedActions (exact tool name)', async () => {
+      const filter = await captureFilterWithSoul({ blockedActions: ['send_email'] });
+      const d = await filter({ name: 'core.send_email' });
+      expect(d.approved).toBe(false);
+      expect(d.reason).toContain('blockedActions');
+    });
+
+    it('blocks a tool matching a blockedActions CATEGORY (execute_code → execute_shell)', async () => {
+      const filter = await captureFilterWithSoul({ blockedActions: ['execute_code'] });
+      expect((await filter({ name: 'execute_shell' })).approved).toBe(false);
+      expect((await filter({ name: 'execute_python' })).approved).toBe(false);
+      // delete_data category → delete_* tools
+      const filter2 = await captureFilterWithSoul({ blockedActions: ['delete_data'] });
+      expect((await filter2({ name: 'core.delete_memory' })).approved).toBe(false);
+    });
+
+    it('blocks a requiresApproval tool (no UI to approve in an unattended heartbeat)', async () => {
+      const filter = await captureFilterWithSoul({ requiresApproval: ['send_channel_message'] });
+      const d = await filter({ name: 'send_channel_message' });
+      expect(d.approved).toBe(false);
+      expect(d.reason).toContain('requires approval');
+    });
+
+    it('enforces allowedActions as an allowlist (non-listed tool denied)', async () => {
+      const filter = await captureFilterWithSoul({ allowedActions: ['search_web'] });
+      expect((await filter({ name: 'search_web' })).approved).toBe(true);
+      const d = await filter({ name: 'create_note' });
+      expect(d.approved).toBe(false);
+      expect(d.reason).toContain('allowedActions');
+    });
+
+    it('always allows meta-tools even under a blockedActions/allowlist policy', async () => {
+      const filter = await captureFilterWithSoul({
+        allowedActions: ['search_web'],
+        blockedActions: ['use_tool'],
+      });
+      // use_tool / search_tools are how the agent reaches any tool — never blocked.
+      expect(await filter({ name: 'use_tool' })).toEqual({ approved: true });
+      expect(await filter({ name: 'search_tools' })).toEqual({ approved: true });
+    });
+  });
+
   it('throws when agent.chat returns ok=false', async () => {
     initRunner();
     mockChat.mockResolvedValue({ ok: false, error: new Error('model error') });

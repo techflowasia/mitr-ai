@@ -49,7 +49,7 @@ import { getSessionWorkspacePath } from '../../workspace/file-workspace.js';
 import { getLog } from '@ownpilot/core/services';
 import { HeartbeatCircuitBreaker, HeartbeatMetricsCollector } from '@ownpilot/core/agent';
 import type { BudgetForecaster } from '@ownpilot/core/agent';
-import { HEARTBEAT_CREW_CONTEXT_CACHE_TTL_MS } from '../../config/defaults.js';
+import { HEARTBEAT_CREW_CONTEXT_CACHE_TTL_MS, AI_META_TOOL_NAMES } from '../../config/defaults.js';
 import { TTLCache } from '../../utils/ttl-cache.js';
 
 const log = getLog('SoulHeartbeatService');
@@ -65,6 +65,48 @@ const TOOL_CALL_PREVIEW_MAX_CHARS = 500;
 const HEARTBEAT_MEMORY_RECALL_LIMIT = 5;
 /** Min task-prompt length before we bother with relevance recall. */
 const HEARTBEAT_MEMORY_RECALL_MIN_CHARS = 8;
+
+const META_TOOL_BASE_NAMES = new Set<string>(AI_META_TOOL_NAMES);
+
+/**
+ * Coarse soul-autonomy categories → the tool base names they govern. Soul
+ * `allowedActions`/`blockedActions`/`requiresApproval` may be exact tool names
+ * (e.g. 'search_web') OR capability categories (e.g. crew defaults
+ * 'execute_code'/'delete_data'). Map both so a soul's configured restrictions are
+ * ENFORCED at the heartbeat tool gate, not merely described in the system prompt.
+ */
+const SOUL_ACTION_CATEGORY_MATCHERS: Record<string, (toolBase: string) => boolean> = {
+  execute_code: (b) => b.startsWith('execute_') || b === 'compile_code' || b === 'package_manager',
+  code_execution: (b) =>
+    b.startsWith('execute_') || b === 'compile_code' || b === 'package_manager',
+  delete_data: (b) => b.startsWith('delete_'),
+  modify_files: (b) =>
+    [
+      'write_file',
+      'edit_file',
+      'delete_file',
+      'move_file',
+      'copy_file',
+      'create_directory',
+    ].includes(b),
+  send_email: (b) => b === 'send_email',
+  send_message: (b) => b.startsWith('send_') || b.startsWith('broadcast_'),
+};
+
+function soulActionBaseName(name: string): string {
+  return name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : name;
+}
+
+/** Whether a tool is governed by any of the given soul autonomy actions. */
+function toolMatchesSoulActions(toolName: string, actions: string[]): boolean {
+  const toolBase = soulActionBaseName(toolName);
+  for (const action of actions) {
+    if (soulActionBaseName(action) === toolBase) return true;
+    const matcher = SOUL_ACTION_CATEGORY_MATCHERS[action];
+    if (matcher && matcher(toolBase)) return true;
+  }
+  return false;
+}
 
 function truncate(value: string, max: number): string {
   if (value.length <= max) return value;
@@ -410,13 +452,29 @@ export class SoulHeartbeatService {
         const skillAccessAllowed = request.context?.skillAccessAllowed as string[] | undefined;
         const skillAccessBlocked = request.context?.skillAccessBlocked as string[] | undefined;
 
-        const hasToolFilter =
-          !clawMode &&
-          !!(allowedTools?.length || skillAccessAllowed?.length || skillAccessBlocked?.length);
+        // Soul-level autonomy lists (allowed/blocked/requiresApproval). These were
+        // previously injected into the system prompt only — never enforced at the
+        // tool gate — so a heartbeat (fully unattended) could call any tool the
+        // model chose. Load them so the gate below ENFORCES them.
+        let soulAllowedActions: string[] = [];
+        let soulBlockedActions: string[] = [];
+        let soulRequiresApproval: string[] = [];
+        try {
+          const soul = await getSoulsRepository().getByAgentId(request.agentId);
+          soulAllowedActions = soul?.autonomy?.allowedActions ?? [];
+          soulBlockedActions = soul?.autonomy?.blockedActions ?? [];
+          soulRequiresApproval = soul?.autonomy?.requiresApproval ?? [];
+        } catch (err) {
+          log.warn(
+            `[Heartbeat ${request.agentId}] Could not load soul autonomy; tool gate runs without per-soul action lists: ${err instanceof Error ? err.message : String(err)}`
+          );
+        }
 
-        // Tool authorization is delegated to the unified PermissionGate so
-        // every runtime applies the same allow / deny logic.
-        const gate = hasToolFilter ? runtime.permissions : null;
+        // Authorization gate. ALWAYS install it for non-claw heartbeats (claw mode
+        // = autonomy level 5 is deliberately unrestricted). Previously the gate was
+        // installed only when a skillAccess/allowedTools filter happened to exist,
+        // so the common default soul ran tool calls with NO approval gate at all.
+        const gate = clawMode ? null : runtime.permissions;
 
         // Per-call workspace scoping. Heartbeats share the cached chat agent
         // across souls, so we cannot setWorkspaceDir on its registry without
@@ -447,6 +505,39 @@ export class SoulHeartbeatService {
             agent.chat(taskMessage, {
               onBeforeToolCall: gate
                 ? async (toolCall) => {
+                    // Soul autonomy enforcement (deny lists first). Meta-tools
+                    // (search_tools/use_tool/…) are always allowed — they are how
+                    // the agent reaches any tool and blocking them breaks the run.
+                    const isMetaTool = META_TOOL_BASE_NAMES.has(soulActionBaseName(toolCall.name));
+                    if (!isMetaTool) {
+                      if (toolMatchesSoulActions(toolCall.name, soulBlockedActions)) {
+                        return {
+                          approved: false,
+                          reason: `Tool '${toolCall.name}' is blocked by this soul's autonomy policy (blockedActions)`,
+                        };
+                      }
+                      // requiresApproval in an UNATTENDED heartbeat = no UI to
+                      // approve → fail closed (block), matching the non-interactive
+                      // downgrade the trigger 'tool' action applies.
+                      if (toolMatchesSoulActions(toolCall.name, soulRequiresApproval)) {
+                        return {
+                          approved: false,
+                          reason: `Tool '${toolCall.name}' requires approval and cannot be auto-approved in an unattended heartbeat`,
+                        };
+                      }
+                      // allowedActions, when set, is an allowlist: anything not on
+                      // it (and not a meta-tool) is denied.
+                      if (
+                        soulAllowedActions.length > 0 &&
+                        !toolMatchesSoulActions(toolCall.name, soulAllowedActions)
+                      ) {
+                        return {
+                          approved: false,
+                          reason: `Tool '${toolCall.name}' is not in this soul's allowedActions`,
+                        };
+                      }
+                    }
+
                     let parsedArgs: Record<string, unknown> | undefined;
                     if (toolCall.arguments) {
                       try {
