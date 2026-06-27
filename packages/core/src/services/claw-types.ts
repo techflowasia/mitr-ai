@@ -118,6 +118,25 @@ export interface ClawAutonomyPolicy {
   maxCostUsdBeforePause?: number;
 }
 
+/**
+ * Safe default autonomy policy applied to a claw that has none configured.
+ *
+ * A claw is autonomous and unattended, so the secure default is to BLOCK
+ * destructive actions (delete / git push / shell `rm -rf`-style) and
+ * self-modification while still allowing ordinary read/work tools and
+ * (depth- and concurrency-bounded) subclaw delegation. Operators that need a
+ * claw to perform destructive work set an explicit `autonomyPolicy`. Without
+ * this default the per-call guardrail was skipped entirely when no policy was
+ * supplied, so destructive tools ran unauthorized.
+ */
+export const DEFAULT_CLAW_AUTONOMY_POLICY: ClawAutonomyPolicy = {
+  allowSelfModify: false,
+  allowSubclaws: true,
+  requireEvidence: false,
+  destructiveActionPolicy: 'block',
+  filesystemScopes: [],
+};
+
 /** Derived runtime health signal returned by API responses. */
 export interface ClawHealthStatus {
   score: number;

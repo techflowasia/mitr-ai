@@ -25,6 +25,7 @@ import type {
   ClawCycleResult,
   ClawToolCall,
 } from '@ownpilot/core/services/claw';
+import { DEFAULT_CLAW_AUTONOMY_POLICY } from '@ownpilot/core/services/claw';
 import type { RuntimeContext } from '@ownpilot/core/services';
 import { getRuntimeContext } from '@ownpilot/core/services';
 import { getLog } from '../log.js';
@@ -535,18 +536,19 @@ export class ClawRunner {
   }
 
   /**
-   * Build the per-tool-call guardrail. Returns `undefined` (zero overhead) when
-   * no autonomy policy is configured, preserving the prior behavior. When a
-   * policy is present, every tool call is checked against it via the
-   * PermissionGate — turning declared `autonomyPolicy` into real enforcement.
-   * Denied / approval-required calls are recorded to `claw_audit_log` under the
-   * `blocked` category so operators get a watcher trail.
+   * Build the per-tool-call guardrail. Always installed: a claw is autonomous
+   * and unattended, so its tool calls must be checked against an autonomy policy
+   * via the PermissionGate. When the claw has no explicit `autonomyPolicy` we
+   * apply DEFAULT_CLAW_AUTONOMY_POLICY (block destructive + self-modify) rather
+   * than returning `undefined` — previously a policy-less claw ran every tool
+   * call unchecked (the recurring "executor skips the gate" class). Denied /
+   * approval-required calls are recorded to `claw_audit_log` under the `blocked`
+   * category so operators get a watcher trail.
    */
   private buildGuardrail(
     cycleNumber: number
-  ): ((tc: ToolCall) => Promise<{ approved: boolean; reason?: string }>) | undefined {
-    const policy = this.config.autonomyPolicy;
-    if (!policy) return undefined;
+  ): (tc: ToolCall) => Promise<{ approved: boolean; reason?: string }> {
+    const policy = this.config.autonomyPolicy ?? DEFAULT_CLAW_AUTONOMY_POLICY;
 
     const workspaceDir = this.config.workspaceId
       ? getSessionWorkspacePath(this.config.workspaceId)

@@ -42,6 +42,7 @@ export {
   CLAW_TASK_STALL_FORCE_BLOCK,
   CLAW_NEXT_INTENT_MAX,
   CLAW_PLAN_HISTORY_MAX,
+  DEFAULT_CLAW_AUTONOMY_POLICY,
   getClawService,
   setClawService,
   hasClawService,

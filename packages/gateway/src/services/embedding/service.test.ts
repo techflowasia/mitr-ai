@@ -64,6 +64,13 @@ vi.mock('../../config/defaults.js', async (importOriginal) => {
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
 
+// SSRF guard: the embedding service routes through safeFetch by default and only
+// uses plain fetch when OWNPILOT_ALLOW_LOCAL_EMBEDDING_URL=true. Mock safeFetch as
+// a spy that delegates to the same fetch mock, so existing assertions still hold
+// AND we can assert which path was taken.
+const { mockSafeFetch } = vi.hoisted(() => ({ mockSafeFetch: vi.fn() }));
+vi.mock('../../utils/safe-fetch.js', () => ({ safeFetch: mockSafeFetch }));
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -125,6 +132,11 @@ describe('EmbeddingService', () => {
 
     // Clean env
     delete process.env.OPENAI_API_KEY;
+    delete process.env.OWNPILOT_ALLOW_LOCAL_EMBEDDING_URL;
+
+    // safeFetch (default path) delegates to the same fetch mock so existing
+    // fetch assertions hold while still recording that safeFetch was used.
+    mockSafeFetch.mockImplementation((url: string, init?: RequestInit) => mockFetch(url, init));
 
     service = new EmbeddingService('test-model', 8);
   });
@@ -404,6 +416,47 @@ describe('EmbeddingService', () => {
   // =========================================================================
 
   describe('callEmbeddingAPI (via generateEmbedding)', () => {
+    it('routes through safeFetch by default (SSRF guard)', async () => {
+      vi.useRealTimers();
+      mockEmbeddingCacheRepo.lookup.mockResolvedValue(null);
+      mockFetch.mockResolvedValue(mockFetchResponse([fakeEmbedding()]));
+
+      await service.generateEmbedding('hello');
+
+      expect(mockSafeFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/embeddings'),
+        expect.objectContaining({ method: 'POST' })
+      );
+    });
+
+    it('uses plain fetch (not safeFetch) only when OWNPILOT_ALLOW_LOCAL_EMBEDDING_URL=true', async () => {
+      vi.useRealTimers();
+      process.env.OWNPILOT_ALLOW_LOCAL_EMBEDDING_URL = 'true';
+      mockEmbeddingCacheRepo.lookup.mockResolvedValue(null);
+      mockFetch.mockResolvedValue(mockFetchResponse([fakeEmbedding()]));
+
+      await service.generateEmbedding('hello');
+
+      expect(mockSafeFetch).not.toHaveBeenCalled();
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/embeddings'),
+        expect.objectContaining({ method: 'POST' })
+      );
+    });
+
+    it('caps an oversized input before sending it to the embeddings API', async () => {
+      vi.useRealTimers();
+      mockEmbeddingCacheRepo.lookup.mockResolvedValue(null);
+      mockFetch.mockResolvedValue(mockFetchResponse([fakeEmbedding()]));
+
+      const huge = 'a'.repeat(100_000);
+      await service.generateEmbedding(huge);
+
+      const init = mockFetch.mock.calls[0]![1] as { body: string };
+      const sent = JSON.parse(init.body) as { input: string[] };
+      expect(sent.input[0]!.length).toBeLessThanOrEqual(32_000);
+    });
+
     it('retries once on 429 rate limit with retry-after header', async () => {
       mockEmbeddingCacheRepo.lookup.mockResolvedValue(null);
 

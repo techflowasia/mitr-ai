@@ -839,15 +839,40 @@ describe('ClawRunner autonomy guardrail', () => {
     vi.clearAllMocks();
   });
 
-  it('does NOT pass a guardrail callback when no autonomyPolicy is set', async () => {
-    let captured: unknown = 'unset';
-    mockChat.mockImplementationOnce((_m: string, opts?: { onBeforeToolCall?: unknown }) => {
+  it('ALWAYS installs a guardrail, applying the safe default policy when none is configured', async () => {
+    // Recurring-class fix: a policy-less claw used to run every tool UNGATED
+    // (onBeforeToolCall undefined). The guardrail is now always installed and
+    // threads DEFAULT_CLAW_AUTONOMY_POLICY (block destructive + self-modify).
+    const check = vi.fn().mockResolvedValue({ type: 'allow' });
+    let captured:
+      | ((tc: { id: string; name: string; arguments: string }) => Promise<{
+          approved: boolean;
+          reason?: string;
+        }>)
+      | undefined;
+    mockChat.mockImplementationOnce((_m: string, opts?: { onBeforeToolCall?: typeof captured }) => {
       captured = opts?.onBeforeToolCall;
       return Promise.resolve({ ok: true, value: { content: 'done' } });
     });
-    const runner = new ClawRunner(makeConfig());
-    await runner.runCycle(makeSession({ config: makeConfig() }));
-    expect(captured).toBeUndefined();
+
+    const config = makeConfig(); // no autonomyPolicy
+    const runner = new ClawRunner(config, makeRuntime(check));
+    await runner.runCycle(makeSession({ config }));
+
+    expect(captured).toBeTypeOf('function');
+    await captured!({ id: 't1', name: 'core.delete_file', arguments: '{"path":"/x"}' });
+    expect(check).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tool: 'core.delete_file',
+        context: expect.objectContaining({
+          actorType: 'claw',
+          autonomyPolicy: expect.objectContaining({
+            destructiveActionPolicy: 'block',
+            allowSelfModify: false,
+          }),
+        }),
+      })
+    );
   });
 
   it('passes a guardrail that denies a blocked destructive tool and audits it', async () => {

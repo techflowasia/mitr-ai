@@ -8,10 +8,18 @@
 import type { IEmbeddingService } from '@ownpilot/core/services';
 import { getConfigCenter } from '@ownpilot/core/services';
 import { getLog } from '../log.js';
+import { safeFetch } from '../../utils/safe-fetch.js';
 import {
   EmbeddingCacheRepository,
   embeddingCacheRepo,
 } from '../../db/repositories/embedding-cache.js';
+
+/**
+ * Per-input character cap before the embeddings call. text-embedding-3-* tops
+ * out around 8191 tokens; ~32k chars is a safe ceiling that stops a single huge
+ * (attacker-influenceable) memory from driving an oversized token-billed request.
+ */
+const MAX_EMBEDDING_INPUT_CHARS = 32_000;
 import {
   EMBEDDING_MODEL,
   EMBEDDING_DIMENSIONS,
@@ -166,7 +174,22 @@ export class EmbeddingService implements IEmbeddingService {
     const apiKey = this.getApiKey();
     const baseUrl = this.getBaseUrl();
 
-    const response = await fetch(`${baseUrl}/embeddings`, {
+    // SSRF: base_url is operator/AI-settable (e.g. via the config_set_entry tool),
+    // and this request carries the provider key in the Authorization header. Route
+    // through safeFetch (blocks private/internal IPs, cloud metadata, and revalidates
+    // every redirect hop) so a repointed base_url cannot reach internal hosts or
+    // exfiltrate the key. Self-hosted users running a LOCAL embedding model (Ollama
+    // at 127.0.0.1, etc.) opt back in with OWNPILOT_ALLOW_LOCAL_EMBEDDING_URL=true.
+    const allowLocal = process.env.OWNPILOT_ALLOW_LOCAL_EMBEDDING_URL === 'true';
+
+    // Cap each input so one oversized (attacker-influenceable) memory can't drive a
+    // huge token-billed request.
+    const cappedInputs = inputs.map((s) =>
+      s.length > MAX_EMBEDDING_INPUT_CHARS ? s.slice(0, MAX_EMBEDDING_INPUT_CHARS) : s
+    );
+
+    const url = `${baseUrl}/embeddings`;
+    const init: RequestInit = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -174,10 +197,11 @@ export class EmbeddingService implements IEmbeddingService {
       },
       body: JSON.stringify({
         model: this.modelName,
-        input: inputs,
+        input: cappedInputs,
         dimensions: this.dimensions,
       }),
-    });
+    };
+    const response = allowLocal ? await fetch(url, init) : await safeFetch(url, init);
 
     if (!response.ok) {
       const errorBody = await response.text().catch(() => 'Unknown error');
