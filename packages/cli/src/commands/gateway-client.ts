@@ -24,12 +24,41 @@ export function getBaseUrl(): string {
  * override built-ins (so a caller can set `Content-Type: application/octet-
  * stream` for binary uploads).
  */
+let warnedInsecureCredentialTarget = false;
+
+/**
+ * Warn (once) when an API key / JWT would be sent in cleartext to a non-loopback
+ * host — e.g. OWNPILOT_GATEWAY_URL set (or poisoned via a shared shell profile)
+ * to a remote `http://` endpoint. The token still goes (the operator may have a
+ * reason), but they're told it's leaving in the clear.
+ */
+function warnIfInsecureCredentialTarget(): void {
+  if (warnedInsecureCredentialTarget) return;
+  try {
+    const u = new URL(getBaseUrl());
+    const host = u.hostname.toLowerCase();
+    const isLoopback =
+      host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '[::1]';
+    if (u.protocol === 'http:' && !isLoopback) {
+      warnedInsecureCredentialTarget = true;
+      console.warn(
+        `⚠ Sending your OwnPilot API key/JWT in cleartext to ${u.host} (http, non-loopback). ` +
+          `Use https:// for a remote gateway, or unset OWNPILOT_GATEWAY_URL for local use.`
+      );
+    }
+  } catch {
+    // Ignore unparseable base URLs — the request itself will surface the error.
+  }
+}
+
 export function gatewayHeaders(extra?: Record<string, string>): Record<string, string> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   const apiKey = process.env.OWNPILOT_API_KEY;
   const jwt = process.env.OWNPILOT_JWT;
-  if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
-  else if (jwt) headers['Authorization'] = `Bearer ${jwt}`;
+  if (apiKey || jwt) {
+    headers['Authorization'] = `Bearer ${apiKey || jwt}`;
+    warnIfInsecureCredentialTarget();
+  }
   if (extra) Object.assign(headers, extra);
   return headers;
 }

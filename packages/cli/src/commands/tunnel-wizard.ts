@@ -151,7 +151,9 @@ export async function tunnelWizard(): Promise<void> {
     console.log(`\nTunnel started!`);
     console.log(`  URL: ${result.url}`);
     if (effectivePassword) {
-      console.log(`  Auth:  op:${effectivePassword}`);
+      // The operator chose this password, so don't echo it in cleartext to
+      // scrollback / screen-share — just confirm Basic Auth is on.
+      console.log(`  Auth:  Basic Auth enabled (username "op", password as you set)`);
     }
     console.log(
       '\nAccess the tunnel URL in your browser. Basic Auth will prompt for credentials if password was set.\n'
