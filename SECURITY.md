@@ -64,6 +64,29 @@ gateway beyond localhost (e.g. via a tunnel or `0.0.0.0` bind), also set:
   broker credentials before binding it to any non-loopback interface.
 - **API auth** — set `auth.type` to `api-key` or `jwt` (with a strong key/secret);
   authentication covers the entire `/api/*` surface (all versions).
+- **UI password** — when an API key / JWT is configured but no UI password is set,
+  the web UI and WebSocket run as the implicitly-authenticated local owner (a
+  single-user-localhost convenience). Set a UI password before exposing the
+  gateway; the gateway logs a startup warning otherwise.
+
+## Security hardening toggles (opt-in)
+
+These default to the **secure** behavior; set to `true` only if you understand the
+trade-off. (See `packages/gateway/.env.example` for the full list.)
+
+| Variable                                | Default (unset)                                               | Effect when `true`                                                        |
+| --------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `OWNPILOT_STRICT_CALLTOOL`              | custom/extension tools may call any non-blocked tool          | default-deny: only read-only / explicitly-permissioned tools are callable |
+| `OWNPILOT_ENABLE_EXTENSION_HOST_ACCESS` | extension `sandbox:'none'` is forced into the isolated worker | allow extensions to opt out of the sandbox (host fs/exec)                 |
+| `OWNPILOT_CODING_AGENT_ANY_DIR`         | coding agents confined to the workspace root                  | allow coding agents to run in any directory                               |
+| `OWNPILOT_ALLOW_LOCAL_EMBEDDING_URL`    | embedding base URL is SSRF-guarded (private blocked)          | allow a private/local embedding endpoint (e.g. Ollama)                    |
+| `OWNPILOT_ALLOW_LOCAL_LLM_URL`          | LLM-provider base URL is SSRF-guarded (private blocked)       | allow a private/local LLM endpoint (Ollama / LM Studio / vLLM)            |
+| `OWNPILOT_ENABLE_SKILL_SCRIPTS`         | agentskills `script_paths` are not auto-wired as tools        | allow skills to auto-create shell/python/js tool bridges                  |
+| `OWNPILOT_TOOL_SANDBOX=worker`          | dynamic tools run on the in-process vm sandbox                | route them through the memory-limited Worker sandbox                      |
+
+Autonomous **Claw** agents with no explicit `autonomyPolicy` block destructive
+actions (delete / git push / shell) and self-modification by default; set a
+per-claw policy to widen that.
 
 ## Dependency Management
 

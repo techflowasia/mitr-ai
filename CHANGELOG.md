@@ -27,6 +27,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Sandbox memory limits enforced** — dynamic tools and LLM-generated agentic/trigger code can run on a Worker-thread sandbox that enforces `maxMemory` (the in-process vm path could not). Opt in per-tool with `OWNPILOT_TOOL_SANDBOX=worker`.
+- **WebSocket auth source fixed** — `/ws` now uses the same resolved API keys as the HTTP API; previously gateway keys configured via the UI/DB left the WebSocket open while HTTP was protected.
+- **No-password warning** — the gateway now warns loudly at startup when an API key / JWT is configured but no UI password is set (the web UI / WebSocket otherwise run as the implicitly-authenticated owner).
+- **Health endpoint gating** — `/health/sandbox*` and `/health/tool-dependencies` (host disclosure + state-mutating POSTs) now require authentication; liveness/readiness probes stay public.
+- **Extension host access gated** — an extension manifest can no longer opt out of the sandbox (`runtime.sandbox:'none'` → host fs/exec) without `OWNPILOT_ENABLE_EXTENSION_HOST_ACCESS=true`.
+- **MCP serve gating** — tools called over the MCP serve surface now run as a non-interactive source (approval-required tools are blocked, not auto-passed), and `batch_use_tool` now enforces per-call permissions.
+- **Coding-agent cwd** — coding agents are confined to the workspace root by default (`OWNPILOT_CODING_AGENT_ANY_DIR=true` to allow any directory); the Windows `cmd.exe` launch path no longer lets prompt/arg metacharacters inject.
+- **Autonomous tool gates** — soul-heartbeat and Claw tool calls are now always gated; policy-less claws block destructive actions + self-modification by default, and soul `blockedActions`/`allowedActions` are enforced (were prompt-only).
+- **SSRF hardening** — the embedding and openai-compatible LLM-provider fetches are SSRF-guarded (private/internal hosts blocked; `OWNPILOT_ALLOW_LOCAL_EMBEDDING_URL` / `OWNPILOT_ALLOW_LOCAL_LLM_URL` to allow local models). The `config_set_entry` AI tool can no longer point a service URL field at a private address.
+- **Opt-in strict `callTool`** — `OWNPILOT_STRICT_CALLTOOL=true` makes custom/extension `utils.callTool` default-deny (read-only + permissioned tools only).
+- **Workflow hardening** — the jobified node path rejects unknown node types instead of falling through to the tool executor; sub-workflow recursion depth is capped.
+- **CLI** — warns when an API key / JWT would be sent in cleartext to a non-loopback `http://` gateway; the tunnel wizard no longer echoes the Basic-Auth password to stdout.
+
+### Fixed
+
+- Streaming: forward per-tool-call `index` in the openai-compatible provider (parallel tool calls could be corrupted); flush the final SSE line on a newline-less EOF.
+- Custom-data: filtered record queries used integer literals instead of bound `$N` placeholders and always returned zero rows.
+
 ## [0.8.3] - 2026-06-23
 
 ### Security
